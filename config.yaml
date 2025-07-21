@@ -1,0 +1,42 @@
+
+basic:
+  # Login credentials for churchtools and the radius shared secret are to be set via the associated environment variables
+  access_group:
+    wifi_group: 194
+    password_field_name: "WLAN-Passwort"
+  # The split character in usernames to request a specific vlan
+  requested_vlan_separator: "#"
+  # The timeout in seconds for contacting the churchtools server
+  timeout: 5
+  
+
+vlans:
+  # The default vlan to sort everybody in, if the do not have higher priority via any of the following vlan assignments
+  default_vlan: 30
+  # This is a dictionary which maps churchtools group ids to vlans, to which the user will be assigned. Priority is in decreasing order. If the user is a member of the first inserted group he will be assigned to this vlan and all following assignments will be ignored.
+  assignments:
+    # VLAN: 10/Verwaltung
+    101: 10 # Ältestenkreis
+    147: 10 # Pastoren
+    107: 10 # Verwaltung
+    104: 10 # Vorstand
+    # VLAN: 20/Veranstaltungstechnik
+    139: 20 # Band Friedrich
+    202: 20 # Band Myri
+    136: 20 # Band Ulli
+    74: 20 # Bands und Lobpreisleiter
+    83: 20 # Beamertechnik
+    197: 20 # Gottesdienstverantwortliche
+    80: 20 # Lichttechnik
+    86: 20 # Moderation
+    71: 20 # Predigt
+    77: 20 # Tontechnik
+    132: 20 # Videotechnik
+    # VLAN: 1/LAN for the management layer
+    177: 1 # Netzwerkadmin
+  # This is a dictionary which maps churchtools group ids to vlans, to which the user will be assigned only if requested. Priority is again in decreasing order.
+  assignments_if_requested:
+    231: 110 # Hausautomatisierung
+    77: 120 # Tontechnik
+
+
