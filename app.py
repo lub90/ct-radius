@@ -18,6 +18,7 @@ class CtAuthProvider:
         basic = cfg["basic"]
         self.vlan_separator = basic["requested_vlan_separator"]
         self.timeout = basic.get("timeout", 5)
+        self.username_field_name = basic.get("username_field_name")
 
         vlans = cfg["vlans"]
         self.default_vlan = vlans["default_vlan"]
@@ -101,7 +102,7 @@ class CtAuthProvider:
             params={
                 "page": 1,
                 "limit": 100,
-                "person_cmsUserId": username
+                "person_"+self.username_field_name: username
             },
             timeout=self.timeout
         )
@@ -111,7 +112,7 @@ class CtAuthProvider:
         # Check if exactly one member is returned
         for member in members:
             field_list = member.get("fields", [])
-            matching_fields = [f for f in field_list if f.get("name") == "cmsUserId"]
+            matching_fields = [f for f in field_list if f.get("name") == self.username_field_name]
             member_username = matching_fields[0].get("value", "").strip()
             if member_username == username:
                 return member.get("personId")
