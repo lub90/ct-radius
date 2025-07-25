@@ -3,3 +3,4 @@ ttls-eap-mschapv2-tests/
 env.list
 envs
 notes
+__pycache__
