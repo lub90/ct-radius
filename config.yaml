@@ -1,13 +1,16 @@
 
 basic:
-  # Login credentials for churchtools and the radius shared secret are to be set via the associated environment variables
-  access_group:
-    wifi_group: 194
-    password_field_name: "WLAN-Passwort"
+  # Login credentials for churchtools, the radius shared secret and the secret for the password database are to be set via the associated environment variables
+  # All users of these churchtools groups have access to the wifi
+  wifi_access_groups: [194]
+  # Whether we want to automatically include the assignemt groups in the wifi access groups, even if they are not specifically listed there
+  include_assignement_groups_in_access_groups: True
   # The split character in usernames to request a specific vlan
   requested_vlan_separator: "#"
   # The timeout in seconds for contacting the churchtools server
   timeout: 5
+  # Path to the PasswordDatabase file
+  path_to_pwd_db = ~/git/ChurchtoolsRadius/passwords.db
   
 
 vlans:

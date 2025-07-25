@@ -2,6 +2,7 @@ import os
 import yaml
 import requests
 import radiusd
+from PasswordDatabase import PasswordDatabase
 
 from AuthenticationError import AuthenticationError
 
@@ -18,14 +19,25 @@ class CtAuthProvider:
         self.vlan_separator = basic["requested_vlan_separator"]
         self.timeout = basic.get("timeout", 5)
 
-        access = basic["access_group"]
-        self.wifi_group_id = access["wifi_group"]
-        self.pwd_field = access["password_field_name"]
-
         vlans = cfg["vlans"]
         self.default_vlan = vlans["default_vlan"]
         self.assignments = {int(k): v for k, v in vlans["assignments"].items()}
         self.assignments_if_requested = {int(k): v for k, v in vlans["assignments_if_requested"].items()}
+
+        wifi_group_ids = basic["wifi_access_groups"]
+        # Check flag to optionally extend with VLAN assignment group IDs
+        if basic.get("include_assignment_groups_in_access_groups", False):
+            extended_ids = set(wifi_group_ids)  # Start with configured ones
+            extended_ids.update(self.assignments.keys())
+            extended_ids.update(self.assignments_if_requested.keys())
+            self.wifi_group_ids = list(sorted(extended_ids))
+        else:
+            self.wifi_group_ids = wifi_group_ids
+
+        # Password database setup
+        db_path = os.path.expanduser(basic["path_to_pwd_db"])
+        pwd_db_secret = os.environ.get("CTRADIUS_PWD_DB_SECRET")
+        self.pwd_db = PasswordDatabase(db_path, pwd_db_secret)
 
         self.session = requests.Session()
 
@@ -34,7 +46,8 @@ class CtAuthProvider:
 
         raw_username = self.cleanup_username(raw_username)
         username, requested_vlan = self.split_username(raw_username)
-        ct_person_id, password = self.get_wifi_credentials(username)
+        ct_person_id = self.get_person_id(username)
+        password = self.get_password(ct_person_id)
         ct_groups = self.get_user_groups(ct_person_id)
         assigned_vlan = self.get_vlan(ct_groups, requested_vlan)
 
@@ -45,6 +58,13 @@ class CtAuthProvider:
             raise AuthenticationError(f"VLAN assignment failed for {username}!")
 
         return password, assigned_vlan
+
+    def get_password(self, person_id):
+        # Retrieve the password from the PasswordDatabase
+        try:
+            return self.pwd_db.getPwd(person_id)
+        except KeyError:
+            raise AuthenticationError(f"Cannot find password for user id {person_id}!")
 
     def cleanup_username(self, raw_username):
         return raw_username.strip().lower()
@@ -64,13 +84,23 @@ class CtAuthProvider:
             return base.strip(), vlan
         else:
             return raw_username.strip(), None
-        
-    def get_wifi_credentials(self, username):
+    
+    def get_person_id(self, username):
+        for group_id in self.wifi_group_ids:
+            user_id = self.get_person_id(username, group_id)
+            if user_id != None:
+                return user_id
+        raise AuthenticationError(f"Cannot find user id for username {username}")
+
+    def get_person_id(self, username, group_id):
+        # A page limit of 100 should be sufficient, as this means that we have 100 users which have a username containing the given username
+        # This is only the case if only a single or few characters are given --> Try to breach system, ignore this request
+        # Or if the given (real) username is contained in another username. Thereby, it is highly unlikely that there exist more than 100 such usernames
         response = self.session.get(
-            f"{self.server_url}/api/groups/{self.wifi_group_id}/members",
+            f"{self.server_url}/api/groups/{group_id}/members",
             params={
                 "page": 1,
-                "limit": 10,
+                "limit": 100,
                 "person_cmsUserId": username
             },
             timeout=self.timeout
@@ -79,26 +109,13 @@ class CtAuthProvider:
         members = response.json().get("data", [])
 
         # Check if exactly one member is returned
-        if len(members) == 0:
-            raise AuthenticationError(f"User {username} is not existent or not allowed to access wifi!")
-        if len(members) > 1:
-            raise ValueError(f"Expected exactly one group member for user ID '{username}', but found {len(members)}.")
-
-        member = members[0]
-        person_id = member.get("personId")
-
-        # Extract WiFi password field
-        field_list = member.get("fields", [])
-        matching_fields = [f for f in field_list if f.get("name") == self.pwd_field]
-
-        if len(matching_fields) != 1:
-            raise ValueError(f"Expected exactly one password field named '{self.pwd_field}', but found {len(matching_fields)}.")
-
-        password = matching_fields[0].get("value", "").strip()
-        if not password:
-            raise ValueError("WiFi password field is empty or missing.")
-
-        return person_id, password
+        for member in members:
+            field_list = member.get("fields", [])
+            matching_fields = [f for f in field_list if f.get("name") == "cmsUserId"]
+            member_username = matching_fields[0].get("value", "").strip()
+            if member_username == username:
+                return member.get("personId")
+        return None
 
     def get_user_groups(self, person_id):
         r = self.session.get(f"{self.server_url}/api/persons/{person_id}/groups", timeout=self.timeout)
