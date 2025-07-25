@@ -26,6 +26,7 @@ VALID_PASSWORDS = [
 
 # Invalid passwords due to disallowed characters, short length, or format
 INVALID_PASSWORDS = [
+    None,
     "",              # empty
     "short",         # too short
     "💥🔥🌪️",         # emojis
