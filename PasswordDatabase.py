@@ -1,8 +1,15 @@
 import dbm
 import base64
+import string
 from cryptography.fernet import Fernet
 
 class PasswordDatabase:
+    _MIN_PASSWORD_LENGTH = 8
+    _ALLOWED_CHARS = (
+        string.ascii_letters + string.digits +
+        "!@#$%^&*()-_+=[]{}<>?."
+    )
+
     def __init__(self, db_path, encryption_password):
         # Derive fixed-size key
         self.key = base64.urlsafe_b64encode(encryption_password.ljust(32).encode("utf-8")[:32])
@@ -10,7 +17,6 @@ class PasswordDatabase:
         self.db = dbm.open(db_path, 'c')  # Open once, reuse
 
     def __del__(self):
-        # Ensure clean close when the object is deleted
         if self.db is not None:
             self.db.close()
 
@@ -31,9 +37,10 @@ class PasswordDatabase:
     def _validate_password(self, password: str) -> None:
         if not isinstance(password, str):
             raise TypeError(f"Password must be a string, got {type(password).__name__}")
-        if not password or len(password) < 8:
-            raise ValueError("Password cannot be empty and must be at least 8 characters long.")
-
+        if len(password) < self._MIN_PASSWORD_LENGTH:
+            raise ValueError(f"Password must be at least {self._MIN_PASSWORD_LENGTH} characters long.")
+        if not all(char in self._ALLOWED_CHARS for char in password):
+            raise ValueError("Password contains invalid characters.")
 
     def containsUser(self, user_id: int) -> bool:
         return self._to_key(user_id) in self.db

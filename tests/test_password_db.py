@@ -1,120 +1,122 @@
 import os
 import tempfile
 import pytest
-from PasswordDatabase import PasswordDatabase  # Adjust to actual import path
+from PasswordDatabase import PasswordDatabase
 
 @pytest.fixture
 def pwd_db():
-    # Use a temporary file for isolated tests
     with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
         path = tmpfile.name
-    # We remove the path so that the database does not exist...
-    os.remove(path)
+    os.remove(path)  # remove before using with dbm
     db = PasswordDatabase(path, encryption_password="testkey123")
     yield db
     db.db.close()
     os.remove(path)
 
-def test_set_and_get_password(pwd_db):
-    pwd_db.setPwd(1, "abc123dk02km,dl")
-    assert pwd_db.getPwd(1) == "abc123dk02km,dl"
+# Valid passwords using all allowed categories
+VALID_PASSWORDS = [
+    "Secure123!",
+    "ValidPass[]",
+    "AlphaBeta123$",
+    "MixUPdown7?",
+    "Symbols{}<>.",
+    "DigitsOnly123456",
+    "Complex#Password1"
+]
 
-def test_update_existing(pwd_db):
-    pwd_db.setPwd(2, "initialhj9d;.jh")
-    pwd_db.update(2, "updated9jdkpl;uo")
-    assert pwd_db.getPwd(2) == "updated9jdkpl;uo"
+# Invalid passwords due to disallowed characters, short length, or format
+INVALID_PASSWORDS = [
+    "",              # empty
+    "short",         # too short
+    "💥🔥🌪️",         # emojis
+    "White Space",   # space
+    "Bad€uro123",     # non-ASCII
+    "Control\x03",   # control char
+    "ÜmläutPass12",   # accented chars
+    "Back\\Slash12"   # unlisted symbol
+]
 
-def test_update_nonexistent_raises(pwd_db): 
+# --- Valid password operations ---
+
+@pytest.mark.parametrize("user_id,password", [(i + 1, pwd) for i, pwd in enumerate(VALID_PASSWORDS)])
+def test_setPwd_and_getPwd_valid(pwd_db, user_id, password):
+    pwd_db.setPwd(user_id, password)
+    assert pwd_db.getPwd(user_id) == password
+
+@pytest.mark.parametrize("user_id,password", [(i + 101, pwd) for i, pwd in enumerate(VALID_PASSWORDS)])
+def test_updatePwd_valid(pwd_db, user_id, password):
+    pwd_db.setPwd(user_id, "Initial123!")
+    pwd_db.update(user_id, password)
+    assert pwd_db.getPwd(user_id) == password
+
+@pytest.mark.parametrize("user_id,password", [(i + 201, pwd) for i, pwd in enumerate(VALID_PASSWORDS)])
+def test_containsUser_after_setPwd(pwd_db, user_id, password):
+    assert not pwd_db.containsUser(user_id)
+    pwd_db.setPwd(user_id, password)
+    assert pwd_db.containsUser(user_id)
+
+@pytest.mark.parametrize("user_id,password", [(i + 301, pwd) for i, pwd in enumerate(VALID_PASSWORDS)])
+def test_deleteUser_removes_access(pwd_db, user_id, password):
+    pwd_db.setPwd(user_id, password)
+    assert pwd_db.containsUser(user_id)
+    pwd_db.deleteUser(user_id)
+    assert not pwd_db.containsUser(user_id)
     with pytest.raises(KeyError):
-        pwd_db.update(99, "faildl-;'dl;sop;dil")
+        pwd_db.getPwd(user_id)
 
-def test_containsUser(pwd_db):
-    assert not pwd_db.containsUser(3)
-    pwd_db.setPwd(3, "hiddendhka;0d.;ou")
-    assert pwd_db.containsUser(3)
+# --- Invalid password rejections ---
 
-def test_user_id_type_check(pwd_db):
+@pytest.mark.parametrize("password", INVALID_PASSWORDS)
+def test_setPwd_invalid_passwords(pwd_db, password):
+    with pytest.raises((TypeError, ValueError)):
+        pwd_db.setPwd(999, password)
+
+@pytest.mark.parametrize("password", INVALID_PASSWORDS)
+def test_updatePwd_invalid_passwords(pwd_db, password):
+    pwd_db.setPwd(998, "InitialValid123!")
+    with pytest.raises((TypeError, ValueError)):
+        pwd_db.update(998, password)
+
+# --- Invalid user ID rejections ---
+
+@pytest.mark.parametrize("bad_user_id", ["", None, "not-an-int"])
+def test_setPwd_invalid_user_id_type(pwd_db, bad_user_id):
     with pytest.raises(TypeError):
-        pwd_db.setPwd("not-an-int", "pwdfjls0l;a.djiso;sil")
+        pwd_db.setPwd(bad_user_id, "ValidPass123!")
 
-def test_negative_user_id_rejected(pwd_db):
+@pytest.mark.parametrize("bad_user_id", [-1, -99])
+def test_setPwd_negative_user_id(pwd_db, bad_user_id):
     with pytest.raises(ValueError):
-        pwd_db.setPwd(-5, "badpwd")
+        pwd_db.setPwd(bad_user_id, "ValidPass123!")
 
-# --- User ID validity checks ---
-def test_empty_user_id_rejected(pwd_db):
+@pytest.mark.parametrize("bad_user_id", ["", None, "NaN"])
+def test_deleteUser_invalid_id_type(pwd_db, bad_user_id):
     with pytest.raises(TypeError):
-        pwd_db.setPwd("", "validPassword123")
+        pwd_db.deleteUser(bad_user_id)
 
-def test_none_user_id_rejected(pwd_db):
-    with pytest.raises(TypeError):
-        pwd_db.setPwd(None, "validPassword123")
-
-# --- Password validity checks ---
-def test_empty_password_rejected(pwd_db):
+@pytest.mark.parametrize("bad_user_id", [-5, -200])
+def test_deleteUser_negative_id(pwd_db, bad_user_id):
     with pytest.raises(ValueError):
-        pwd_db.setPwd(10, "")
+        pwd_db.deleteUser(bad_user_id)
 
-def test_none_password_type_rejected(pwd_db):
-    with pytest.raises(TypeError):
-        pwd_db.setPwd(11, None)
-
-def test_short_password_rejected(pwd_db):
-    with pytest.raises(ValueError):
-        pwd_db.setPwd(12, "short")
-
-# --- Deletion tests ---
-def test_user_deletion_existing_user(pwd_db):
-    pwd_db.setPwd(20, "SecurePass123")
-    
-    # Confirm presence before deletion
-    assert pwd_db.containsUser(20)
-    assert pwd_db.getPwd(20) == "SecurePass123"
-    
-    # Delete the user
-    pwd_db.deleteUser(20)
-    
-    # Ensure user is gone
-    assert not pwd_db.containsUser(20)
-    
-    # Ensure password retrieval fails
+def test_updatePwd_nonexistent_user_raises(pwd_db):
     with pytest.raises(KeyError):
-        pwd_db.getPwd(20)
+        pwd_db.update(555, "NewValidPass!")
 
+def test_deleteUser_nonexistent_user_does_not_error(pwd_db):
+    pwd_db.deleteUser(777)  # no exception expected
+    assert not pwd_db.containsUser(777)
 
-def test_user_deletion_nonexistent_user(pwd_db):
-    # Should not raise an exception even if the user doesn't exist
-    pwd_db.deleteUser(999)
-    # Confirm it's still not in the DB
-    assert not pwd_db.containsUser(999)
+# --- Precision deletion test ---
+def test_deleteUser_does_not_affect_other_users(pwd_db):
+    pwd_db.setPwd(800, "FirstPass123!")
+    pwd_db.setPwd(801, "SecondPass123!")
+    pwd_db.setPwd(802, "ThirdPass123!")
 
-def test_user_deletion_invalid_id_type(pwd_db):
-    with pytest.raises(TypeError):
-        pwd_db.deleteUser("not-an-int")
+    pwd_db.deleteUser(801)
 
-def test_user_deletion_negative_id(pwd_db):
-    with pytest.raises(ValueError):
-        pwd_db.deleteUser(-8)
-
-def test_user_deletion_removes_only_target_user(pwd_db):
-    # Set up multiple users
-    pwd_db.setPwd(101, "UserOnePass")
-    pwd_db.setPwd(102, "UserTwoPass")
-    pwd_db.setPwd(103, "UserThreePass")
-
-    # Delete one user
-    pwd_db.deleteUser(102)
-
-    # Ensure user is gone
-    assert not pwd_db.containsUser(102)
-
-    # Confirm deleted user's password is no longer accessible
     with pytest.raises(KeyError):
-        pwd_db.getPwd(102)
+        pwd_db.getPwd(801)
 
-    # Confirm other users are still intact
-    assert pwd_db.getPwd(101) == "UserOnePass"
-    assert pwd_db.getPwd(103) == "UserThreePass"
-
-
-
+    assert pwd_db.getPwd(800) == "FirstPass123!"
+    assert pwd_db.getPwd(802) == "ThirdPass123!"
