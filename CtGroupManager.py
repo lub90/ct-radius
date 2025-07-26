@@ -1,12 +1,11 @@
 import requests
 
 class CtGroupManager:
-    def __init__(self, server_url, api_user, api_pwd, timeout, username_field_name):
+    def __init__(self, server_url, api_user, api_pwd, timeout):
         self.server_url = server_url.rstrip('/')
         self.api_user = api_user
         self.api_pwd = api_pwd
         self.timeout = timeout
-        self.username_field_name = username_field_name
 
         self.session = requests.Session()
 
@@ -17,26 +16,43 @@ class CtGroupManager:
         }, timeout=self.timeout)
         r.raise_for_status()
 
-    def _cleanup_and_check_username(self, username):
-        if not isinstance(username, str):
-            raise ValueError(f"Username must be a string, got {type(username).__name__} instead!")
-
-        if not username:
-            raise ValueError("Username is empty!")
-        
-        # Remove leading and trailing whitespace, convert to lowercase
-        return username.strip().lower()
-
     def get_user_groups(self, person_id):
+        if not isinstance(person_id, int):
+            raise ValueError(f"Person ID must be an integer, got {type(person_id).__name__} instead!")
+        
+        if not person_id:
+            raise ValueError("Person ID is not allowed to be None!")
+        
+        if person_id < 0:
+            raise ValueError(f"Person ID must be a positive integer, got {person_id} instead!")
+
+        # Fetch the groups for the given person ID
         r = self.session.get(f"{self.server_url}/api/persons/{person_id}/groups", timeout=self.timeout)
         r.raise_for_status()
         return {int(g["group"]["domainIdentifier"]) for g in r.json()["data"]}
 
-    def get_person_ids_from_group(self, group_id):
-        members = self._get_member_data_from_group(group_id, self.username_field_name)
+    def get_all_members_by_id(self, group_id, page_size=100):
+        members = self.get_members(group_id, page_size=page_size)
         return [member["personId"] for member in members]
 
-    def _get_member_data_from_group(self, group_id, field_name, field_value = "", members_per_page=100):
+    def get_members(self, group_id, field_name_filter=None, field_value_filter = "", page_size=100):
+
+        if not isinstance(group_id, int):
+            raise ValueError(f"Group ID must be an integer, got {type(group_id).__name__} instead!")
+        
+        if not group_id:
+            raise ValueError("Group ID is not allowed to be None!")
+        
+        if group_id < 0:
+            raise ValueError(f"Group ID must be a positive integer, got {group_id} instead!")
+
+        params = {
+                    "limit": page_size
+                }
+        
+        if field_name_filter is not None:
+            params["person_"+field_name_filter] = field_value_filter
+
         members = []
 
         page = 1
@@ -44,13 +60,11 @@ class CtGroupManager:
 
         while page <= page_limit:
 
+            params["page"] = page
+
             response = self.session.get(
                 f"{self.server_url}/api/groups/{group_id}/members",
-                params={
-                    "page": page,
-                    "limit": members_per_page,
-                    "person_"+field_name: field_value
-                },
+                params=params,
                 timeout=self.timeout
             )
 
@@ -69,18 +83,29 @@ class CtGroupManager:
 
         return members
         
-    def get_person_id_from_group(self, group_id, username):
-        username = self._cleanup_and_check_username(username)
+    def get_members_by_id_and_attribute(self, group_id, field_name, page_size=100):
+        
+        members = self.get_members(group_id, field_name, page_size=page_size)   
 
-        members = self._get_member_data_from_group(group_id, self.username_field_name, username)   
+        result_members = {}
 
         # Check if we can return a member because the username matches
         for member in members:
+            # Find the field with the given name
             field_list = member.get("fields", [])
-            matching_fields = [f for f in field_list if f.get("name") == self.username_field_name]
-            member_username = matching_fields[0].get("value", "").strip()
-            member_username = self._cleanup_and_check_username(member_username)
-            if member_username == username:
-                return member.get("personId")
+
+            # If no fields are present, skip this member
+            if not field_list or (len(field_list) == 0):
+                continue
+
+            matching_fields = [f for f in field_list if f.get("name") == field_name]
+
+            # If no matching field is found, skip this member
+            if len(matching_fields) == 0:
+                continue
+
+            field_value = matching_fields[0].get("value", "")
+
+            result_members[member["personId"]] = field_value   
             
-        return None
+        return result_members

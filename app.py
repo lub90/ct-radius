@@ -14,13 +14,13 @@ class CtAuthProvider:
 
         basic = cfg["basic"]
         self.vlan_separator = basic["requested_vlan_separator"]
+        self.username_field_name = basic.get("username_field_name")
 
         self.group_manager = CtGroupManager(
             os.environ.get("CTRADIUS_RADIUS_BASE_URL"),
             os.environ.get("CTRADIUS_API_USER"),
             os.environ.get("CTRADIUS_API_USER_PWD"),
-            basic.get("timeout", 5),
-            basic.get("username_field_name")
+            basic.get("timeout", 5)
         )
 
         vlans = cfg["vlans"]
@@ -45,8 +45,20 @@ class CtAuthProvider:
 
         self.session = requests.Session()
 
+    def _cleanup_and_check_username(self, username):
+        if not isinstance(username, str):
+            raise ValueError(f"Username must be a string, got {type(username).__name__} instead!")
+
+        # Remove leading and trailing whitespace, convert to lowercase
+        username = username.strip().lower()
+
+        if not username:
+            raise ValueError("Username is empty!")
+        
+        return username
+
     def authorize(self, raw_username):
-        self.login()
+        self.group_manager.login()
 
         username, requested_vlan = self.split_username(raw_username)
         ct_person_id = self.get_person_id(username)
@@ -82,10 +94,22 @@ class CtAuthProvider:
             return raw_username.strip(), None
     
     def get_person_id(self, username):
+        username = self._cleanup_and_check_username(username)
+
         for group_id in self.wifi_group_ids:
-            user_id = self.group_manager.get_person_id_from_group(username, group_id)
-            if user_id != None:
-                return user_id
+            members_list = self.group_manager.get_members_by_id_and_attribute(group_id, self.username_field_name)
+            for person_id, person_username in members_list.items():
+                try:
+                    person_username = self._cleanup_and_check_username(person_username)
+                except ValueError:
+                    # If the returned username is empty, we do not want to raise an error here,
+                    # as it might be a valid case where the user has no username set in ChurchTools,
+                    # we just skip this entry and continue to the next one
+                    continue
+
+                if username == person_username:
+                    return person_id
+                
         raise AuthenticationError(f"Cannot find user id for username {username}")
 
     def get_vlan(self, ct_person_id, requested_vlan):
