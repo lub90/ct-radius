@@ -45,8 +45,8 @@ class CtAuthProvider:
     def authorize(self, raw_username):
         self.login()
 
-        raw_username = self.cleanup_username(raw_username)
         username, requested_vlan = self.split_username(raw_username)
+        username = self.cleanup_and_check_username(username)
         ct_person_id = self.get_person_id(username)
         password = self.get_password(ct_person_id)
         ct_groups = self.get_user_groups(ct_person_id)
@@ -63,12 +63,24 @@ class CtAuthProvider:
     def get_password(self, person_id):
         # Retrieve the password from the PasswordDatabase
         try:
-            return self.pwd_db.getPwd(person_id)
+            password = self.pwd_db.getPwd(person_id)
         except KeyError:
             raise AuthenticationError(f"Cannot find password for user id {person_id}!")
 
-    def cleanup_username(self, raw_username):
-        return raw_username.strip().lower()
+        if not password:
+            raise ValueError(f"Password for user id {person_id} is empty!")
+    
+        return password
+
+    def cleanup_and_check_username(self, username):
+        if not isinstance(username, str):
+            raise ValueError(f"Username must be a string, got {type(username).__name__} instead!")
+
+        if not username:
+            raise ValueError("Username is empty!")
+        
+        # Remove leading and trailing whitespace, convert to lowercase
+        return username.strip().lower()
 
     def login(self):
         r = self.session.post(f"{self.server_url}/api/login", json={
@@ -88,12 +100,12 @@ class CtAuthProvider:
     
     def get_person_id(self, username):
         for group_id in self.wifi_group_ids:
-            user_id = self.get_person_id(username, group_id)
+            user_id = self._get_person_id_from_group(username, group_id)
             if user_id != None:
                 return user_id
         raise AuthenticationError(f"Cannot find user id for username {username}")
 
-    def get_person_id(self, username, group_id):
+    def _get_person_id_from_group(self, username, group_id):
         # A page limit of 100 should be sufficient, as this means that we have 100 users which have a username containing the given username
         # This is only the case if only a single or few characters are given --> Try to breach system, ignore this request
         # Or if the given (real) username is contained in another username. Thereby, it is highly unlikely that there exist more than 100 such usernames
@@ -109,11 +121,12 @@ class CtAuthProvider:
         response.raise_for_status()
         members = response.json().get("data", [])
 
-        # Check if exactly one member is returned
+        # Check if we can return a member because the username matches
         for member in members:
             field_list = member.get("fields", [])
             matching_fields = [f for f in field_list if f.get("name") == self.username_field_name]
             member_username = matching_fields[0].get("value", "").strip()
+            member_username = self.cleanup_and_check_username(member_username)
             if member_username == username:
                 return member.get("personId")
         return None
