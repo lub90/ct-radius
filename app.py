@@ -3,6 +3,7 @@ import yaml
 import requests
 import radiusd
 from PasswordDatabase import PasswordDatabase
+from CtGroupManager import CtGroupManager
 
 from AuthenticationError import AuthenticationError
 
@@ -11,14 +12,16 @@ class CtAuthProvider:
         with open(config_path, "r") as f:
             cfg = yaml.safe_load(f)
 
-        self.server_url = os.environ.get("CTRADIUS_RADIUS_BASE_URL")
-        self.api_user = os.environ.get("CTRADIUS_API_USER")
-        self.api_pwd = os.environ.get("CTRADIUS_API_USER_PWD")
-
         basic = cfg["basic"]
         self.vlan_separator = basic["requested_vlan_separator"]
-        self.timeout = basic.get("timeout", 5)
-        self.username_field_name = basic.get("username_field_name")
+
+        self.group_manager = CtGroupManager(
+            os.environ.get("CTRADIUS_RADIUS_BASE_URL"),
+            os.environ.get("CTRADIUS_API_USER"),
+            os.environ.get("CTRADIUS_API_USER_PWD"),
+            basic.get("timeout", 5),
+            basic.get("username_field_name")
+        )
 
         vlans = cfg["vlans"]
         self.default_vlan = vlans["default_vlan"]
@@ -46,11 +49,9 @@ class CtAuthProvider:
         self.login()
 
         username, requested_vlan = self.split_username(raw_username)
-        username = self.cleanup_and_check_username(username)
         ct_person_id = self.get_person_id(username)
         password = self.get_password(ct_person_id)
-        ct_groups = self.get_user_groups(ct_person_id)
-        assigned_vlan = self.get_vlan(ct_groups, requested_vlan)
+        assigned_vlan = self.get_vlan(ct_person_id, requested_vlan)
 
         if not password:
             raise AuthenticationError(f"Cannot find password for user {username}!")
@@ -72,24 +73,6 @@ class CtAuthProvider:
     
         return password
 
-    def cleanup_and_check_username(self, username):
-        if not isinstance(username, str):
-            raise ValueError(f"Username must be a string, got {type(username).__name__} instead!")
-
-        if not username:
-            raise ValueError("Username is empty!")
-        
-        # Remove leading and trailing whitespace, convert to lowercase
-        return username.strip().lower()
-
-    def login(self):
-        r = self.session.post(f"{self.server_url}/api/login", json={
-            "username": self.api_user,
-            "password": self.api_pwd
-        }, timeout=self.timeout)
-        r.raise_for_status()
-
-
     def split_username(self, raw_username):
         if self.vlan_separator in raw_username:
             base, vlan_str = raw_username.rsplit(self.vlan_separator, 1)
@@ -100,43 +83,14 @@ class CtAuthProvider:
     
     def get_person_id(self, username):
         for group_id in self.wifi_group_ids:
-            user_id = self._get_person_id_from_group(username, group_id)
+            user_id = self.group_manager.get_person_id_from_group(username, group_id)
             if user_id != None:
                 return user_id
         raise AuthenticationError(f"Cannot find user id for username {username}")
 
-    def _get_person_id_from_group(self, username, group_id):
-        # A page limit of 100 should be sufficient, as this means that we have 100 users which have a username containing the given username
-        # This is only the case if only a single or few characters are given --> Try to breach system, ignore this request
-        # Or if the given (real) username is contained in another username. Thereby, it is highly unlikely that there exist more than 100 such usernames
-        response = self.session.get(
-            f"{self.server_url}/api/groups/{group_id}/members",
-            params={
-                "page": 1,
-                "limit": 100,
-                "person_"+self.username_field_name: username
-            },
-            timeout=self.timeout
-        )
-        response.raise_for_status()
-        members = response.json().get("data", [])
+    def get_vlan(self, ct_person_id, requested_vlan):
 
-        # Check if we can return a member because the username matches
-        for member in members:
-            field_list = member.get("fields", [])
-            matching_fields = [f for f in field_list if f.get("name") == self.username_field_name]
-            member_username = matching_fields[0].get("value", "").strip()
-            member_username = self.cleanup_and_check_username(member_username)
-            if member_username == username:
-                return member.get("personId")
-        return None
-
-    def get_user_groups(self, person_id):
-        r = self.session.get(f"{self.server_url}/api/persons/{person_id}/groups", timeout=self.timeout)
-        r.raise_for_status()
-        return {int(g["group"]["domainIdentifier"]) for g in r.json()["data"]}
-
-    def get_vlan(self, group_ids, requested_vlan):
+        group_ids = self.group_manager.get_user_groups(ct_person_id)
 
         for ct_id, vlan in self.assignments.items():
             if ct_id in group_ids:
