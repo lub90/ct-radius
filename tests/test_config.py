@@ -156,6 +156,59 @@ def test_valid_config_reads_correctly(config_data):
 
 
 
+
+@pytest.mark.parametrize("env_vars", [
+    {
+        "CT_SERVER_URL": "https://env-1.com",
+        "CT_API_USER": "admin1",
+        "CT_API_USER_PWD": "pass1",
+        "PWD_DB_SECRET": "secret1"
+    },
+    {
+        "CT_SERVER_URL": "https://env-2.com",
+        "CT_API_USER": "admin2",
+        "CT_API_USER_PWD": "pass2",
+        "PWD_DB_SECRET": "secret2"
+    },
+    {
+        "CT_SERVER_URL": "https://env-3.com",
+        "CT_API_USER": "admin3",
+        "CT_API_USER_PWD": "pass3",
+        "PWD_DB_SECRET": "secret3"
+    }
+])
+def test_config_reads_env(monkeypatch, env_vars):
+    # Set the environment vars via monkeypatch
+    for key, val in env_vars.items():
+        monkeypatch.setenv(key, val)
+
+    config_data = {
+        "basic": {
+            "wifi_access_groups": [100],
+            "include_assignment_groups_in_access_groups": False,
+            "requested_vlan_separator": "#",
+            "timeout": 3,
+            "path_to_pwd_db": "pwd.db",
+            "username_field_name": "cmsUserId"
+        },
+        "vlans": {
+            "default_vlan": 10,
+            "assignments": {},
+            "assignments_if_requested": {}
+        }
+    }
+
+    path = create_temp_config(config_data)
+    cfg = Config(path)
+
+    assert cfg.basic.ct_server_url == env_vars["CT_SERVER_URL"]
+    assert cfg.basic.ct_api_user == env_vars["CT_API_USER"]
+    assert cfg.basic.ct_api_user_pwd == env_vars["CT_API_USER_PWD"]
+    assert cfg.basic.pwd_db_secret == env_vars["PWD_DB_SECRET"]
+
+
+
+
 # --- INVALID TEST CASES ---
 @pytest.mark.parametrize("config_data, env_vars, exception", [
     ({}, FULL_ENV, ValueError),  # empty config
