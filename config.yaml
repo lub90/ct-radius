@@ -4,7 +4,7 @@ basic:
   # All users of these churchtools groups have access to the wifi
   wifi_access_groups: [194]
   # Whether we want to automatically include the assignemt groups in the wifi access groups, even if they are not specifically listed there
-  include_assignement_groups_in_access_groups: True
+  include_assignment_groups_in_access_groups: True
   # The split character in usernames to request a specific vlan
   requested_vlan_separator: "#"
   # The timeout in seconds for contacting the churchtools server
