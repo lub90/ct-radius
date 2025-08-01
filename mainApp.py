@@ -34,8 +34,6 @@ class CtAuthProvider(RadiusRelevantApp):
         password = self._get_password(ct_person_id)
         assigned_vlan = self._get_vlan(ct_person_id, requested_vlan)
 
-        print(password)
-
         if not password:
             raise AuthenticationError(f"Cannot find password for user {username}!")
         
@@ -59,7 +57,10 @@ class CtAuthProvider(RadiusRelevantApp):
     def _split_username(self, raw_username):
         if self.config.basic.vlan_separator in raw_username:
             base, vlan_str = raw_username.rsplit(self.config.basic.vlan_separator, 1)
-            vlan = int(vlan_str)
+            try:
+                vlan = int(vlan_str)
+            except ValueError:
+                raise AuthenticationError(f"Invalid VLAN format in username: {raw_username}")
             return base.strip(), vlan
         else:
             return raw_username.strip(), None
