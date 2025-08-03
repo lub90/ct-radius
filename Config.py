@@ -66,14 +66,26 @@ class Config(AttrDict):
         if "wifi_access_groups" not in basic or not basic.wifi_access_groups:
             raise ValueError("basic.wifi_access_groups must be present and non-empty.")
 
+        if not all(isinstance(k, int) for k in self.basic.wifi_access_groups):
+            raise ValueError("basic.wifi_access_groups should only contain integers")
+
         if "include_assignment_groups_in_access_groups" not in basic:
             raise ValueError("Missing key: basic.include_assignment_groups_in_access_groups")
 
-        if "requested_vlan_separator" not in basic:
-            raise ValueError("Missing key: basic.requested_vlan_separator")
+        if not isinstance(self.basic.include_assignment_groups_in_access_groups, bool):
+            raise TypeError("basic.include_assignment_groups_in_access_groups mus be a boolean")
+
+        if "vlan_separator" not in basic:
+            raise ValueError("Missing key: basic.vlan_separator")
 
         if "timeout" not in basic:
             raise ValueError("Missing key: basic.timeout")
+
+        if not isinstance(self.basic.timeout, int):
+            raise TypeError("basic.timeout must be an integer")
+
+        if self.basic.timeout < 1:
+            raise ValueError("basic.timeout must be greater than 0")
 
         if "path_to_pwd_db" not in basic:
             raise ValueError("Missing key: basic.path_to_pwd_db")
@@ -84,6 +96,12 @@ class Config(AttrDict):
         # Check required vlans fields
         if "default_vlan" not in vlans:
             raise ValueError("Missing key: vlans.default_vlan")
+
+        if not isinstance(self.vlans.default_vlan, int):
+            raise TypeError("vlans.default_vlan must be an integer")
+
+        if self.vlans.default_vlan < 0:
+            raise ValueError("vlans.default_vlan must be greater than or equal to 0")
 
         if "assignments" not in vlans:
             raise ValueError("Missing key: vlans.assignments")
@@ -98,6 +116,19 @@ class Config(AttrDict):
         if not isinstance(vlans.assignments_if_requested, dict):
             raise TypeError("vlans.assignments_if_requested must be a dictionary.")
 
+        # Ensure assignments are dicts of integers to integeres
+        if not all(isinstance(k, int) and isinstance(v, int) for k, v in self.vlans.assignments.items()):
+            raise TypeError("vlans.assignments are only allowed to be mappings of integers to integers!")
+
+        if not all(isinstance(k, int) and isinstance(v, int) for k, v in self.vlans.assignments_if_requested.items()):
+            raise TypeError("vlans.assignments_if_requested are only allowed to be mappings of integers to integers!")
+
+        # Ensure no negative vlan ids
+        if any(v < 0 for v in self.vlans.assignments.values()):
+            raise ValueError("The vlan ids for vlans.assignments are only allowed to be equalt to or greather than 0")
+
+        if any(v < 0 for v in self.vlans.assignments_if_requested.values()):
+            raise ValueError("The vlan ids for vlans.assignments_if_requested are only allowed to be equalt to or greather than 0")
 
     def _build_all_wifi_access_groups(self):
         basic = self.basic

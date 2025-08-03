@@ -1,5 +1,6 @@
 import sys
 import types
+import os
 
 # Create a dummy radiusd module
 sys.modules["radiusd"] = types.SimpleNamespace(
@@ -16,71 +17,51 @@ from unittest.mock import MagicMock, patch
 from mainApp import CtAuthProvider
 from AuthenticationError import AuthenticationError
 
+from envs import VALID_ENVS
 
-# Stub config used in tests
-CONFIG = {
-    "vlans": {
-        "default_vlan": 1,
-        "assignments": {
-            "admin": 10,
-            "tech": 20,
-            "guest": 30
-        },
-        "assignments_if_requested": {
-            "media": 40,
-            "staff": 50
-        }
-    },
-    "basic": {
-        "vlan_separator": "#",
-        "wifi_access_groups": [100, 200],
-        "username_field_name": "username",
-        "ct_server_url": "https://ct.example.com",
-        "ct_api_user": "apiuser",
-        "ct_api_user_pwd": "securepwd",
-        "timeout": 5,
-        "path_to_pwd_db": "path.db",
-        "pwd_db_secret": "secret"
-    }
-}
+
+
+@pytest.fixture(params=VALID_ENVS, autouse=True)
+def patch_env_valid(request, monkeypatch):
+    for key, val in request.param.items():
+        monkeypatch.setenv(key, val)
 
 # Fixture for mocked CtAuthProvider
 @pytest.fixture
 def authorizer():
-    with patch("mainApp.CtAuthProvider.__init__", lambda self, path: None):
-        app = CtAuthProvider("/mock/config.yaml")
-        app.config = MagicMock()
-        app.config.basic = MagicMock(**CONFIG["basic"])
-        app.config.vlans = MagicMock(**CONFIG["vlans"])
 
-        # Mock user ID resolution via ChurchTools
-        members = {
-            100: {"1": "user1", "2": "user2"},
-            200: {"3": "user3", "4": "multiuser", "5": "overlap", "6": "userX"}
-        }
-        app.group_manager = MagicMock()
-        app.group_manager.login.return_value = None
-        app.group_manager.get_members_by_id_and_attribute.side_effect = lambda gid, attr: members.get(gid, {})
-        app.group_manager.get_user_groups.side_effect = lambda pid: {
-            "1": ["admin"],
-            "2": ["guest"],
-            "3": ["staff"],
-            "4": ["admin", "tech"],
-            "5": ["admin", "staff"],
-            "6": []
-        }.get(pid, [])
+    config_path = os.path.join(os.path.dirname(__file__), "./valid_config_1.yaml")
 
-        app.pwd_db = MagicMock()
-        app.pwd_db.getPwd.side_effect = lambda pid: {
-            "1": "pass1",
-            "2": "pass2",
-            "3": "pass3",
-            "4": "pass4",
-            "5": "pass5",
-            "6": "passX"
-        }.get(pid)
+    app = CtAuthProvider(config_path)
 
-        return app
+    # Mock user ID resolution via ChurchTools
+    members = {
+        100: {"1": "user1", "2": "user2"},
+        200: {"3": "user3", "4": "multiuser", "5": "overlap", "6": "userX"}
+    }
+    app.group_manager = MagicMock()
+    app.group_manager.login.return_value = None
+    app.group_manager.get_members_by_id_and_attribute.side_effect = lambda gid, attr: members.get(gid, {})
+    app.group_manager.get_user_groups.side_effect = lambda pid: {
+        "1": [1],
+        "2": [3],
+        "3": [5],
+        "4": [1, 2],
+        "5": [1, 5],
+        "6": []
+    }.get(pid, [])
+
+    app.pwd_db = MagicMock()
+    app.pwd_db.getPwd.side_effect = lambda pid: {
+        "1": "pass1",
+        "2": "pass2",
+        "3": "pass3",
+        "4": "pass4",
+        "5": "pass5",
+        "6": "passX"
+    }.get(pid)
+
+    return app
 
 # --- CORE TEST CASES ---
 def test_valid_user_with_assignment(authorizer):
@@ -99,7 +80,7 @@ def test_empty_username(authorizer):
 def test_user_without_vlan_assignment(authorizer):
     pwd, vlan = authorizer.authorize("userX")
     assert pwd == "passX"
-    assert vlan == CONFIG["vlans"]["default_vlan"]
+    assert vlan == authorizer.config.vlans.default_vlan
 
 def test_first_vlan_match_selected(authorizer):
     pwd, vlan = authorizer.authorize("multiuser")
@@ -107,7 +88,7 @@ def test_first_vlan_match_selected(authorizer):
 
 def test_ignore_assignments_if_not_requested(authorizer):
     pwd, vlan = authorizer.authorize("user3")
-    assert vlan == CONFIG["vlans"]["default_vlan"]
+    assert vlan == authorizer.config.vlans.default_vlan
 
 # --- REQUESTED VLAN CASES ---
 def test_valid_requested_assignment(authorizer):
@@ -158,7 +139,7 @@ def test_group_lookup_failure(authorizer):
     authorizer.group_manager.get_user_groups.side_effect = None
     authorizer.group_manager.get_user_groups.return_value = []
     pwd, vlan = authorizer.authorize("user1")
-    assert vlan == CONFIG["vlans"]["default_vlan"]
+    assert vlan == authorizer.config.vlans.default_vlan
 
 def test_multiple_users_in_group(authorizer):
     pwd, vlan = authorizer.authorize("user1")

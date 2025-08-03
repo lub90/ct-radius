@@ -1,0 +1,14 @@
+# Invalid type for assignment
+basic:
+  wifi_access_groups:
+    - 194
+  include_assignment_groups_in_access_groups: true
+  vlan_separator: "#"
+  timeout: 5
+  path_to_pwd_db: "pwd.db"
+  username_field_name: "cmsUserId"
+vlans:
+  default_vlan: 10
+  assignments:
+    - "oops"
+  assignments_if_requested: {}

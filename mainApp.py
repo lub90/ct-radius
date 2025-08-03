@@ -2,8 +2,6 @@ import os
 import yaml
 import requests
 import radiusd
-from PasswordDatabase import PasswordDatabase
-from CtGroupManager import CtGroupManager
 from RadiusRelevantApp import RadiusRelevantApp
 import RadiusUtils
 

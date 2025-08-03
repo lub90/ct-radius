@@ -6,7 +6,7 @@ basic:
   # Whether we want to automatically include the assignemt groups in the wifi access groups, even if they are not specifically listed there
   include_assignment_groups_in_access_groups: True
   # The split character in usernames to request a specific vlan
-  requested_vlan_separator: "#"
+  vlan_separator: "#"
   # The timeout in seconds for contacting the churchtools server
   timeout: 5
   # Path to the PasswordDatabase file

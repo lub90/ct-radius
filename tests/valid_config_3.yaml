@@ -1,0 +1,13 @@
+basic:
+  wifi_access_groups:
+    - 194
+  include_assignment_groups_in_access_groups: false
+  vlan_separator: "#"
+  timeout: 5
+  path_to_pwd_db: "pwd.db"
+  username_field_name: "cmsUserId"
+
+vlans:
+  default_vlan: 20
+  assignments: {}
+  assignments_if_requested: {}
