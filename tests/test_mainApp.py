@@ -129,7 +129,7 @@ def test_username_cleanup_and_case(authorizer, username):
     assert vlan == 10
 
 def test_non_numeric_vlan_request(authorizer):
-    with pytest.raises(ValueError):
+    with pytest.raises(AuthenticationError):
         authorizer.authorize("user1#abc")
 
 def test_numeric_vlan_not_assigned(authorizer):

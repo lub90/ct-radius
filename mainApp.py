@@ -5,6 +5,7 @@ import radiusd
 from PasswordDatabase import PasswordDatabase
 from CtGroupManager import CtGroupManager
 from RadiusRelevantApp import RadiusRelevantApp
+import RadiusUtils
 
 from AuthenticationError import AuthenticationError
 
@@ -15,16 +16,12 @@ class CtAuthProvider(RadiusRelevantApp):
 
 
     def _cleanup_and_check_username(self, username):
-        if not isinstance(username, str):
-            raise ValueError(f"Username must be a string, got {type(username).__name__} instead!")
+        # Use the RadiusUtils to validate the username
+        username = RadiusUtils.validate_username(username)
 
         # Remove leading and trailing whitespace, convert to lowercase
-        username = username.strip().lower()
+        return username.strip().lower()
 
-        if not username:
-            raise ValueError("Username is empty!")
-        
-        return username
 
     def authorize(self, raw_username):
         self.group_manager.login()
