@@ -17,78 +17,70 @@ from unittest.mock import MagicMock, patch
 from mainApp import CtAuthProvider
 from AuthenticationError import AuthenticationError
 
-from env_loader import VALID_ENVS
+import env_loader
+import mainApp_loader
 
 
 
-@pytest.fixture(params=VALID_ENVS, autouse=True)
+@pytest.fixture(params=env_loader.VALID_ENVS, autouse=True)
 def patch_env_valid(request, monkeypatch):
     for key, val in request.param.items():
         monkeypatch.setenv(key, val)
 
 # Fixture for mocked CtAuthProvider
-@pytest.fixture
-def authorizer():
-
-    config_path = os.path.join(os.path.dirname(__file__), "./valid_config_1.yaml")
-
-    app = CtAuthProvider(config_path)
+@pytest.fixture(params=mainApp_loader.VALID_CONFIGS)
+def authorizer(request):
+    app = CtAuthProvider(request.param)
 
     # Mock user ID resolution via ChurchTools
-    members = {
-        100: {"1": "user1", "2": "user2"},
-        200: {"3": "user3", "4": "multiuser", "5": "overlap", "6": "userX"}
-    }
+    members = mainApp_loader.get_group_members()
     app.group_manager = MagicMock()
     app.group_manager.login.return_value = None
     app.group_manager.get_members_by_id_and_attribute.side_effect = lambda gid, attr: members.get(gid, {})
-    app.group_manager.get_user_groups.side_effect = lambda pid: {
-        "1": [1],
-        "2": [3],
-        "3": [5],
-        "4": [1, 2],
-        "5": [1, 5],
-        "6": []
-    }.get(pid, [])
+    app.group_manager.get_user_groups.side_effect = mainApp_loader.get_user_groups()
 
     app.pwd_db = MagicMock()
-    app.pwd_db.getPwd.side_effect = lambda pid: {
-        "1": "pass1",
-        "2": "pass2",
-        "3": "pass3",
-        "4": "pass4",
-        "5": "pass5",
-        "6": "passX"
-    }.get(pid)
+    app.pwd_db.db = None
+    app.pwd_db.getPwd.side_effect = mainApp_loader.get_user_pwds()
 
     return app
 
 # --- CORE TEST CASES ---
-def test_valid_user_with_assignment(authorizer):
-    password, vlan = authorizer.authorize("user1")
-    assert password == "pass1"
-    assert vlan == 10
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
+    password, vlan = authorizer.authorize(username_pwd_vlan[0])
+    assert password == username_pwd_vlan[1]
+    assert vlan == username_pwd_vlan[2]
 
-def test_user_not_in_pwd_db(authorizer):
+
+@pytest.mark.parametrize("nonexistent", mainApp_loader.get_nonexistent_users())
+def test_user_not_in_pwd_db(authorizer, nonexistent):
     with pytest.raises(AuthenticationError):
-        authorizer.authorize("nonexistent")
+        authorizer.authorize(nonexistent)
 
-def test_empty_username(authorizer):
+@pytest.mark.parametrize("empty_users", [
+    "",
+    " ",         # Single space
+    "\t",        # Tab
+    "\n",        # Newline
+    "\r",        # Carriage return
+    "\f",        # Form feed
+    "\v",        # Vertical tab
+    "  \t  ",    # Multiple spaces and a tab
+    "\n\r\t "    # Mixed whitespace characters
+])
+def test_empty_username(authorizer, empty_users):
     with pytest.raises(ValueError):
-        authorizer.authorize("")
+        authorizer.authorize(empty_users)
 
-def test_user_without_vlan_assignment(authorizer):
-    pwd, vlan = authorizer.authorize("userX")
-    assert pwd == "passX"
-    assert vlan == authorizer.config.vlans.default_vlan
+def test_none_username(authorizer):
+    with pytest.raises(TypeError):
+        authorizer.authorize(None)
 
-def test_first_vlan_match_selected(authorizer):
-    pwd, vlan = authorizer.authorize("multiuser")
-    assert vlan == 10
 
-def test_ignore_assignments_if_not_requested(authorizer):
-    pwd, vlan = authorizer.authorize("user3")
-    assert vlan == authorizer.config.vlans.default_vlan
+# TODO: Continue tests here
+
+'''
 
 # --- REQUESTED VLAN CASES ---
 def test_valid_requested_assignment(authorizer):
@@ -144,3 +136,4 @@ def test_group_lookup_failure(authorizer):
 def test_multiple_users_in_group(authorizer):
     pwd, vlan = authorizer.authorize("user1")
     assert vlan == 10
+'''

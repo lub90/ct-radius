@@ -17,6 +17,9 @@ def validate_username(username: str, max_length: int = 32) -> str:
         ValueError: If the username is invalid or contains disallowed characters.
     """
 
+    if username is None:
+        raise ValueError("Username is not allowed to be None!")
+
     if not isinstance(username, str):
         raise ValueError("Username must be a string.")
 

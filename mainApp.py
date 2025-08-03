@@ -50,6 +50,9 @@ class CtAuthProvider(RadiusRelevantApp):
         return password
 
     def _split_username(self, raw_username):
+        if not isinstance(raw_username, str):
+            raise TypeError("raw_username must be a string!")
+
         if self.config.basic.vlan_separator in raw_username:
             base, vlan_str = raw_username.rsplit(self.config.basic.vlan_separator, 1)
             try:
