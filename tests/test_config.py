@@ -3,16 +3,15 @@ import pytest
 import tempfile
 import yaml
 from Config import Config
-import configs
+import config_loader
+import env_loader
 
-from envs import *
-
-@pytest.fixture(params=VALID_ENVS)
+@pytest.fixture(params=env_loader.VALID_ENVS)
 def patch_env_valid(request, monkeypatch):
     for key, val in request.param.items():
         monkeypatch.setenv(key, val)
 
-@pytest.fixture(params=INVALID_ENVS)
+@pytest.fixture(params=env_loader.INVALID_ENVS)
 def patch_env_invalid(request, monkeypatch):
     for key in request.param.keys():
         value = request.param.get(key, None)
@@ -23,11 +22,11 @@ def patch_env_invalid(request, monkeypatch):
 
 
 # --- VALID TEST CASES ---
-@pytest.mark.parametrize("config_file", configs.VALID_CONFIGS)
+@pytest.mark.parametrize("config_file", config_loader.VALID_CONFIGS)
 def test_valid_config_reads_correctly(patch_env_valid, config_file):
     cfg = Config(config_file)
 
-    config_data = configs.load_raw_configs(config_file)
+    config_data = config_loader.load_raw_configs(config_file)
 
     basic = config_data["basic"]
     vlans = config_data["vlans"]
@@ -56,7 +55,7 @@ def test_valid_config_reads_correctly(patch_env_valid, config_file):
 
 
 
-@pytest.mark.parametrize("config_file", configs.VALID_CONFIGS)
+@pytest.mark.parametrize("config_file", config_loader.VALID_CONFIGS)
 def test_config_reads_env(patch_env_valid, config_file):
     cfg = Config(config_file)
 
@@ -68,12 +67,12 @@ def test_config_reads_env(patch_env_valid, config_file):
 
 # --- INVALID TEST CASES ---
 
-@pytest.mark.parametrize("config_file", configs.INVALID_CONFIGS)
+@pytest.mark.parametrize("config_file", config_loader.INVALID_CONFIGS)
 def test_invalid_configs_throw_exception(patch_env_valid, config_file):
     with pytest.raises((TypeError, ValueError)):
         Config(config_file)
 
-@pytest.mark.parametrize("config_file", configs.VALID_CONFIGS)
+@pytest.mark.parametrize("config_file", config_loader.VALID_CONFIGS)
 def test_invalid_envs_throw_exception(patch_env_invalid, config_file):
     with pytest.raises(EnvironmentError):
         Config(config_file)

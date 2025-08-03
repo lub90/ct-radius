@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 from mainApp import CtAuthProvider
 from AuthenticationError import AuthenticationError
 
-from envs import VALID_ENVS
+from env_loader import VALID_ENVS
 
 
 
