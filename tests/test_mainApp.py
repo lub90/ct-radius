@@ -53,10 +53,10 @@ def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
     assert vlan == username_pwd_vlan[2]
 
 
-@pytest.mark.parametrize("nonexistent", mainApp_loader.get_nonexistent_users())
-def test_user_not_in_pwd_db(authorizer, nonexistent):
+@pytest.mark.parametrize("not_allowed", mainApp_loader.get_not_allowed_users())
+def test_user_not_in_pwd_db(authorizer, not_allowed):
     with pytest.raises(AuthenticationError):
-        authorizer.authorize(nonexistent)
+        authorizer.authorize(not_allowed)
 
 @pytest.mark.parametrize("empty_users", [
     "",
@@ -80,60 +80,59 @@ def test_none_username(authorizer):
 
 # TODO: Continue tests here
 
-'''
+
 
 # --- REQUESTED VLAN CASES ---
-def test_valid_requested_assignment(authorizer):
-    pwd, vlan = authorizer.authorize("user1#10")
-    assert vlan == 10
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_requested_vlan())
+def test_valid_requested_assignment(authorizer, username_pwd_vlan):
+    username = username_pwd_vlan[0] + authorizer.config.basic.vlan_separator + str(username_pwd_vlan[2])
+    password, vlan = authorizer.authorize(username)
+    assert password == username_pwd_vlan[1]
+    assert vlan == username_pwd_vlan[2]
 
-def test_valid_requested_assignment_if_requested(authorizer):
-    pwd, vlan = authorizer.authorize("user3#50")
-    assert vlan == 50
 
-def test_invalid_vlan_request(authorizer):
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_requested_invalid_vlan())
+def test_invalid_vlan_request(authorizer, username_pwd_vlan):
     with pytest.raises(AuthenticationError):
-        authorizer.authorize("user1#999")
+        username = username_pwd_vlan[0] + authorizer.config.basic.vlan_separator + str(username_pwd_vlan[2])
+        authorizer.authorize(username)
+
 
 # --- INPUT EDGE CASES ---
-@pytest.mark.parametrize("username", [" user1 ", "USER1", "user1#10", " USeR1"])
-def test_username_cleanup_and_case(authorizer, username):
-    pwd, vlan = authorizer.authorize(username)
-    assert vlan == 10
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_variants_pwds_default_vlan())
+def test_username_cleanup_and_case(authorizer, username_pwd_vlan):
+    password, vlan = authorizer.authorize(username_pwd_vlan[0])
+    assert password == username_pwd_vlan[1]
+    assert vlan == username_pwd_vlan[2]
 
-def test_non_numeric_vlan_request(authorizer):
+
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+def test_non_numeric_vlan_request(authorizer, username_pwd_vlan):
+    username = username_pwd_vlan[0] + authorizer.config.basic.vlan_separator + chr(username_pwd_vlan[2]) + "te"
     with pytest.raises(AuthenticationError):
-        authorizer.authorize("user1#abc")
+        authorizer.authorize(username)
 
-def test_numeric_vlan_not_assigned(authorizer):
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
+    username = username_pwd_vlan[0] + authorizer.config.basic.vlan_separator
     with pytest.raises(AuthenticationError):
-        authorizer.authorize("user1#99")
+        authorizer.authorize(username)
 
-def test_empty_string_password_handling(authorizer):
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+def test_empty_string_password_handling(authorizer, username_pwd_vlan):
     authorizer.pwd_db.getPwd.side_effect = None
     authorizer.pwd_db.getPwd.return_value = ""
     with pytest.raises(ValueError):
-        authorizer.authorize("user1")
+        authorizer.authorize(username_pwd_vlan[0])
 
-def test_multiple_vlan_assignments(authorizer):
-    pwd, vlan = authorizer.authorize("multiuser")
-    assert vlan == 10
-
-def test_overlap_assignments_and_request(authorizer):
-    pwd, vlan = authorizer.authorize("overlap#50")
-    assert vlan == 50
-
-def test_requested_vlan_is_default(authorizer):
-    pwd, vlan = authorizer.authorize("userX#1")
-    assert vlan == 1
-
-def test_group_lookup_failure(authorizer):
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+def test_group_lookup_failure(authorizer, username_pwd_vlan):
     authorizer.group_manager.get_user_groups.side_effect = None
     authorizer.group_manager.get_user_groups.return_value = []
-    pwd, vlan = authorizer.authorize("user1")
+    pwd, vlan = authorizer.authorize(username_pwd_vlan[0])
     assert vlan == authorizer.config.vlans.default_vlan
 
-def test_multiple_users_in_group(authorizer):
-    pwd, vlan = authorizer.authorize("user1")
-    assert vlan == 10
-'''
+@pytest.mark.parametrize("username", mainApp_loader.get_invalid_usernames())
+def test_invalid_usernames(authorizer, username):
+    with pytest.raises((ValueError, TypeError)):
+        authorizer.authorize(username)
