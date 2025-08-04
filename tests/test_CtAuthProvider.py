@@ -1,20 +1,10 @@
 import sys
 import types
 import os
-
-# Create a dummy radiusd module
-sys.modules["radiusd"] = types.SimpleNamespace(
-    RLM_MODULE_OK=0,
-    RLM_MODULE_FAIL=1,
-    L_INFO=1,
-    L_ERR=2,
-    radlog=lambda level, msg: None
-)
-
-
 import pytest
+
 from unittest.mock import MagicMock, patch
-from mainApp import CtAuthProvider
+from CtAuthProvider import CtAuthProvider
 from AuthenticationError import AuthenticationError
 
 import env_loader
