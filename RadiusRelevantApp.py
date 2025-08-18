@@ -3,8 +3,8 @@ from PasswordDatabase import PasswordDatabase
 from CtGroupManager import CtGroupManager
 
 class RadiusRelevantApp:
-    def __init__(self, config_path: str):
-        self.config = Config(config_path)
+    def __init__(self, config_path: str, env_file=None):
+        self.config = Config(config_path, env_file)
 
         # Ct group manager setup
         self.group_manager = CtGroupManager(

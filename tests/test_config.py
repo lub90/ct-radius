@@ -76,3 +76,22 @@ def test_invalid_configs_throw_exception(patch_env_valid, config_file):
 def test_invalid_envs_throw_exception(patch_env_invalid, config_file):
     with pytest.raises(EnvironmentError):
         Config(config_file)
+
+# Test env loading from file
+@pytest.mark.parametrize("config_file", config_loader.VALID_CONFIGS)
+def test_env_file_loading(config_file):
+    cfg = Config(config_file, env_file="./tests/test.env")
+
+    assert cfg.basic.ct_server_url == "https://example.church.tools"
+    assert cfg.basic.ct_api_user == "radius@example.com"
+    assert cfg.basic.ct_api_user_pwd == "1990Fish!"
+    assert cfg.basic.pwd_db_secret == "Blubb123456789"
+
+def test_missing_config_file():
+    with pytest.raises(FileNotFoundError):
+        Config("nonexistent.yaml")
+
+@pytest.mark.parametrize("config_file", config_loader.VALID_CONFIGS)
+def test_nonexistent_env_file(config_file):
+    with pytest.raises(FileNotFoundError):
+        Config(config_file, "nonexistent.env")

@@ -51,7 +51,7 @@ def authorizer(request):
 def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
-    p = {"User-Name": username}
+    p = {"User-Name": username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
@@ -82,7 +82,7 @@ def test_user_not_in_pwd_db(authorizer, not_allowed):
     "\n\r\t "    # Mixed whitespace characters
 ])
 def test_empty_username(authorizer, empty_users):
-    p = {"User-Name": empty_users}
+    p = {"User-Name": empty_users, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
@@ -99,7 +99,7 @@ def test_valid_requested_assignment(authorizer, username_pwd_vlan):
 
     full_username = username + authorizer.config.basic.vlan_separator + str(requested_vlan)
 
-    p = {"User-Name": full_username}
+    p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
@@ -119,7 +119,7 @@ def test_invalid_vlan_request(authorizer, username_pwd_vlan):
 
     full_username = username + authorizer.config.basic.vlan_separator + str(requested_vlan)
 
-    p = {"User-Name": full_username}
+    p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
@@ -134,7 +134,7 @@ def test_invalid_vlan_request(authorizer, username_pwd_vlan):
 def test_username_cleanup_and_case(authorizer, username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
-    p = {"User-Name": username}
+    p = {"User-Name": username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
@@ -152,7 +152,7 @@ def test_non_numeric_vlan_request(authorizer, username_pwd_vlan):
 
     full_username = username + authorizer.config.basic.vlan_separator + chr(username_pwd_vlan[2]) + "te"
 
-    p = {"User-Name": full_username}
+    p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
@@ -168,7 +168,7 @@ def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
 
     full_username = username + authorizer.config.basic.vlan_separator
 
-    p = {"User-Name": full_username}
+    p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
@@ -180,10 +180,31 @@ def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
 
 @pytest.mark.parametrize("username", mainApp_loader.get_invalid_usernames())
 def test_invalid_usernames(authorizer, username):
-    p = {"User-Name": username}
+    p = {"User-Name": username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
     with patch("mainApp.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 1  # RLM_MODULE_FAIL
+    assert p["Auth-Type"] == "Reject"
+
+
+def test_missing_config_path(authorizer):
+    p = {"User-Name": "someuser"}  # No Ct-Config-Path
+
+    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+        result = authorize(p)
+
+    assert result == 1
+    assert p["Auth-Type"] == "Reject"
+
+
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+def test_invalid_env_file_assignment(username_pwd_vlan):
+    username, expected_pwd, expected_vlan = username_pwd_vlan
+
+    p = {"User-Name": username, "Ct-Config-Path": "someNonexistentPath.yaml"}
+
+    result = authorize(p)
+    assert result == 1
     assert p["Auth-Type"] == "Reject"

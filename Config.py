@@ -23,8 +23,15 @@ class Config(AttrDict):
         "PWD_DB_SECRET"
     ]
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, env_file = None):
         super().__init__()
+
+        if env_file:
+            from dotenv import load_dotenv
+            if not os.path.isfile(env_file):
+                raise FileNotFoundError(f"Environment file not found: {env_file}")
+            load_dotenv(dotenv_path=env_file)
+
         self._load_yaml(config_path)
         self._merge_env_into_basic()
         self._validate_native_vars()

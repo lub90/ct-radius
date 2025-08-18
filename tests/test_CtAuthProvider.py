@@ -121,3 +121,14 @@ def test_group_lookup_failure(authorizer, username_pwd_vlan):
 def test_invalid_usernames(authorizer, username):
     with pytest.raises((ValueError, TypeError)):
         authorizer.authorize(username)
+
+
+@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+def test_invalid_env_file_assignment(username_pwd_vlan):
+    username, expected_pwd, expected_vlan = username_pwd_vlan
+
+
+@pytest.mark.parametrize("valid_configs", mainApp_loader.VALID_CONFIGS)
+def test_invalid_env_file_assignment(valid_configs):
+    with pytest.raises(FileNotFoundError):
+        CtAuthProvider(valid_configs, "nonexistent.env")

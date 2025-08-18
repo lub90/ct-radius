@@ -5,12 +5,12 @@ from AuthenticationError import AuthenticationError
 
 
 def authorize(p):
-    CONFIG_PATH = "/etc/freeradius/ctradius_config.yaml"
 
     try:
-        
+        config_path = p.get("Ct-Config-Path")
+        env_path = p.get("Ct-Env-Path")
         username_raw = p.get("User-Name", "")
-        ct = CtAuthProvider(CONFIG_PATH)
+        ct = CtAuthProvider(config_path, env_path)
         pwd, vlan_id = ct.authorize(username_raw)
 
         p["Cleartext-Password"] = pwd

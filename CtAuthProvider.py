@@ -8,8 +8,8 @@ from AuthenticationError import AuthenticationError
 
 class CtAuthProvider(RadiusRelevantApp):
 
-    def __init__(self, config_path):
-        super().__init__(config_path)
+    def __init__(self, config_path, env_file=None):
+        super().__init__(config_path, env_file)
 
 
     def _cleanup_and_check_username(self, username):
