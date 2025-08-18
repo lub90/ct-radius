@@ -1,3 +1,4 @@
+import os
 import dbm
 import base64
 import string
@@ -26,6 +27,8 @@ class PasswordDatabase:
         # Pad/truncate password to 32 bytes and encode as Fernet key
         self.key = base64.urlsafe_b64encode(encryption_password.ljust(32).encode("utf-8")[:32])
         self.fernet = Fernet(self.key)
+        # Take care of the home use sign ~
+        db_path = os.path.expanduser(db_path)
         self.db = dbm.open(db_path, 'c')  # Open/create DB file
 
     def __del__(self):
