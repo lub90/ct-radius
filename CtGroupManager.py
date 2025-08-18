@@ -35,7 +35,7 @@ class CtGroupManager:
         members = self.get_members(group_id, page_size=page_size)
         return [member["personId"] for member in members]
 
-    def get_members(self, group_id, field_name_filter=None, field_value_filter = "", page_size=100):
+    def get_members(self, group_id, field_name_filter=None, page_size=100):
 
         if not isinstance(group_id, int):
             raise ValueError(f"Group ID must be an integer, got {type(group_id).__name__} instead!")
@@ -49,9 +49,9 @@ class CtGroupManager:
         params = {
                     "limit": page_size
                 }
-        
+
         if field_name_filter is not None:
-            params["person_"+field_name_filter] = field_value_filter
+            params["personFields[]"] = [field_name_filter]
 
         members = []
 
@@ -85,27 +85,19 @@ class CtGroupManager:
         
     def get_members_by_id_and_attribute(self, group_id, field_name, page_size=100):
         
-        members = self.get_members(group_id, field_name, page_size=page_size)   
+        members = self.get_members(group_id, field_name_filter=field_name, page_size=page_size)   
 
         result_members = {}
 
         # Check if we can return a member because the username matches
         for member in members:
             # Find the field with the given name
-            field_list = member.get("fields", [])
+            field_list = member.get("personFields", [])
 
             # If no fields are present, skip this member
-            if not field_list or (len(field_list) == 0):
+            if not field_list or (len(field_list) == 0) or (not field_name in field_list):
                 continue
 
-            matching_fields = [f for f in field_list if f.get("name") == field_name]
-
-            # If no matching field is found, skip this member
-            if len(matching_fields) == 0:
-                continue
-
-            field_value = matching_fields[0].get("value", "")
-
-            result_members[member["personId"]] = field_value   
+            result_members[member["personId"]] = field_list[field_name]   
             
         return result_members

@@ -128,25 +128,23 @@ def test_get_members_by_id_and_attribute_invalid_group_id(manager, group_id):
 
 @pytest.mark.parametrize("mock_members,expected", [
     ([], {}),
-    ([{"personId": 1, "fields": [{"name": "username", "value": "lukas"}]}], {1: "lukas"}),
-    ([{"personId": 2, "fields": [{"name": "username", "value": "admin"}]},
-      {"personId": 3, "fields": [{"name": "username", "value": "guest"}]}], {2: "admin", 3: "guest"}),
+    ([{"personId": 1, "personFields": {"cmsUserId": "lukas"}}], {1: "lukas"}),
+    ([{"personId": 2, "personFields": {"cmsUserId": "admin"}},
+      {"personId": 3, "personFields": {"cmsUserId": "guest"}}], {2: "admin", 3: "guest"}),
     ([  # Six members
-        {"personId": i, "fields": [{"name": "username", "value": f"user{i}"}]}
+        {"personId": i, "personFields": {"cmsUserId": f"user{i}"}}
         for i in range(1, 7)
     ], {i: f"user{i}" for i in range(1, 7)}),
     ([  # Missing 'fields' key
         {"personId": 1},
-        {"personId": 2, "fields": None}
-    ], {}),
-    ([  # Field exists, but missing 'value'
-        {"personId": 3, "fields": [{"name": "username"}]},
-        {"personId": 4, "fields": [{"name": "username", "value": ""}]}
-    ], {3: "", 4: ""})
+        {"personId": 2, "cmsUserId": None},
+        {"personId": 3, "cmsUserId": {"cmsUserId": ""}},
+        {"personId": 4, "cmsUserId": {"name": ""}}
+    ], {})
 ])
 def test_get_members_by_id_and_attribute_response(manager, mock_members, expected):
     manager.get_members = MagicMock(return_value=mock_members)
-    result = manager.get_members_by_id_and_attribute(1, "username")
+    result = manager.get_members_by_id_and_attribute(1, "cmsUserId")
     assert result == expected
 
 

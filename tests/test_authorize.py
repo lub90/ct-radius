@@ -14,12 +14,12 @@ sys.modules["radiusd"] = types.SimpleNamespace(
 
 import pytest
 from unittest.mock import MagicMock, patch
-from mainApp import CtAuthProvider
+from CtAuthProvider import CtAuthProvider
 from AuthenticationError import AuthenticationError
-from mainApp import authorize
+from authorize import authorize
 
 import env_loader
-import mainApp_loader
+import authorization_loader
 
 
 
@@ -29,31 +29,31 @@ def patch_env_valid(request, monkeypatch):
         monkeypatch.setenv(key, val)
 
 # Fixture for mocked CtAuthProvider
-@pytest.fixture(params=mainApp_loader.VALID_CONFIGS)
+@pytest.fixture(params=authorization_loader.VALID_CONFIGS)
 def authorizer(request):
     app = CtAuthProvider(request.param)
 
     # Mock user ID resolution via ChurchTools
-    members = mainApp_loader.get_group_members()
+    members = authorization_loader.get_group_members()
     app.group_manager = MagicMock()
     app.group_manager.login.return_value = None
     app.group_manager.get_members_by_id_and_attribute.side_effect = lambda gid, attr: members.get(gid, {})
-    app.group_manager.get_user_groups.side_effect = mainApp_loader.get_user_groups()
+    app.group_manager.get_user_groups.side_effect = authorization_loader.get_user_groups()
 
     app.pwd_db = MagicMock()
     app.pwd_db.db = None
-    app.pwd_db.getPwd.side_effect = mainApp_loader.get_user_pwds()
+    app.pwd_db.getPwd.side_effect = authorization_loader.get_user_pwds()
 
     return app
 
 # --- CORE TEST CASES ---
-@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
 def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
     p = {"User-Name": username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 0  # RLM_MODULE_OK
@@ -64,7 +64,7 @@ def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
 
 
 
-@pytest.mark.parametrize("not_allowed", mainApp_loader.get_not_allowed_users())
+@pytest.mark.parametrize("not_allowed", authorization_loader.get_not_allowed_users())
 def test_user_not_in_pwd_db(authorizer, not_allowed):
     with pytest.raises(AuthenticationError):
         authorizer.authorize(not_allowed)
@@ -84,7 +84,7 @@ def test_user_not_in_pwd_db(authorizer, not_allowed):
 def test_empty_username(authorizer, empty_users):
     p = {"User-Name": empty_users, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
     
     assert result == 1  # RLM_MODULE_FAIL
@@ -93,7 +93,7 @@ def test_empty_username(authorizer, empty_users):
 
 
 # --- REQUESTED VLAN CASES ---
-@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_requested_vlan())
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_requested_vlan())
 def test_valid_requested_assignment(authorizer, username_pwd_vlan):
     username, expected_pwd, requested_vlan = username_pwd_vlan
 
@@ -101,7 +101,7 @@ def test_valid_requested_assignment(authorizer, username_pwd_vlan):
 
     p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 0  # RLM_MODULE_OK
@@ -113,7 +113,7 @@ def test_valid_requested_assignment(authorizer, username_pwd_vlan):
 
 
 
-@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_requested_invalid_vlan())
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_requested_invalid_vlan())
 def test_invalid_vlan_request(authorizer, username_pwd_vlan):
     username, expected_pwd, requested_vlan = username_pwd_vlan
 
@@ -121,7 +121,7 @@ def test_invalid_vlan_request(authorizer, username_pwd_vlan):
 
     p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 1  # RLM_MODULE_FAIL
@@ -130,13 +130,13 @@ def test_invalid_vlan_request(authorizer, username_pwd_vlan):
 
 
 # --- INPUT EDGE CASES ---
-@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_variants_pwds_default_vlan())
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_variants_pwds_default_vlan())
 def test_username_cleanup_and_case(authorizer, username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
     p = {"User-Name": username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 0  # RLM_MODULE_OK
@@ -146,7 +146,7 @@ def test_username_cleanup_and_case(authorizer, username_pwd_vlan):
     assert p["Ct-Tunnel-Private-Group-Id"] == str(expected_vlan)
 
 
-@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
 def test_non_numeric_vlan_request(authorizer, username_pwd_vlan):
     username, expected_pwd, requested_vlan = username_pwd_vlan
 
@@ -154,7 +154,7 @@ def test_non_numeric_vlan_request(authorizer, username_pwd_vlan):
 
     p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 1  # RLM_MODULE_FAIL
@@ -162,7 +162,7 @@ def test_non_numeric_vlan_request(authorizer, username_pwd_vlan):
 
 
 
-@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
 def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
     username, expected_pwd, requested_vlan = username_pwd_vlan
 
@@ -170,7 +170,7 @@ def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
 
     p = {"User-Name": full_username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 1  # RLM_MODULE_FAIL
@@ -178,11 +178,11 @@ def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
 
 
 
-@pytest.mark.parametrize("username", mainApp_loader.get_invalid_usernames())
+@pytest.mark.parametrize("username", authorization_loader.get_invalid_usernames())
 def test_invalid_usernames(authorizer, username):
     p = {"User-Name": username, "Ct-Config-Path": "somePath", "Ct-Env-Path": "someEnvPath"}
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 1  # RLM_MODULE_FAIL
@@ -192,14 +192,14 @@ def test_invalid_usernames(authorizer, username):
 def test_missing_config_path(authorizer):
     p = {"User-Name": "someuser"}  # No Ct-Config-Path
 
-    with patch("mainApp.CtAuthProvider", return_value=authorizer):
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
         result = authorize(p)
 
     assert result == 1
     assert p["Auth-Type"] == "Reject"
 
 
-@pytest.mark.parametrize("username_pwd_vlan", mainApp_loader.get_user_names_pwds_default_vlan())
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
 def test_invalid_env_file_assignment(username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
