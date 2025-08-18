@@ -65,7 +65,7 @@ class CtAuthProvider(RadiusRelevantApp):
     def _get_person_id(self, username):
         username = self._cleanup_and_check_username(username)
 
-        for group_id in self.config.basic.wifi_access_groups:
+        for group_id in self.config.basic.all_wifi_access_groups:
             members_list = self.group_manager.get_members_by_id_and_attribute(group_id, self.config.basic.username_field_name)
             for person_id, person_username in members_list.items():
                 try:

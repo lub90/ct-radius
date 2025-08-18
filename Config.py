@@ -143,7 +143,7 @@ class Config(AttrDict):
 
         wifi_group_ids = basic.wifi_access_groups
 
-        if basic.get("include_assignment_groups_in_access_groups", False):
+        if basic.get("include_assignment_groups_in_access_groups"):
             extended_ids = set(wifi_group_ids)
             extended_ids.update(map(int, vlan_cfg.assignments.keys()))
             extended_ids.update(map(int, vlan_cfg.assignments_if_requested.keys()))
