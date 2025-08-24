@@ -19,7 +19,7 @@ vlans:
     5: 50
 
 communication:
-    server_url: "https://chat.church.tools"
+    server_url: 1234
     language: "de"
     pwd_display_time: 2761 # -1 for forever
     reset_command: "Reset"

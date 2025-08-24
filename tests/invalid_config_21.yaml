@@ -19,10 +19,11 @@ communication:
     reset_command: "Reset"
     custom_settings:
         512:
+            pwd_display_time: 20
             reset_command: "Zuruecksetzen"
-            chat_room_id: "!iYxmXAGPd7PCyRh:chat.church.tools"
-        30:
+        "Hello":
             pwd_display_time: 2000
+            reset_command: "Zuruecksetzen"
             chat_room_id: "!iY1234xmXAGPCyRh:chat.church.tools"
         10365:
             pwd_display_time: -1

@@ -2,9 +2,14 @@ Hallo {{firstname}} {{lastname}},
 
 in unserer Gemeinde verwenden wir persönliche Zugangsdaten für das WLAN. Dein Benutzername für das WLAN ist derselbe wie dein ChurchTools-Benutzername. Das WLAN-Passwort ist aus Sicherheitsgründen jedoch ein anderes. Dieses Passwort erhältst du hier im Chat. Es wurde zufällig generiert, gilt nur für dich persönlich und du solltest es niemals mit anderen Personen teilen. Auch deine IT-Verantwortlichen werden dich nie nach diesem Passwort fragen.
 
-Da das Passwort sicherheitsrelevant ist, wird es auch hier im Chat nur für {{duration}} angezeigt. Danach wird es automatisch durch mehrere Sternchen ersetzt. Bitte merke es dir gut oder notiere es dir vor Ablauf der Frist sicher.
+{{#show_pwd_display_time}}
+Da das Passwort sicherheitsrelevant ist, wird es auch hier im Chat nur für {{pwd_display_time_formatted}} Stunden angezeigt. Danach wird es automatisch durch mehrere Sternchen ersetzt. Bitte merke es dir gut oder notiere es dir vor Ablauf der Frist sicher.
 
-Falls du das Passwort nicht rechtzeitig lesen konntest oder es zurücksetzen möchtest, schreibe einfach {{reset_command}} in diesen Chat. Du erhältst dann ein neues WLAN-Passwort.
+Falls du das Passwort nicht rechtzeitig lesen konntest oder es zurücksetzen möchtest, schreibe einfach "{{reset_command}}" (ohne die Anführungszeichen) in diesen Chat. Du erhältst dann ein neues WLAN-Passwort.
+{{/show_pwd_display_time}}
+{{^show_pwd_display_time}}
+Falls du das Passwort zurücksetzen möchtest, schreibe einfach "{{reset_command}}" (ohne die Anführungszeichen) in diesen Chat. Du erhältst dann ein neues WLAN-Passwort.
+{{/show_pwd_display_time}}
 
 Viele Grüße
 

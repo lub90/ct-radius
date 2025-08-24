@@ -24,3 +24,8 @@ communication:
     language: "en"
     pwd_display_time: -1 # -1 for forever
     reset_command: "Zurueck"
+    custom_settings:
+        -10:
+            pwd_display_time: -1
+            reset_command: "Redo"
+            chat_room_id: "!iYyRh:chat.church.tools"

@@ -22,6 +22,7 @@ class CtPwdProvider(RadiusRelevantApp):
     def sync(self, other_person_id, new_pwd):
         # TODO: The other person id must be the ChurchTools person id and the following dict should be loaded for it
         person = SimpleNamespace(
+            id=other_person_id,
             firstname="Max",
             lastname="Mustermann",
             guid=other_person_id,
@@ -44,6 +45,11 @@ class CtPwdProvider(RadiusRelevantApp):
 
 
     def _get_or_create_room(self, person):
+
+        custom_com_settings = self.config.getCommunicationConfigFor(person.id)
+
+        if custom_com_settings.chat_room_id:
+            return custom_com_settings.chat_room_id
         
         room_name = self._get_room_title(person)
 
@@ -63,8 +69,16 @@ class CtPwdProvider(RadiusRelevantApp):
             
             # Send first message
             # Load first message from mustache file using the person object and config information
-            # TODO: Add the context information
-            context = person
+            context = SimpleNamespace()
+            context.__dict__.update(person.__dict__)
+            context.__dict__.update(custom_com_settings.__dict__)
+
+            context.show_pwd_display_time = context.pwd_display_time > 0
+            if context.show_pwd_display_time:
+                # Format the pwd_display_time in a nice manner
+                hours, minutes = divmod(context.pwd_display_time, 60)
+                context.pwd_display_time_formatted = f"{hours}:{minutes:02d}"
+
             first_message = self._render_template("initial_message.mustache", context)
             self.chat_manager.send_message(room_id, first_message)
 

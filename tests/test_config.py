@@ -30,6 +30,7 @@ def test_valid_config_reads_correctly(patch_env_valid, config_file):
 
     basic = config_data["basic"]
     vlans = config_data["vlans"]
+    communication = config_data["communication"]
 
     # Basic section checks
     assert cfg.basic.wifi_access_groups == basic["wifi_access_groups"]
@@ -43,6 +44,17 @@ def test_valid_config_reads_correctly(patch_env_valid, config_file):
     assert cfg.vlans.default_vlan == vlans["default_vlan"]
     assert cfg.vlans.assignments == vlans["assignments"]
     assert cfg.vlans.assignments_if_requested == vlans["assignments_if_requested"]
+
+    # Communications check
+    assert cfg.communication.server_url == communication["server_url"]
+    assert cfg.communication.language == communication["language"]
+    assert cfg.communication.pwd_display_time == communication["pwd_display_time"]
+    assert cfg.communication.reset_command == communication["reset_command"]
+
+    if ("custom_settings" in cfg.communication):
+        assert cfg.communication.custom_settings == communication["custom_settings"]
+    else:
+        assert not "custom_settings" in communication
 
     # Derived property check
     base_ids = set(basic["wifi_access_groups"])
