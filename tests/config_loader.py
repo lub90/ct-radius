@@ -31,7 +31,8 @@ INVALID_CONFIGS = [
     os.path.join(os.path.dirname(__file__), "./invalid_config_19.yaml"),
     os.path.join(os.path.dirname(__file__), "./invalid_config_20.yaml"),
     os.path.join(os.path.dirname(__file__), "./invalid_config_21.yaml"),
-    os.path.join(os.path.dirname(__file__), "./invalid_config_22.yaml")
+    os.path.join(os.path.dirname(__file__), "./invalid_config_22.yaml"),
+    os.path.join(os.path.dirname(__file__), "./invalid_config_23.yaml")
 ]
 
 

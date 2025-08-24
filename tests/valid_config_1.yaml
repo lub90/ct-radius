@@ -23,6 +23,7 @@ communication:
     language: "de"
     pwd_display_time: 2761 # -1 for forever
     reset_command: "Reset"
+    auto_reset: -1
     custom_settings:
         30:
             pwd_display_time: 2000

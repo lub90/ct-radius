@@ -9,3 +9,15 @@ vlans:
   default_vlan: 10
   assignments: {}
   assignments_if_requested: {}
+
+communication:
+    server_url: "https://chat.church.tools"
+    language: "de"
+    pwd_display_time: 2761 # -1 for forever
+    reset_command: "Reset"
+    auto_reset: -1
+    custom_settings:
+        30:
+            pwd_display_time: 2000
+            reset_command: "Zuruecksetzen"
+            chat_room_id: "!iY1234xmXAGPCyRh:chat.church.tools"

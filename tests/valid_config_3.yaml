@@ -13,6 +13,7 @@ vlans:
   assignments_if_requested: {}
 
 communication:
+    auto_reset: -1
     server_url: "https://chat.church.tools"
     language: "en"
     pwd_display_time: 2761 # -1 for forever

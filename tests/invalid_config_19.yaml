@@ -20,6 +20,7 @@ vlans:
 
 communication:
     server_url: 1234
+    auto_reset: -1
     language: "de"
     pwd_display_time: 2761 # -1 for forever
     reset_command: "Reset"

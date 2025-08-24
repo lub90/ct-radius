@@ -1,27 +1,31 @@
-# Invalid type for assignment
 basic:
   wifi_access_groups:
     - 194
-  include_assignment_groups_in_access_groups: true
+  include_assignment_groups_in_access_groups: false
   vlan_separator: "#"
   timeout: 5
   path_to_pwd_db: "pwd.db"
   username_field_name: "cmsUserId"
+
 vlans:
-  default_vlan: 10
-  assignments:
-    - "oops"
+  default_vlan: 20
+  assignments: {}
   assignments_if_requested: {}
 
-
 communication:
+    auto_reset: "Hallo"
     server_url: "https://chat.church.tools"
-    language: "de"
+    language: "en"
     pwd_display_time: 2761 # -1 for forever
     reset_command: "Reset"
-    auto_reset: -1
     custom_settings:
+        512:
+            reset_command: "Zuruecksetzen"
+            chat_room_id: "!iYxmXAGPd7PCyRh:chat.church.tools"
         30:
             pwd_display_time: 2000
-            reset_command: "Zuruecksetzen"
             chat_room_id: "!iY1234xmXAGPCyRh:chat.church.tools"
+        10365:
+            pwd_display_time: -1
+            reset_command: "Redo"
+            chat_room_id: "!iYyRh:chat.church.tools"

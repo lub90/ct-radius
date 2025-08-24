@@ -44,6 +44,7 @@ class Config(AttrDict):
         result = SimpleNamespace()
         result.pwd_display_time = self.communication.pwd_display_time
         result.reset_command = self.communication.reset_command
+        result.auto_reset = self.communication.auto_reset
         result.chat_room_id = None
 
         if person_id in self.communication.custom_settings:
@@ -180,6 +181,12 @@ class Config(AttrDict):
         if not isinstance(self.communication.reset_command, str):
             raise TypeError("communication.reset_command must be a string")
 
+        if "auto_reset" not in communication:
+            raise ValueError("communication.auto_reset must be set")
+
+        if not isinstance(self.communication.auto_reset, int):
+            raise TypeError("communication.auto_reset must be an integer")
+
         if "custom_settings" in communication:
             for custom_setting_id, custom_setting in communication.custom_settings.items():
                 self._validate_custom_communication_setting(custom_setting_id, custom_setting)
@@ -196,6 +203,9 @@ class Config(AttrDict):
 
         if ("chat_room_id" in custom_setting) and not isinstance(custom_setting["chat_room_id"], str):
             raise TypeError("custom_setting.chat_room_id must be a string")
+
+        if ("auto_reset"in custom_setting) and not isinstance(custom_setting["auto_reset"], int):
+            raise TypeError("custom_setting.auto_reset must be an integer")
 
     def _build_all_wifi_access_groups(self):
         basic = self.basic

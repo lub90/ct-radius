@@ -20,6 +20,7 @@ vlans:
     77: 120
 
 communication:
+    auto_reset: 30000
     server_url: "https://chat.church.tools"
     language: "en"
     pwd_display_time: -1 # -1 for forever

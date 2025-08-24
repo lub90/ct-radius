@@ -22,6 +22,7 @@ vlans:
 communication:
     server_url: "https://chat.church.tools"
     language: "en"
+    auto_reset: 500
     pwd_display_time: -1 # -1 for forever
     reset_command: "Zurueck"
     custom_settings:

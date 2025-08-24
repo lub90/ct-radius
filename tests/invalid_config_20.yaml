@@ -19,3 +19,4 @@ communication:
     server_url: "https://chat.church.tools"
     pwd_display_time: -1
     reset_command: "Reset"
+    auto_reset: 20000

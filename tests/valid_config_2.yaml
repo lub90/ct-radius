@@ -18,5 +18,6 @@ vlans:
 communication:
     server_url: "https://chat.church.tools"
     language: "de"
+    auto_reset: 100
     pwd_display_time: -1
     reset_command: "Reset"
