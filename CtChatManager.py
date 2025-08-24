@@ -5,9 +5,9 @@ import re
 
 class CtChatManager:
 
-    def __init__(self, server_url, username, password):
+    def __init__(self, server_url, guid_user, password):
         self.server_url = server_url
-        self.username = username
+        self.guid_user = guid_user
         self.password = password
         self.access_token = None
 
@@ -18,7 +18,7 @@ class CtChatManager:
             "type": "m.login.password",
             "identifier": {
                 "type": "m.id.user",
-                "user": self.username.split(":")[0][1:]
+                "user": self.username
             },
             "password": self.password
         }
@@ -33,6 +33,12 @@ class CtChatManager:
 
         return True
 
+    @property
+    def username(self):
+        return self._username_from_guid(self.guid_user)
+
+    def _username_from_guid(self, guid):
+        return f"@ct_{guid.lower()}:chat.church.tools"
 
     def _headers_with_token(self):
         if not self.access_token:
@@ -53,15 +59,43 @@ class CtChatManager:
         }
         create_response = requests.post(create_room_url, headers=headers, json=room_payload)
         create_response.raise_for_status()
-        # TODO: check if room_id variable exists, if not raise Exception
+
+        if not "room_id" in create_response.json():
+             raise Exception("Room creation failed: No room_id returned.")
+
         return create_response.json()["room_id"]
 
+    def create_secure_room(self, room_name):
+        room_id = self.create_room(room_name)
 
-    def invite_user_to_room(self, room_id, other_username):
+        power_levels_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/state/m.room.power_levels"
+        headers = self._headers_with_token()
+
+        power_levels_payload = {
+            "users": {
+                self.username: 100
+            },
+            "users_default": 0,
+            "invite": 50,
+            "kick": 50,
+            "ban": 50,
+            "redact": 50,
+            "state_default": 50,
+            "events_default": 0
+        }
+
+        response = requests.put(power_levels_url, headers=headers, json=power_levels_payload)
+
+        response.raise_for_status()
+
+        return room_id
+
+
+    def invite_user_to_room(self, room_id, other_guid):
         invite_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/invite"
         headers = self._headers_with_token()
         invite_payload = {
-            "user_id": other_username
+            "user_id": self._username_from_guid(other_guid)
         }
         invite_response = requests.post(invite_url, headers=headers, json=invite_payload)
         invite_response.raise_for_status()
@@ -148,5 +182,54 @@ class CtChatManager:
                 })
 
         return matching_messages
+
+    def find_room(self, title_pattern, other_guid):
+        
+
+        # Step 1: Get joined rooms
+        joined_url = f"{self.server_url}/_matrix/client/v3/joined_rooms"
+        headers = self._headers_with_token()
+        response = requests.get(joined_url, headers=headers)
+        response.raise_for_status()
+        room_ids = response.json().get("joined_rooms", [])
+
+        # Compile regex pattern
+        pattern = re.compile(title_pattern)
+        other_user_id = self._username_from_guid(other_guid)
+
+        # Step 2: Check each room's name and members
+        for room_id in room_ids:
+            # Step 2: Get room name
+            name_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/state/m.room.name"
+            try:
+                name_response = requests.get(name_url, headers=headers)
+                name_response.raise_for_status()
+                room_name = name_response.json().get("name", "")
+            except requests.exceptions.HTTPError:
+                continue  # Skip rooms with no name
+
+            if not pattern.fullmatch(room_name):
+                continue  # Skip if name doesn't match
+
+            # Step 3: Get room members
+            members_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/members"
+            members_response = requests.get(members_url, headers=headers)
+            members_response.raise_for_status()
+            members = members_response.json().get("chunk", [])
+
+            # Filter actual members (joined or invited)
+            active_members = [
+                m["state_key"]
+                for m in members
+                if m.get("type") == "m.room.member" and
+                m.get("content", {}).get("membership") in ["join", "invite"]
+            ]
+
+            # Check if room has exactly you and the other user
+            if set(active_members) == {self.username, other_user_id}:
+                return room_id
+
+        return False
+
 
 
