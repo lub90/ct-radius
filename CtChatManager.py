@@ -2,6 +2,8 @@ import requests
 import uuid
 import re
 
+from datetime import datetime
+
 
 class CtChatManager:
 
@@ -177,11 +179,51 @@ class CtChatManager:
             body = content.get("body", "")
             if pattern.fullmatch(body):
                 matching_messages.append({
-                    "event_id": event["event_id"],
+                    "event_id": event.get("event_id"),
                     "body": body
+                    "timestamp": self._to_datetime( event.get("origin_server_ts") )
                 })
 
         return matching_messages
+
+    def last_message_sent(self, room_id, user_guid, limit=100):
+        headers = self._headers_with_token()
+        user_id = self._username_from_guid(user_guid)
+
+        messages_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/messages"
+        params = {
+            "dir": "b",  # backwards (latest first)
+            "limit": limit,
+            "filter": {
+                "types": ["m.room.message"]
+            }
+        }
+
+        response = requests.get(messages_url, headers=headers, params=params)
+        response.raise_for_status()
+        events = response.json().get("chunk", [])
+
+        for event in events:
+            if event.get("type") != "m.room.message":
+                continue
+            if event.get("sender") != user_id:
+                continue
+            content = event.get("content", {})
+            body = content.get("body", "")
+            return {
+                "event_id": event.get("event_id"),
+                "body": body,
+                "timestamp": self._to_datetime( event.get("origin_server_ts") )
+            }
+
+        return None  # No message found
+
+
+    def _to_datetime(self, timestamp_ms):
+        """Converts Matrix-Timestamp (ms) in UTC datetime object."""
+        timestamp_sec = timestamp_ms / 1000
+        return datetime.utcfromtimestamp(timestamp_sec)
+
 
     def find_room(self, title_pattern, other_guid):
         

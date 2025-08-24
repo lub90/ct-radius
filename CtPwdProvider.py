@@ -1,5 +1,6 @@
 import os
 import pystache
+import re
 
 from types import SimpleNamespace
 
@@ -16,10 +17,59 @@ class CtPwdProvider(RadiusRelevantApp):
 
     def login(self):
         self.person_manager.login()
+        self.group_manager.login()
+
         self.chat_manager = CtChatManager(self.config.communication.server_url, self.person_manager.my_guid(), self.config.basic.ct_api_user_pwd)
         self.chat_manager.login()
 
-    def sync(self, other_person_id, new_pwd):
+
+    def _get_all_ct_members():
+        all_members = {}
+        
+        for group_id in self.config.basic.all_wifi_access_groups:
+            all_members.update(
+                self.group_manager.get_all_members_by_id(grou_id)
+            )
+
+        return all_members
+
+    def sync(self):
+        all_ct_members = self._get_all_ct_members()
+        all_db_members = self.pwd_db.getAllUsers()
+
+        # The persons to give a new pwd are for sure the once, who are currently member of a allowed ct group but are not part of the password database yet
+        to_update = [ct_member for person_id, ct_member in all_ct_members.items() if person_id not in all_db_members]
+        # TODO: Furthermore the once who specifically requested a new pwd are to be added here
+        # TODO: In the meantime deal with the once who sent an unknown command
+        # TODO: Finally, the once who receive a new password automatically after a certain time are to be added here
+
+        # Now give them a new password and send them a message
+        for ct_member in to_update:
+            self._new_pwd(ct_member)
+
+        # At last, deal with the once to be removed
+        to_remove = [person_id for person_id in all_db_members if person_id not in all_ct_members]
+        for person_id in to_remove:
+            # TODO: This function needs to be implemented
+            self._remove(person_id)
+
+
+        # TODO: Replace for all_ct_members the password with *** where appropriate
+
+    def _remove(person_id):
+        # TODO: Delete person from database
+
+        # TODO: Retrieve additional information about the person from ChurchTools - if it fails continue as usual and ignore it (person might have been deleted from ChurchTools)
+
+        # TODO: Send them a message, informing them about their cancellation
+
+        # TODO: Replace all the passwords with ***
+        
+    # TODO: Adjust to take care of the new format and the new password internally
+    def new_pwd(self, other_person_id, new_pwd):
+
+        # TODO: Give them a password and store it in the database
+
         # TODO: The other person id must be the ChurchTools person id and the following dict should be loaded for it
         person = SimpleNamespace(
             id=other_person_id,
@@ -54,8 +104,8 @@ class CtPwdProvider(RadiusRelevantApp):
         room_name = self._get_room_title(person)
 
         # Check if room exists
-        # TODO: Escape so that it is an exact string match
-        room_name_pattern = room_name
+        # Escape so that it is an exact string match
+        room_name_pattern = "^" + re.escape(room_name) + "$"
         existing_room_id = self.chat_manager.find_room(room_name, person.guid)
 
         if existing_room_id:

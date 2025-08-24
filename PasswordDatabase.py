@@ -168,3 +168,9 @@ class PasswordDatabase:
         key = self._to_key(user_id)
         if key in self.db:
             del self.db[key]
+
+    def getAllUsers(self):
+        """
+        Returns all users currently stored in the database
+        """
+        return self.db.keys()
