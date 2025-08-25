@@ -70,24 +70,27 @@ class CtPwdProvider(RadiusRelevantApp):
     # TODO: Adjust to take care of the new format and the new password internally
     def new_pwd(self, other_person_id, new_pwd):
 
-        # TODO: Test
+        # TODO: Where to move this part. On the one hand, we want to cache all the chat information, on the other hand, we want this function to be callable also from the outside
         room_name = self._get_regex_room_title()
         guid_room_mapping = self.chat_manager.find_private_rooms(room_name)
         print(guid_room_mapping)
 
         # TODO: Give them a password and store it in the database
 
-        # TODO: The other person id must be the ChurchTools person id and the following dict should be loaded for it
+        # The other person id must be the ChurchTools person id and the following dict should be loaded for it
+        person_data = self.person_manager.get_person(other_person_id)
         person = SimpleNamespace(
-            id=other_person_id,
-            firstname="Max",
-            lastname="Mustermann",
-            guid=other_person_id,
-            username="mmustermann"
+            id=person_data["id"],
+            firstname=person_data["firstName"],
+            lastname=person_data["lastName"],
+            guid=person_data["guid"],
+            username=person_data[self.config.basic.username_field_name]
         )
 
+        # Get the room or generate one
         room_id = self._get_or_create_room(person, guid_room_mapping)
 
+        # Send the new password message
         self._send_pwd_msg(room_id, person, new_pwd)
 
     def _render_template(self, filename, context):
