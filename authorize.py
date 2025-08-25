@@ -14,9 +14,9 @@ def authorize(p):
         pwd, vlan_id = ct.authorize(username_raw)
 
         p["Cleartext-Password"] = pwd
-        p["Ct-Tunnel-Type"] = "13"
-        p["Ct-Tunnel-Medium-Type"] = "6"
-        p["Ct-Tunnel-Private-Group-Id"] = str(vlan_id)
+        p["Tunnel-Type"] = "13"
+        p["Tunnel-Medium-Type"] = "6"
+        p["Tunnel-Private-Group-Id"] = str(vlan_id)
 
         return radiusd.RLM_MODULE_OK
     

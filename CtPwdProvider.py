@@ -33,14 +33,14 @@ class CtPwdProvider(RadiusRelevantApp):
                 self.group_manager.get_all_members_by_id(grou_id)
             )
 
-        return all_members
+        return all_members.keys()
 
     def sync(self):
         all_ct_members = self._get_all_ct_members()
-        all_db_members = self.pwd_db.getAllUsers()
+        all_db_members = self.pwd_db.list_all_users()
 
         # The persons to give a new pwd are for sure the once, who are currently member of a allowed ct group but are not part of the password database yet
-        to_update = [ct_member for person_id, ct_member in all_ct_members.items() if person_id not in all_db_members]
+        to_update = [person_id for person_id in all_ct_members if person_id not in all_db_members]
         # TODO: Furthermore the once who specifically requested a new pwd are to be added here
         # TODO: In the meantime deal with the once who sent an unknown command
         # TODO: Finally, the once who receive a new password automatically after a certain time are to be added here
