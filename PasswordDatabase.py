@@ -13,7 +13,7 @@ class PasswordDatabase:
     MIN_PASSWORD_LENGTH = 8
     ALLOWED_CHARS = (
         string.ascii_letters + string.digits +
-        "!@#$%&*-_+=?.()[]{}<>"
+        "!@#$%&*-_+=?."
     )
 
     def __init__(self, db_path, encryption_password):

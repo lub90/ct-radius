@@ -16,10 +16,10 @@ def pwd_db():
 # Valid passwords using all allowed categories
 VALID_PASSWORDS = [
     "Secure123!",
-    "ValidPass[]",
+    "ValidPass",
     "AlphaBeta123$",
     "MixUPdown7?",
-    "Symbols{}<>.",
+    "Symbols.",
     "DigitsOnly123456",
     "Complex#Password1"
 ]
@@ -34,7 +34,10 @@ INVALID_PASSWORDS = [
     "Bad€uro123",     # non-ASCII
     "Control\x03",   # control char
     "ÜmläutPass12",   # accented chars
-    "Back\\Slash12"   # unlisted symbol
+    "Back\\Slash12",   # unlisted symbol
+    "ValidPass)",
+    "AlphaBeta123$}",
+    "Symbols.>"
 ]
 
 # --- Valid password operations ---
