@@ -37,9 +37,9 @@ class CtChatManager:
 
     @property
     def username(self):
-        return self._username_from_guid(self.guid_user)
+        return self.username_from_guid(self.guid_user)
 
-    def _username_from_guid(self, guid):
+    def username_from_guid(self, guid):
         return f"@ct_{guid.lower()}:chat.church.tools"
 
     def _headers_with_token(self):
@@ -97,7 +97,7 @@ class CtChatManager:
         invite_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/invite"
         headers = self._headers_with_token()
         invite_payload = {
-            "user_id": self._username_from_guid(other_guid)
+            "user_id": self.username_from_guid(other_guid)
         }
         invite_response = requests.post(invite_url, headers=headers, json=invite_payload)
         invite_response.raise_for_status()
@@ -180,7 +180,7 @@ class CtChatManager:
             if pattern.fullmatch(body):
                 matching_messages.append({
                     "event_id": event.get("event_id"),
-                    "body": body
+                    "body": body,
                     "timestamp": self._to_datetime( event.get("origin_server_ts") )
                 })
 
@@ -188,7 +188,7 @@ class CtChatManager:
 
     def last_message_sent(self, room_id, user_guid, limit=100):
         headers = self._headers_with_token()
-        user_id = self._username_from_guid(user_guid)
+        user_id = self.username_from_guid(user_guid)
 
         messages_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/messages"
         params = {
@@ -225,26 +225,28 @@ class CtChatManager:
         return datetime.utcfromtimestamp(timestamp_sec)
 
 
-    def find_room(self, title_pattern, other_guid):
-        
-
-        # Step 1: Get joined rooms
+    def get_all_rooms(self):
         joined_url = f"{self.server_url}/_matrix/client/v3/joined_rooms"
         headers = self._headers_with_token()
         response = requests.get(joined_url, headers=headers)
         response.raise_for_status()
-        room_ids = response.json().get("joined_rooms", [])
+        return response.json().get("joined_rooms", [])
+
+    def find_rooms(self, title_pattern):
+        result = []
+
+        # Step 1: Get joined rooms
+        room_ids = self.get_all_rooms()
 
         # Compile regex pattern
         pattern = re.compile(title_pattern)
-        other_user_id = self._username_from_guid(other_guid)
 
         # Step 2: Check each room's name and members
         for room_id in room_ids:
             # Step 2: Get room name
             name_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/state/m.room.name"
             try:
-                name_response = requests.get(name_url, headers=headers)
+                name_response = requests.get(name_url, headers=self._headers_with_token())
                 name_response.raise_for_status()
                 room_name = name_response.json().get("name", "")
             except requests.exceptions.HTTPError:
@@ -253,9 +255,49 @@ class CtChatManager:
             if not pattern.fullmatch(room_name):
                 continue  # Skip if name doesn't match
 
+            result.append(room_id)
+
+        return result
+
+    def find_private_rooms(self, title_pattern):
+        result = {}
+
+        room_ids = self.find_rooms(title_pattern)
+
+        for room_id in room_ids:
+
+            # Get room members
+            members_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/members"
+            members_response = requests.get(members_url, headers=self._headers_with_token())
+            members_response.raise_for_status()
+            members = members_response.json().get("chunk", [])
+
+            # Filter actual members (joined or invited)
+            active_members = [
+                m["state_key"]
+                for m in members
+                if m.get("type") == "m.room.member" and
+                m.get("content", {}).get("membership") in ["join", "invite"]
+            ]
+
+            # Check if room has the other user after removing me
+            active_members.remove(self.username)
+            if len(set(active_members)) == 1:
+                result[active_members[0]] = room_id
+
+        return result
+
+    def find_private_room(self, title_pattern, other_guid):
+
+        room_ids = self.find_rooms(title_pattern)
+
+        other_user_id = self.username_from_guid(other_guid)
+
+        for room_id in room_ids:
+
             # Step 3: Get room members
             members_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/members"
-            members_response = requests.get(members_url, headers=headers)
+            members_response = requests.get(members_url, headers=self._headers_with_token())
             members_response.raise_for_status()
             members = members_response.json().get("chunk", [])
 

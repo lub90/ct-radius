@@ -64,9 +64,16 @@ class CtPwdProvider(RadiusRelevantApp):
         # TODO: Send them a message, informing them about their cancellation
 
         # TODO: Replace all the passwords with ***
+
+        pass
         
     # TODO: Adjust to take care of the new format and the new password internally
     def new_pwd(self, other_person_id, new_pwd):
+
+        # TODO: Test
+        room_name = self._get_regex_room_title()
+        guid_room_mapping = self.chat_manager.find_private_rooms(room_name)
+        print(guid_room_mapping)
 
         # TODO: Give them a password and store it in the database
 
@@ -79,7 +86,7 @@ class CtPwdProvider(RadiusRelevantApp):
             username="mmustermann"
         )
 
-        room_id = self._get_or_create_room(person)
+        room_id = self._get_or_create_room(person, guid_room_mapping)
 
         self._send_pwd_msg(room_id, person, new_pwd)
 
@@ -89,50 +96,68 @@ class CtPwdProvider(RadiusRelevantApp):
             template = f.read()
         return pystache.render(template, context)
 
-    def _get_room_title(self, person):
+    def _render_regex_template(self, filename):
+        template_path = os.path.join(self.template_dir, filename)
+        with open(template_path, "r", encoding="utf-8") as f:
+            template = f.read()
+            
+        # Escape all regex special characters
+        escaped = re.escape(template)
+
+        # Replace escaped {{variable}} with regex wildcard
+        pattern = re.sub(r'\\{\\{.*?\\}\\}', r'.+?', escaped)
+
+        # Anchor the pattern to match the full string
+        return re.compile(f"^{pattern}$")
+
+
+    def _get_regex_room_title(self):
         # Load room title from mustache file, using the person object
+        return self._render_regex_template("room_title.mustache")
+
+    def _get_room_title(self, person):
+        # Load room name from mustache file, using person object
         return self._render_template("room_title.mustache", person)
 
 
-    def _get_or_create_room(self, person):
+    def _get_or_create_room(self, person, guid_room_mapping):
 
+        # Firstly check if a chat room is given in the cusom settings
         custom_com_settings = self.config.getCommunicationConfigFor(person.id)
 
         if custom_com_settings.chat_room_id:
             return custom_com_settings.chat_room_id
+
+        # Now check if a chat room already exists
+        chat_guid = self.chat_manager.username_from_guid(person.guid)
+
+        if chat_guid in guid_room_mapping:
+            return guid_room_mapping[chat_guid]
         
+
+        # No chat room exists, generate room
         room_name = self._get_room_title(person)
+        room_id = self.chat_manager.create_secure_room(room_name)
 
-        # Check if room exists
-        # Escape so that it is an exact string match
-        room_name_pattern = "^" + re.escape(room_name) + "$"
-        existing_room_id = self.chat_manager.find_room(room_name, person.guid)
+        # Invite user
+        self.chat_manager.invite_user_to_room(room_id, person.guid)
+        
+        # Send first message
+        # Load first message from mustache file using the person object and config information
+        context = SimpleNamespace()
+        context.__dict__.update(person.__dict__)
+        context.__dict__.update(custom_com_settings.__dict__)
 
-        if existing_room_id:
-            return existing_room_id
-        else:
-            # Generate room
-            room_id = self.chat_manager.create_secure_room(room_name)
+        context.show_pwd_display_time = context.pwd_display_time > 0
+        if context.show_pwd_display_time:
+            # Format the pwd_display_time in a nice manner
+            hours, minutes = divmod(context.pwd_display_time, 60)
+            context.pwd_display_time_formatted = f"{hours}:{minutes:02d}"
 
-            # Invite user
-            self.chat_manager.invite_user_to_room(room_id, person.guid)
-            
-            # Send first message
-            # Load first message from mustache file using the person object and config information
-            context = SimpleNamespace()
-            context.__dict__.update(person.__dict__)
-            context.__dict__.update(custom_com_settings.__dict__)
+        first_message = self._render_template("initial_message.mustache", context)
+        self.chat_manager.send_message(room_id, first_message)
 
-            context.show_pwd_display_time = context.pwd_display_time > 0
-            if context.show_pwd_display_time:
-                # Format the pwd_display_time in a nice manner
-                hours, minutes = divmod(context.pwd_display_time, 60)
-                context.pwd_display_time_formatted = f"{hours}:{minutes:02d}"
-
-            first_message = self._render_template("initial_message.mustache", context)
-            self.chat_manager.send_message(room_id, first_message)
-
-            return room_id
+        return room_id
 
     def _send_pwd_msg(self, room_id, person, new_pwd):
 
