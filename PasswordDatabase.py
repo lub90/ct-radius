@@ -10,10 +10,10 @@ class PasswordDatabase:
     Stores encrypted passwords keyed by user ID.
     """
 
-    _MIN_PASSWORD_LENGTH = 8
-    _ALLOWED_CHARS = (
+    MIN_PASSWORD_LENGTH = 8
+    ALLOWED_CHARS = (
         string.ascii_letters + string.digits +
-        "!@#$%^&*()-_+=[]{}<>?."
+        "!@#$%&*-_+=?.()[]{}<>"
     )
 
     def __init__(self, db_path, encryption_password):
@@ -86,9 +86,9 @@ class PasswordDatabase:
         """
         if not isinstance(password, str):
             raise TypeError(f"Password must be a string, got {type(password).__name__}")
-        if len(password) < self._MIN_PASSWORD_LENGTH:
-            raise ValueError(f"Password must be at least {self._MIN_PASSWORD_LENGTH} characters long.")
-        if not all(char in self._ALLOWED_CHARS for char in password):
+        if len(password) < self.MIN_PASSWORD_LENGTH:
+            raise ValueError(f"Password must be at least {self.MIN_PASSWORD_LENGTH} characters long.")
+        if not all(char in self.ALLOWED_CHARS for char in password):
             raise ValueError("Password contains invalid characters.")
 
     def containsUser(self, user_id: int) -> bool:

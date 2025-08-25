@@ -1,11 +1,13 @@
 import os
 import pystache
 import re
+import random
 
 from types import SimpleNamespace
 
 from RadiusRelevantApp import RadiusRelevantApp
 from CtChatManager import CtChatManager
+from PasswordDatabase import PasswordDatabase
 
 
 class CtPwdProvider(RadiusRelevantApp):
@@ -66,17 +68,30 @@ class CtPwdProvider(RadiusRelevantApp):
         # TODO: Replace all the passwords with ***
 
         pass
+
+
+    def set_new_pwd(self, other_person_id, new_pwd, guid_room_mapping=None):
+        # Write new_pwd to database
+        self.pwd_db.setPwd(other_person_id, new_pwd)
+
+        # Communicate it
+        self._communicate_new_pwd(other_person_id, new_pwd, guid_room_mapping)
+
+    def _generate_pwd(self):
+        length = self.config.basic.pwd_length
+        return ''.join(random.choices(PasswordDatabase.ALLOWED_CHARS, k=length))
+
+    def generate_new_pwd(self, other_person_id, guid_room_mapping=None):
+        # Generate a new password and set it
+        new_pwd = self._generate_pwd()
+        self.set_new_pwd(other_person_id, new_pwd, guid_room_mapping)
+
+    def _communicate_new_pwd(self, other_person_id, new_pwd, guid_room_mapping=None):
+
+        # Check if we already have a guid to chat room mapping
+        if not guid_room_mapping:
+            guid_room_mapping = self._generate_guid_room_mapping()
         
-    # TODO: Adjust to take care of the new format and the new password internally
-    def new_pwd(self, other_person_id, new_pwd):
-
-        # TODO: Where to move this part. On the one hand, we want to cache all the chat information, on the other hand, we want this function to be callable also from the outside
-        room_name = self._get_regex_room_title()
-        guid_room_mapping = self.chat_manager.find_private_rooms(room_name)
-        print(guid_room_mapping)
-
-        # TODO: Give them a password and store it in the database
-
         # The other person id must be the ChurchTools person id and the following dict should be loaded for it
         person_data = self.person_manager.get_person(other_person_id)
         person = SimpleNamespace(
@@ -92,6 +107,12 @@ class CtPwdProvider(RadiusRelevantApp):
 
         # Send the new password message
         self._send_pwd_msg(room_id, person, new_pwd)
+
+    def _generate_guid_room_mapping(self):
+        room_name = self._get_regex_room_title()
+        guid_room_mapping = self.chat_manager.find_private_rooms(room_name)
+        print(guid_room_mapping)
+        return guid_room_mapping
 
     def _render_template(self, filename, context):
         template_path = os.path.join(self.template_dir, filename)

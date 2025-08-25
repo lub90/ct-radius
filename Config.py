@@ -2,6 +2,7 @@ import os
 import yaml
 
 from types import SimpleNamespace
+from PasswordDatabase import PasswordDatabase
 
 class AttrDict(dict):
     def __getattr__(self, item):
@@ -119,6 +120,15 @@ class Config(AttrDict):
 
         if "username_field_name" not in basic:
             raise ValueError("Missing key: basic.username_field_name")
+
+        if "pwd_length" not in basic:
+            raise ValueError("Missing key: basic.pwd_length")
+
+        if not isinstance(self.basic.pwd_length, int):
+            raise TypeError("basic.pwd_length must be of type integer")
+
+        if self.basic.pwd_length < PasswordDatabase.MIN_PASSWORD_LENGTH:
+            raise ValueError(f"basic.pwd_length must be greater or equal to {PasswordDatabase.MIN_PASSWORD_LENGTH}")
 
         # Check required vlans fields
         if "default_vlan" not in vlans:

@@ -6,7 +6,7 @@ basic:
   timeout: 5
   path_to_pwd_db: "pwd.db"
   username_field_name: "cmsUserId"
-  pwd_length: 10
+  pwd_length: 5
 
 vlans:
   default_vlan: 20
