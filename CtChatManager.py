@@ -171,6 +171,16 @@ class CtChatManager:
         events = response.json().get("chunk", [])
 
         pattern = re.compile(regex_pattern)
+
+        # Track edited messages
+        replaced_event_ids = set()
+
+        for event in events:
+            content = event.get("content", {})
+            relates_to = content.get("m.relates_to", {})
+            if relates_to.get("rel_type") == "m.replace":
+                replaced_event_ids.add(relates_to.get("event_id"))
+
         matching_messages = []
 
         for event in events:
@@ -178,6 +188,8 @@ class CtChatManager:
                 continue
             if event.get("sender") != user_id:
                 continue
+            if event.get("event_id") in replaced_event_ids:
+                continue  # Skip messages that were edited
             content = event.get("content", {})
             body = content.get("body", "")
             if pattern.fullmatch(body):

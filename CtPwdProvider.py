@@ -81,6 +81,12 @@ class CtPwdProvider(RadiusRelevantApp):
             print(f"Would have update the following member: {ct_member}")
             self.generate_new_pwd(ct_member)
 
+
+        # Replace for all_ct_members the password with *** where appropriate
+        all_persons = set(all_ct_members + all_db_members)
+        for person_id in all_persons:
+            self._hide_passwords(person_id)
+
         # At last, deal with the ones to be removed
         to_remove = [person_id for person_id in all_db_members if person_id not in all_ct_members]
         for person_id in to_remove:
@@ -88,7 +94,7 @@ class CtPwdProvider(RadiusRelevantApp):
             self._remove(person_id)
 
 
-        # TODO: Replace for all_ct_members the password with *** where appropriate
+        
 
 
     def _get_existing_chat_room(self, person_id):
@@ -156,12 +162,14 @@ class CtPwdProvider(RadiusRelevantApp):
         if not last_message:
             return True
 
-        age_of_last_message = datetime.datetime.now() - last_message["timestamp"]
-        timeout_age = datetime.timedelta(minutes=auto_reset)
-
-        return (age_of_last_message >= timeout_age)
+        return self._is_msg_out_of_date(last_message, auto_reset)
 
 
+    def _is_msg_out_of_date(self, msg, timeout):
+        age_of_msg = datetime.datetime.now() - msg["timestamp"]
+        timeout_age = datetime.timedelta(minutes=timeout)
+
+        return (age_of_msg >= timeout_age)
         
 
     def _remove(self, person_id):
@@ -192,10 +200,7 @@ class CtPwdProvider(RadiusRelevantApp):
         new_pwd = self._generate_pwd()
         self.set_new_pwd(other_person_id, new_pwd)
 
-    def _communicate_new_pwd(self, other_person_id, new_pwd):
-        # Run the setup routine if it has not been run before...
-        self._setup()
-        
+    def _get_person_data_for_templates(self, other_person_id):
         # The other person id must be the ChurchTools person id and the following dict should be loaded for it
         person_data = self.person_manager.get_person(other_person_id)
         person = SimpleNamespace(
@@ -205,6 +210,14 @@ class CtPwdProvider(RadiusRelevantApp):
             guid=person_data["guid"],
             username=person_data[self.config.basic.username_field_name]
         )
+
+        return person
+
+    def _communicate_new_pwd(self, other_person_id, new_pwd):
+        # Run the setup routine if it has not been run before...
+        self._setup()
+        
+        person = self._get_person_data_for_templates(other_person_id)
 
         # Get the room or generate one
         room_id = self._get_or_create_room(person)
@@ -285,14 +298,39 @@ class CtPwdProvider(RadiusRelevantApp):
 
         return room_id
 
-    def _send_pwd_msg(self, room_id, person, new_pwd):
-
+    def _get_pwd_msg(self, person, new_pwd):
         context = SimpleNamespace()
         context.__dict__.update(person.__dict__)
         context.password = new_pwd
-        msg = self._render_template("password_message.mustache", context)
+        return self._render_template("password_message.mustache", context)
 
+    def _send_pwd_msg(self, room_id, person, new_pwd):
+        msg = self._get_pwd_msg(person, new_pwd)
         self.chat_manager.send_message(room_id, msg)
+        
+
+    def _hide_passwords(self, person_id):
+        custom_com_settings = self.config.getCommunicationConfigFor(person_id)
+
+        room_id = self._get_existing_chat_room(person_id)
+
+        # Nothing to hide if there is no chat room
+        if not room_id:
+            return
+
+        # Construct the message with the hidden password
+        person = self._get_person_data_for_templates(person_id)
+        hidden_pwd = "*" * self.config.basic.pwd_length
+        new_msg = self._get_pwd_msg(person, hidden_pwd)
+
+        # Construct 
+        msg_search_pattern = self._render_regex_template("password_message.mustache")
+        found_messages = self.chat_manager.find_messages(room_id, msg_search_pattern, self.my_guid)
+
+        for msg in found_messages:
+            # Check display time of each message
+            if self._is_msg_out_of_date(msg, custom_com_settings.pwd_display_time) and (msg["body"] != new_msg):
+                self.chat_manager.edit_message(room_id, msg["event_id"], new_msg)
     
 
 
