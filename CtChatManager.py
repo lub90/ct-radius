@@ -1,6 +1,7 @@
 import requests
 import uuid
 import re
+import json
 
 from datetime import datetime
 
@@ -186,7 +187,7 @@ class CtChatManager:
 
         return matching_messages
 
-    def last_message_sent(self, room_id, user_guid, limit=100):
+    def last_message_sent(self, room_id, user_guid, limit=100, must_be_last_message=False):
         headers = self._headers_with_token()
         user_id = self.username_from_guid(user_guid)
 
@@ -194,9 +195,9 @@ class CtChatManager:
         params = {
             "dir": "b",  # backwards (latest first)
             "limit": limit,
-            "filter": {
+            "filter": json.dumps({
                 "types": ["m.room.message"]
-            }
+            })
         }
 
         response = requests.get(messages_url, headers=headers, params=params)
@@ -207,7 +208,10 @@ class CtChatManager:
             if event.get("type") != "m.room.message":
                 continue
             if event.get("sender") != user_id:
-                continue
+                if must_be_last_message:
+                    return None
+                else:
+                    continue
             content = event.get("content", {})
             body = content.get("body", "")
             return {

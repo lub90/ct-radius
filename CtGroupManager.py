@@ -21,7 +21,7 @@ class CtGroupManager(AbstractCtManager):
 
     def get_all_members_by_id(self, group_id, page_size=100):
         members = self.get_members(group_id, page_size=page_size)
-        return [member["personId"] for member in members]
+        return {member["personId"]: member for member in members}
 
     def get_members(self, group_id, field_name_filter=None, page_size=100):
 

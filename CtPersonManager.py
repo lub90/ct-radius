@@ -2,7 +2,7 @@ from AbstractCtManager import AbstractCtManager
 
 class CtPersonManager(AbstractCtManager):
 
-    def my_guid(self):
+    def who_am_i(self):
 
         url = f"{self.server_url}/api/whoami"
         response = self.session.get(url, timeout=self.timeout)
@@ -12,10 +12,10 @@ class CtPersonManager(AbstractCtManager):
         data = response.json()
 
         try:
-            guid = data["data"]["guid"]
-            return guid
+            result = data["data"]
+            return result
         except KeyError:
-            raise ValueError("Cannot extract guid from response.")
+            raise ValueError("Cannot extract personal data from response.")
 
 
     def get_person(self, person_id: int) -> dict:

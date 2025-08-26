@@ -21,35 +21,55 @@ class CtPwdProvider(RadiusRelevantApp):
         self.person_manager.login()
         self.group_manager.login()
 
-        self.chat_manager = CtChatManager(self.config.communication.server_url, self.person_manager.my_guid(), self.config.basic.ct_api_user_pwd)
+        my_data = self.person_manager.who_am_i()
+        self.my_guid = my_data["guid"]
+        self.my_id = int(my_data["id"])
+
+        self.chat_manager = CtChatManager(self.config.communication.server_url, self.my_guid, self.config.basic.ct_api_user_pwd)
         self.chat_manager.login()
 
 
-    def _get_all_ct_members():
+    def _get_ct_members_data(self):
         all_members = {}
         
         for group_id in self.config.basic.all_wifi_access_groups:
-            all_members.update(
-                self.group_manager.get_all_members_by_id(grou_id)
-            )
+            new_members = self.group_manager.get_all_members_by_id(group_id)
+            all_members.update(new_members)
 
-        return all_members.keys()
+        return all_members
+
+    def _setup(self, update=False):
+        # We want to run the setup only, if it has not been run before or if we want to update the settings
+        if update or (not self.guid_to_room_mapping):
+            self.guid_to_room_mapping = self._generate_guid_room_mapping()
+            self.person_id_to_guid_mapping = {key: data["person"]["domainAttributes"]["guid"] for key, data in self._get_ct_members_data().items()}
+
+    def _get_all_ct_members(self):
+        return list(self.person_id_to_guid_mapping.keys())
 
     def sync(self):
+        self._setup(True)
+
         all_ct_members = self._get_all_ct_members()
+        all_ct_members.remove(self.my_id)
         all_db_members = self.pwd_db.list_all_users()
 
-        # The persons to give a new pwd are for sure the once, who are currently member of a allowed ct group but are not part of the password database yet
-        to_update = [person_id for person_id in all_ct_members if person_id not in all_db_members]
-        # TODO: Furthermore the once who specifically requested a new pwd are to be added here
-        # TODO: In the meantime deal with the once who sent an unknown command
-        # TODO: Finally, the once who receive a new password automatically after a certain time are to be added here
+        # The persons to give a new pwd are for sure the ones, who are currently member of a allowed ct group but are not part of the password database yet
+        to_update = {person_id for person_id in all_ct_members if person_id not in all_db_members}
+        # Furthermore the ones who specifically requested a new pwd are to be added here
+        for ct_member in all_ct_members:
+            # This function also deals with unknown commands
+            if self._reset_requested(ct_member):
+                to_update.add(ct_member)
+        # TODO: Finally, the ones who receive a new password automatically after a certain time are to be added here
 
         # Now give them a new password and send them a message
         for ct_member in to_update:
-            self._new_pwd(ct_member)
+            # TODO: Comment out for testing purposes
+            print(f"Would have update the following member: {ct_member}")
+            # self.generate_new_pwd(ct_member)
 
-        # At last, deal with the once to be removed
+        # At last, deal with the ones to be removed
         to_remove = [person_id for person_id in all_db_members if person_id not in all_ct_members]
         for person_id in to_remove:
             # TODO: This function needs to be implemented
@@ -58,7 +78,46 @@ class CtPwdProvider(RadiusRelevantApp):
 
         # TODO: Replace for all_ct_members the password with *** where appropriate
 
-    def _remove(person_id):
+
+    def _get_existing_chat_room(self, person_id):
+        if not person_id in self.person_id_to_guid_mapping:
+            return None
+        
+        person_guid = self.person_id_to_guid_mapping[person_id]
+        full_chat_guid = self.chat_manager.username_from_guid(person_guid)
+
+        if not full_chat_guid in self.guid_to_room_mapping:
+            return None
+
+        return self.guid_to_room_mapping[full_chat_guid]
+
+    def _reset_requested(self, person_id):
+
+        room_id = self._get_existing_chat_room(person_id)
+
+        # If there is no chat room, there is no reset message
+        if room_id is None:
+            return False
+
+        person_guid = self.person_id_to_guid_mapping[person_id]
+        last_message = self.chat_manager.last_message_sent(room_id, person_guid, must_be_last_message=True)
+
+        # Check if we found any last message
+        if not last_message:
+            return False
+
+        # If we found one, check if it fits the personal reset command of this person
+        custom_com_settings = self.config.getCommunicationConfigFor(person_id)
+        if last_message["body"] == custom_com_settings.reset_command:
+            return True
+        else:
+            # We received a message we cannot decode. Send error message
+            wrong_cmd_msg = self._render_template("unknown_command_message.mustache", custom_com_settings)
+            self.chat_manager.send_message(room_id, wrong_cmd_msg)
+            return False
+
+
+    def _remove(self, person_id):
         # TODO: Delete person from database
 
         # TODO: Retrieve additional information about the person from ChurchTools - if it fails continue as usual and ignore it (person might have been deleted from ChurchTools)
@@ -81,16 +140,14 @@ class CtPwdProvider(RadiusRelevantApp):
         length = self.config.basic.pwd_length
         return ''.join(random.choices(PasswordDatabase.ALLOWED_CHARS, k=length))
 
-    def generate_new_pwd(self, other_person_id, guid_room_mapping=None):
+    def generate_new_pwd(self, other_person_id):
         # Generate a new password and set it
         new_pwd = self._generate_pwd()
         self.set_new_pwd(other_person_id, new_pwd, guid_room_mapping)
 
-    def _communicate_new_pwd(self, other_person_id, new_pwd, guid_room_mapping=None):
-
-        # Check if we already have a guid to chat room mapping
-        if not guid_room_mapping:
-            guid_room_mapping = self._generate_guid_room_mapping()
+    def _communicate_new_pwd(self, other_person_id, new_pwd):
+        # Run the setup routine if it has not been run before...
+        self._setup()
         
         # The other person id must be the ChurchTools person id and the following dict should be loaded for it
         person_data = self.person_manager.get_person(other_person_id)
@@ -103,7 +160,7 @@ class CtPwdProvider(RadiusRelevantApp):
         )
 
         # Get the room or generate one
-        room_id = self._get_or_create_room(person, guid_room_mapping)
+        room_id = self._get_or_create_room(person, self.guid_room_mapping)
 
         # Send the new password message
         self._send_pwd_msg(room_id, person, new_pwd)
@@ -144,7 +201,7 @@ class CtPwdProvider(RadiusRelevantApp):
         return self._render_template("room_title.mustache", person)
 
 
-    def _get_or_create_room(self, person, guid_room_mapping):
+    def _get_or_create_room(self, person):
 
         # Firstly check if a chat room is given in the cusom settings
         custom_com_settings = self.config.getCommunicationConfigFor(person.id)
@@ -153,10 +210,9 @@ class CtPwdProvider(RadiusRelevantApp):
             return custom_com_settings.chat_room_id
 
         # Now check if a chat room already exists
-        chat_guid = self.chat_manager.username_from_guid(person.guid)
-
-        if chat_guid in guid_room_mapping:
-            return guid_room_mapping[chat_guid]
+        room_id = _get_existing_chat_room(person.id)
+        if not room_id:
+            return room_id
         
 
         # No chat room exists, generate room
