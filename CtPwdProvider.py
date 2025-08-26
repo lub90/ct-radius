@@ -2,6 +2,7 @@ import os
 import pystache
 import re
 import random
+import datetime
 
 from types import SimpleNamespace
 
@@ -56,18 +57,29 @@ class CtPwdProvider(RadiusRelevantApp):
 
         # The persons to give a new pwd are for sure the ones, who are currently member of a allowed ct group but are not part of the password database yet
         to_update = {person_id for person_id in all_ct_members if person_id not in all_db_members}
-        # Furthermore the ones who specifically requested a new pwd are to be added here
+        
+        # Now look if there is any special case why we want to update the password of somebody
         for ct_member in all_ct_members:
+
+            # We do not check for the ones who are already to be updated
+            if ct_member in to_update:
+                continue
+
+            # Check if thereare specific requests for a new pwd
             # This function also deals with unknown commands
-            if self._reset_requested(ct_member):
+            if self._is_reset_requested(ct_member):
                 to_update.add(ct_member)
-        # TODO: Finally, the ones who receive a new password automatically after a certain time are to be added here
+                continue
+            
+            # If there are no specific requests, check if we need to update the passwords, because they timed out
+            if self._password_timed_out(ct_member):
+                to_update.add(ct_member)
 
         # Now give them a new password and send them a message
         for ct_member in to_update:
             # TODO: Comment out for testing purposes
             print(f"Would have update the following member: {ct_member}")
-            # self.generate_new_pwd(ct_member)
+            self.generate_new_pwd(ct_member)
 
         # At last, deal with the ones to be removed
         to_remove = [person_id for person_id in all_db_members if person_id not in all_ct_members]
@@ -80,6 +92,7 @@ class CtPwdProvider(RadiusRelevantApp):
 
 
     def _get_existing_chat_room(self, person_id):
+
         if not person_id in self.person_id_to_guid_mapping:
             return None
         
@@ -91,12 +104,12 @@ class CtPwdProvider(RadiusRelevantApp):
 
         return self.guid_to_room_mapping[full_chat_guid]
 
-    def _reset_requested(self, person_id):
+    def _is_reset_requested(self, person_id):
 
         room_id = self._get_existing_chat_room(person_id)
 
         # If there is no chat room, there is no reset message
-        if room_id is None:
+        if not room_id:
             return False
 
         person_guid = self.person_id_to_guid_mapping[person_id]
@@ -116,6 +129,40 @@ class CtPwdProvider(RadiusRelevantApp):
             self.chat_manager.send_message(room_id, wrong_cmd_msg)
             return False
 
+    # Important precondition here is, that the person must be in general eligible for a password
+    def _password_timed_out(self, person_id):
+
+        # Check the auto_reset setting for this person_id
+        auto_reset = self.config.getCommunicationConfigFor(person_id).auto_reset
+        if auto_reset < 0:
+            return False
+
+        room_id = self._get_existing_chat_room(person_id)
+
+        # If there is no chat room, the password should be timed out automatically, to prevent people from leaving a chatroom and maintaining their password
+        if not room_id:
+            return True
+
+
+        message_pattern = self._render_regex_template("password_message.mustache")
+        matching_messages = self.chat_manager.find_messages(room_id, message_pattern, self.my_guid)
+
+        last_message = None
+        for msg in matching_messages:
+            if (not last_message) or (last_message["timestamp"] < msg["timestamp"]):
+                last_message = msg
+
+        # There is no previous password message, as such the previous password should be timed out...
+        if not last_message:
+            return True
+
+        age_of_last_message = datetime.datetime.now() - last_message["timestamp"]
+        timeout_age = datetime.timedelta(minutes=auto_reset)
+
+        return (age_of_last_message >= timeout_age)
+
+
+        
 
     def _remove(self, person_id):
         # TODO: Delete person from database
@@ -129,12 +176,12 @@ class CtPwdProvider(RadiusRelevantApp):
         pass
 
 
-    def set_new_pwd(self, other_person_id, new_pwd, guid_room_mapping=None):
+    def set_new_pwd(self, other_person_id, new_pwd):
         # Write new_pwd to database
         self.pwd_db.setPwd(other_person_id, new_pwd)
 
         # Communicate it
-        self._communicate_new_pwd(other_person_id, new_pwd, guid_room_mapping)
+        self._communicate_new_pwd(other_person_id, new_pwd)
 
     def _generate_pwd(self):
         length = self.config.basic.pwd_length
@@ -143,7 +190,7 @@ class CtPwdProvider(RadiusRelevantApp):
     def generate_new_pwd(self, other_person_id):
         # Generate a new password and set it
         new_pwd = self._generate_pwd()
-        self.set_new_pwd(other_person_id, new_pwd, guid_room_mapping)
+        self.set_new_pwd(other_person_id, new_pwd)
 
     def _communicate_new_pwd(self, other_person_id, new_pwd):
         # Run the setup routine if it has not been run before...
@@ -160,7 +207,7 @@ class CtPwdProvider(RadiusRelevantApp):
         )
 
         # Get the room or generate one
-        room_id = self._get_or_create_room(person, self.guid_room_mapping)
+        room_id = self._get_or_create_room(person)
 
         # Send the new password message
         self._send_pwd_msg(room_id, person, new_pwd)
@@ -168,7 +215,6 @@ class CtPwdProvider(RadiusRelevantApp):
     def _generate_guid_room_mapping(self):
         room_name = self._get_regex_room_title()
         guid_room_mapping = self.chat_manager.find_private_rooms(room_name)
-        print(guid_room_mapping)
         return guid_room_mapping
 
     def _render_template(self, filename, context):
@@ -210,8 +256,8 @@ class CtPwdProvider(RadiusRelevantApp):
             return custom_com_settings.chat_room_id
 
         # Now check if a chat room already exists
-        room_id = _get_existing_chat_room(person.id)
-        if not room_id:
+        room_id = self._get_existing_chat_room(person.id)
+        if room_id:
             return room_id
         
 

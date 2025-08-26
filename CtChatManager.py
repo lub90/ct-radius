@@ -113,6 +113,7 @@ class CtChatManager:
             "msgtype": "m.text",
             "body": message
         }
+        
         send_response = requests.put(send_url, headers=headers, json=message_payload)
         send_response.raise_for_status()
 
@@ -152,16 +153,17 @@ class CtChatManager:
 
 
 
-    def find_messages(self, room_id, regex_pattern, user_id, limit=200):
+    def find_messages(self, room_id, regex_pattern, user_guid, limit=100):
         headers = self._headers_with_token()
+        user_id = self.username_from_guid(user_guid)
 
         messages_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/messages"
         params = {
             "dir": "b",  # backwards (latest first)
             "limit": limit,
-            "filter": {
+            "filter": json.dumps({
                 "types": ["m.room.message"]
-            }
+            })
         }
 
         response = requests.get(messages_url, headers=headers, params=params)
