@@ -58,9 +58,9 @@ def test_get_all_members_by_id_invalid_group_id(manager, group_id):
         manager.get_all_members_by_id(group_id)
 
 @pytest.mark.parametrize("mock_members,expected_ids", [
-    ([], []),  # No members
-    ([{"personId": 42}], [42]),  # One member
-    ([{"personId": i} for i in range(5)], [0, 1, 2, 3, 4])  # Five members
+    ([], {}),  # No members
+    ([{"personId": 42}], {42: {'personId': 42}}),  # One member
+    ([{"personId": i} for i in range(5)], {i: {"personId": i} for i in range(5)})  # Five members
 ])
 def test_get_all_members_by_id_returns_ids(manager, mock_members, expected_ids):
     manager.get_members = MagicMock(return_value=mock_members)

@@ -58,9 +58,9 @@ def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
 
     assert result == 0  # RLM_MODULE_OK
     assert p["Cleartext-Password"] == expected_pwd
-    assert p["Ct-Tunnel-Type"] == "13"
-    assert p["Ct-Tunnel-Medium-Type"] == "6"
-    assert p["Ct-Tunnel-Private-Group-Id"] == str(expected_vlan)
+    assert p["Tunnel-Type"] == "13"
+    assert p["Tunnel-Medium-Type"] == "6"
+    assert p["Tunnel-Private-Group-Id"] == str(expected_vlan)
 
 
 
@@ -106,9 +106,9 @@ def test_valid_requested_assignment(authorizer, username_pwd_vlan):
 
     assert result == 0  # RLM_MODULE_OK
     assert p["Cleartext-Password"] == expected_pwd
-    assert p["Ct-Tunnel-Type"] == "13"
-    assert p["Ct-Tunnel-Medium-Type"] == "6"
-    assert p["Ct-Tunnel-Private-Group-Id"] == str(requested_vlan)
+    assert p["Tunnel-Type"] == "13"
+    assert p["Tunnel-Medium-Type"] == "6"
+    assert p["Tunnel-Private-Group-Id"] == str(requested_vlan)
 
 
 
@@ -141,9 +141,9 @@ def test_username_cleanup_and_case(authorizer, username_pwd_vlan):
 
     assert result == 0  # RLM_MODULE_OK
     assert p["Cleartext-Password"] == expected_pwd
-    assert p["Ct-Tunnel-Type"] == "13"
-    assert p["Ct-Tunnel-Medium-Type"] == "6"
-    assert p["Ct-Tunnel-Private-Group-Id"] == str(expected_vlan)
+    assert p["Tunnel-Type"] == "13"
+    assert p["Tunnel-Medium-Type"] == "6"
+    assert p["Tunnel-Private-Group-Id"] == str(expected_vlan)
 
 
 @pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())

@@ -9,6 +9,12 @@ def authorize(p):
     try:
         config_path = p.get("Ct-Config-Path")
         env_path = p.get("Ct-Env-Path")
+
+        if not config_path or not env_path:
+            radiusd.radlog(radiusd.L_ERR, "[ChurchTools Error] Missing config or env path.")
+            p["Auth-Type"] = "Reject"
+            return radiusd.RLM_MODULE_FAIL
+
         username_raw = p.get("User-Name", "")
         ct = CtAuthProvider(config_path, env_path)
         pwd, vlan_id = ct.authorize(username_raw)
@@ -17,6 +23,8 @@ def authorize(p):
         p["Tunnel-Type"] = "13"
         p["Tunnel-Medium-Type"] = "6"
         p["Tunnel-Private-Group-Id"] = str(vlan_id)
+
+        radiusd.radlog(radiusd.L_INFO, f"ChurchTools Authentication successful for user {username_raw}, VLAN {vlan_id}")
 
         return radiusd.RLM_MODULE_OK
     
