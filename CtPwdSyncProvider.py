@@ -11,7 +11,7 @@ from CtChatManager import CtChatManager
 from PasswordDatabase import PasswordDatabase
 
 
-class CtPwdProvider(RadiusRelevantApp):
+class CtPwdSyncProvider(RadiusRelevantApp):
 
     def __init__(self, config_path, env_file=None):
         super().__init__(config_path, env_file)
@@ -39,20 +39,42 @@ class CtPwdProvider(RadiusRelevantApp):
 
         return all_members
 
-    def _setup(self, update=False):
-        # We want to run the setup only, if it has not been run before or if we want to update the settings
-        if update or (not self.guid_to_room_mapping):
-            self.guid_to_room_mapping = self._generate_guid_room_mapping()
-            self.person_id_to_guid_mapping = {key: data["person"]["domainAttributes"]["guid"] for key, data in self._get_ct_members_data().items()}
+    def _get_ct_members(self, guid_to_room_mapping):
+        result = {}
 
-    def _get_all_ct_members(self):
-        return list(self.person_id_to_guid_mapping.keys())
+        for person_id, person_data in self._get_ct_members_data().items():
+            # Find the field with the given name entry for the username
+            field_list = member.get("personFields", [])
+            field_name = self.config.basic.username_field_name
+            username = field_list[field_name]
+
+            new_person = SimpleNamespace(
+                id=person_id,
+                firstname=person_data["person"]["domainAttributes"]["firstName"],
+                lastname=person_data["person"]["domainAttributes"]["lastName"],
+                guid=person_data["person"]["domainAttributes"]["guid"],
+                username=username
+                chat_room_id = None
+            )
+
+            if new_person.guid in guid_to_room_mapping:
+                new_person.chat_room_id = guid_to_room_mapping[new_person.guid]
+
+            result[person_id] = new_person
+
+        return result
+
+        
 
     def sync(self):
-        self._setup(True)
 
-        all_ct_members = self._get_all_ct_members()
+        guid_to_room_mapping = self._generate_guid_room_mapping()
+        all_ct_members = self._get_ct_members(guid_to_room_mapping)
         all_ct_members.remove(self.my_id)
+
+
+
+        
         all_db_members = self.pwd_db.list_all_users()
 
         # The persons to give a new pwd are for sure the ones, who are currently member of a allowed ct group but are not part of the password database yet
@@ -94,9 +116,7 @@ class CtPwdProvider(RadiusRelevantApp):
             self._remove(person_id)
 
 
-        
-
-
+    # TODO: Rewrite
     def _get_existing_chat_room(self, person_id):
 
         if not person_id in self.person_id_to_guid_mapping:
@@ -116,24 +136,21 @@ class CtPwdProvider(RadiusRelevantApp):
 
         # If there is no chat room, there is no reset message
         if not room_id:
-            return False
+            return []
 
         person_guid = self.person_id_to_guid_mapping[person_id]
         last_message = self.chat_manager.last_message_sent(room_id, person_guid, must_be_last_message=True)
 
         # Check if we found any last message
         if not last_message:
-            return False
+            return []
 
         # If we found one, check if it fits the personal reset command of this person
         custom_com_settings = self.config.getCommunicationConfigFor(person_id)
         if last_message["body"] == custom_com_settings.reset_command:
-            return True
+            return [NewPwdCommand(self, person)]
         else:
-            # We received a message we cannot decode. Send error message
-            wrong_cmd_msg = self._render_template("unknown_command_message.mustache", custom_com_settings)
-            self.chat_manager.send_message(room_id, wrong_cmd_msg)
-            return False
+            return [UnknownCommandCommand(self, person)]
 
     # Important precondition here is, that the person must be in general eligible for a password
     def _password_timed_out(self, person_id):
@@ -141,13 +158,13 @@ class CtPwdProvider(RadiusRelevantApp):
         # Check the auto_reset setting for this person_id
         auto_reset = self.config.getCommunicationConfigFor(person_id).auto_reset
         if auto_reset < 0:
-            return False
+            return []
 
         room_id = self._get_existing_chat_room(person_id)
 
         # If there is no chat room, the password should be timed out automatically, to prevent people from leaving a chatroom and maintaining their password
         if not room_id:
-            return True
+            return [NewPwdCommand(self, person)]
 
 
         message_pattern = self._render_regex_template("password_message.mustache")
@@ -160,9 +177,12 @@ class CtPwdProvider(RadiusRelevantApp):
 
         # There is no previous password message, as such the previous password should be timed out...
         if not last_message:
-            return True
+            return [NewPwdCommand(self, person)]
 
-        return self._is_msg_out_of_date(last_message, auto_reset)
+        if self._is_msg_out_of_date(last_message, auto_reset):
+            return [NewPwdCommand(self, person)]
+        else:
+            return []
 
 
     def _is_msg_out_of_date(self, msg, timeout):
@@ -184,21 +204,7 @@ class CtPwdProvider(RadiusRelevantApp):
         pass
 
 
-    def set_new_pwd(self, other_person_id, new_pwd):
-        # Write new_pwd to database
-        self.pwd_db.setPwd(other_person_id, new_pwd)
-
-        # Communicate it
-        self._communicate_new_pwd(other_person_id, new_pwd)
-
-    def _generate_pwd(self):
-        length = self.config.basic.pwd_length
-        return ''.join(random.choices(PasswordDatabase.ALLOWED_CHARS, k=length))
-
-    def generate_new_pwd(self, other_person_id):
-        # Generate a new password and set it
-        new_pwd = self._generate_pwd()
-        self.set_new_pwd(other_person_id, new_pwd)
+    
 
     def _get_person_data_for_templates(self, other_person_id):
         # The other person id must be the ChurchTools person id and the following dict should be loaded for it
@@ -213,124 +219,16 @@ class CtPwdProvider(RadiusRelevantApp):
 
         return person
 
-    def _communicate_new_pwd(self, other_person_id, new_pwd):
-        # Run the setup routine if it has not been run before...
-        self._setup()
-        
-        person = self._get_person_data_for_templates(other_person_id)
-
-        # Get the room or generate one
-        room_id = self._get_or_create_room(person)
-
-        # Send the new password message
-        self._send_pwd_msg(room_id, person, new_pwd)
-
+    
     def _generate_guid_room_mapping(self):
         room_name = self._get_regex_room_title()
         guid_room_mapping = self.chat_manager.find_private_rooms(room_name)
         return guid_room_mapping
 
-    def _render_template(self, filename, context):
-        template_path = os.path.join(self.template_dir, filename)
-        with open(template_path, "r", encoding="utf-8") as f:
-            template = f.read()
-        return pystache.render(template, context)
-
-    def _render_regex_template(self, filename):
-        template_path = os.path.join(self.template_dir, filename)
-        with open(template_path, "r", encoding="utf-8") as f:
-            template = f.read()
-            
-        # Escape all regex special characters
-        escaped = re.escape(template)
-
-        # Replace escaped {{variable}} with regex wildcard
-        pattern = re.sub(r'\\{\\{.*?\\}\\}', r'.+?', escaped)
-
-        # Anchor the pattern to match the full string
-        return re.compile(f"^{pattern}$")
-
 
     def _get_regex_room_title(self):
         # Load room title from mustache file, using the person object
         return self._render_regex_template("room_title.mustache")
-
-    def _get_room_title(self, person):
-        # Load room name from mustache file, using person object
-        return self._render_template("room_title.mustache", person)
-
-
-    def _get_or_create_room(self, person):
-
-        # Firstly check if a chat room is given in the cusom settings
-        custom_com_settings = self.config.getCommunicationConfigFor(person.id)
-
-        if custom_com_settings.chat_room_id:
-            return custom_com_settings.chat_room_id
-
-        # Now check if a chat room already exists
-        room_id = self._get_existing_chat_room(person.id)
-        if room_id:
-            return room_id
-        
-
-        # No chat room exists, generate room
-        room_name = self._get_room_title(person)
-        room_id = self.chat_manager.create_secure_room(room_name)
-
-        # Invite user
-        self.chat_manager.invite_user_to_room(room_id, person.guid)
-        
-        # Send first message
-        # Load first message from mustache file using the person object and config information
-        context = SimpleNamespace()
-        context.__dict__.update(person.__dict__)
-        context.__dict__.update(custom_com_settings.__dict__)
-
-        context.show_pwd_display_time = context.pwd_display_time > 0
-        if context.show_pwd_display_time:
-            # Format the pwd_display_time in a nice manner
-            hours, minutes = divmod(context.pwd_display_time, 60)
-            context.pwd_display_time_formatted = f"{hours}:{minutes:02d}"
-
-        first_message = self._render_template("initial_message.mustache", context)
-        self.chat_manager.send_message(room_id, first_message)
-
-        return room_id
-
-    def _get_pwd_msg(self, person, new_pwd):
-        context = SimpleNamespace()
-        context.__dict__.update(person.__dict__)
-        context.password = new_pwd
-        return self._render_template("password_message.mustache", context)
-
-    def _send_pwd_msg(self, room_id, person, new_pwd):
-        msg = self._get_pwd_msg(person, new_pwd)
-        self.chat_manager.send_message(room_id, msg)
-        
-
-    def _hide_passwords(self, person_id):
-        custom_com_settings = self.config.getCommunicationConfigFor(person_id)
-
-        room_id = self._get_existing_chat_room(person_id)
-
-        # Nothing to hide if there is no chat room
-        if not room_id:
-            return
-
-        # Construct the message with the hidden password
-        person = self._get_person_data_for_templates(person_id)
-        hidden_pwd = "*" * self.config.basic.pwd_length
-        new_msg = self._get_pwd_msg(person, hidden_pwd)
-
-        # Construct 
-        msg_search_pattern = self._render_regex_template("password_message.mustache")
-        found_messages = self.chat_manager.find_messages(room_id, msg_search_pattern, self.my_guid)
-
-        for msg in found_messages:
-            # Check display time of each message
-            if self._is_msg_out_of_date(msg, custom_com_settings.pwd_display_time) and (msg["body"] != new_msg):
-                self.chat_manager.edit_message(room_id, msg["event_id"], new_msg)
     
 
 

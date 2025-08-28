@@ -19,8 +19,8 @@ class CtGroupManager(AbstractCtManager):
         r.raise_for_status()
         return {int(g["group"]["domainIdentifier"]) for g in r.json()["data"]}
 
-    def get_all_members_by_id(self, group_id, page_size=100):
-        members = self.get_members(group_id, page_size=page_size)
+    def get_all_members_by_id(self, group_id, field_name_filter=None, page_size=100):
+        members = self.get_members(group_id, page_size=page_size, field_name_filter=field_name_filter, page_size=page_size)
         return {member["personId"]: member for member in members}
 
     def get_members(self, group_id, field_name_filter=None, page_size=100):
