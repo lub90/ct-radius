@@ -9,7 +9,7 @@ class Command:
 
     @property
     def config(self):
-        return self.parent_app_config
+        return self.parent_app.config
 
     @property
     def personal_communication_config(self):
@@ -25,7 +25,7 @@ class Command:
 
     def get_chat_room_id(self):
         # Firstly check if a chat room is given in the cusom settings
-        room_id = personal_communication_config.chat_room_id
+        room_id = self.personal_communication_config.chat_room_id
         if room_id:
             return room_id
 

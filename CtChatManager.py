@@ -40,6 +40,13 @@ class CtChatManager:
     def username(self):
         return self.username_from_guid(self.guid_user)
 
+    def guid_from_username(self, username):
+        prefix = "@ct_"
+        suffix = ":chat.church.tools"
+        if username.startswith(prefix) and username.endswith(suffix):
+            return username[len(prefix):-len(suffix)]
+        raise ValueError("Invalid username format")
+
     def username_from_guid(self, guid):
         return f"@ct_{guid.lower()}:chat.church.tools"
 
@@ -277,6 +284,34 @@ class CtChatManager:
 
         return result
 
+    def find_empty_rooms(self, title_pattern):
+        result = []
+
+        room_ids = self.find_rooms(title_pattern)
+
+        for room_id in room_ids:
+
+            # Get room members
+            members_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/members"
+            members_response = requests.get(members_url, headers=self._headers_with_token())
+            members_response.raise_for_status()
+            members = members_response.json().get("chunk", [])
+
+            # Filter actual members (joined or invited)
+            active_members = [
+                m["state_key"]
+                for m in members
+                if m.get("type") == "m.room.member" and
+                m.get("content", {}).get("membership") in ["join", "invite"]
+            ]
+
+            # Check if room has the other user after removing me
+            active_members.remove(self.username)
+            if len(set(active_members)) == 0:
+                result.append(room_id)
+
+        return result
+
     def find_private_rooms(self, title_pattern):
         result = {}
 
@@ -301,7 +336,9 @@ class CtChatManager:
             # Check if room has the other user after removing me
             active_members.remove(self.username)
             if len(set(active_members)) == 1:
-                result[active_members[0]] = room_id
+                other_username = active_members[0]
+                other_guid = self.guid_from_username(other_username)
+                result[other_guid] = room_id
 
         return result
 
@@ -333,5 +370,23 @@ class CtChatManager:
 
         return False
 
+    def delete_room(self, room_id):
+        """
+        Leaves the room and forgets it from the user's account.
+        Note: Matrix does not support global deletion of rooms.
+        """
+        headers = self._headers_with_token()
+
+        # Step 1: Leave the room
+        leave_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/leave"
+        leave_response = requests.post(leave_url, headers=headers)
+        leave_response.raise_for_status()
+
+        # Step 2: Forget the room
+        forget_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/forget"
+        forget_response = requests.post(forget_url, headers=headers)
+        forget_response.raise_for_status()
+
+        return True
 
 

@@ -3,19 +3,25 @@ import pystache
 import re
 import random
 import datetime
+import time
 
 from types import SimpleNamespace
 
 from RadiusRelevantApp import RadiusRelevantApp
 from CtChatManager import CtChatManager
 from PasswordDatabase import PasswordDatabase
+from TemplateProvider import TemplateProvider
+from HidePwdCommand import HidePwdCommand
+from NewPwdCommand import NewPwdCommand
+from RemoveUserCommand import RemoveUserCommand
+from UnknownCommandCommand import UnknownCommandCommand
 
 
 class CtPwdSyncProvider(RadiusRelevantApp):
 
     def __init__(self, config_path, env_file=None):
         super().__init__(config_path, env_file)
-        self.template_dir = os.path.join("communication", self.config.communication.language)
+        self.template_provider = TemplateProvider(self.config.communication.language)
 
 
     def login(self):
@@ -34,7 +40,7 @@ class CtPwdSyncProvider(RadiusRelevantApp):
         all_members = {}
         
         for group_id in self.config.basic.all_wifi_access_groups:
-            new_members = self.group_manager.get_all_members_by_id(group_id)
+            new_members = self.group_manager.get_all_members_by_id(group_id, field_name_filter=self.config.basic.username_field_name)
             all_members.update(new_members)
 
         return all_members
@@ -44,7 +50,7 @@ class CtPwdSyncProvider(RadiusRelevantApp):
 
         for person_id, person_data in self._get_ct_members_data().items():
             # Find the field with the given name entry for the username
-            field_list = member.get("personFields", [])
+            field_list = person_data.get("personFields", [])
             field_name = self.config.basic.username_field_name
             username = field_list[field_name]
 
@@ -52,9 +58,9 @@ class CtPwdSyncProvider(RadiusRelevantApp):
                 id=person_id,
                 firstname=person_data["person"]["domainAttributes"]["firstName"],
                 lastname=person_data["person"]["domainAttributes"]["lastName"],
-                guid=person_data["person"]["domainAttributes"]["guid"],
-                username=username
-                chat_room_id = None
+                guid=person_data["person"]["domainAttributes"]["guid"].lower(),
+                username=username,
+                chat_room_id=None
             )
 
             if new_person.guid in guid_to_room_mapping:
@@ -65,109 +71,162 @@ class CtPwdSyncProvider(RadiusRelevantApp):
         return result
 
         
+    def _get_db_user(self, person_id, guid_to_room_mapping):
+        try:
+            person_data = self.person_manager.get_person(person_id)
+            new_person = SimpleNamespace(
+                id=person_data["id"],
+                firstname=person_data["firstName"],
+                lastname=person_data["lastName"],
+                guid=person_data["guid"].lower(),
+                username=person_data[self.config.basic.username_field_name],
+                chat_room_id=None
+            )
+
+            if new_person.guid in guid_to_room_mapping:
+                new_person.chat_room_id = guid_to_room_mapping[new_person.guid]
+
+        except Exception:
+            # We cannot get person data, most likely because the person was already deleted from ChurchTools
+            # We proceed with an empty person object to process it further
+            new_person = SimpleNamespace(
+                id=person_id
+            )
+
+        return new_person
+
+    def _add_to_batch(self, batch, element):
+        if element not in batch:
+            batch.append(element)
 
     def sync(self):
+        print("===================================================")
+        print("Starting to sync password database with ChurchTools")
+
+        command_batch = self.generate_update_batch()
+
+        for cmd in command_batch:
+            # We try to execute each command on its own, if it fails, we continue with the next one
+            try:
+                print(f"Executing {type(cmd)} for {cmd.person.id}...")
+                cmd.execute()
+                print("Execution successfull!")
+            except Exception as e:
+                # TODO: Implement logging functionality here
+                print(f"Execution failed: {e}")
+                raise e
+
+        self.remove_empty_chats()
+
+
+    def generate_update_batch(self):
+        batch = []
 
         guid_to_room_mapping = self._generate_guid_room_mapping()
+
+        # Get all relevant ChurchTools members
         all_ct_members = self._get_ct_members(guid_to_room_mapping)
-        all_ct_members.remove(self.my_id)
+        all_ct_members.pop(self.my_id, None)
 
+        # Get the ids of all users in the pwd database
+        users_in_pwd_db = self.pwd_db.list_all_users()
 
+        # Generate a list of all persons to process
+        all_persons_to_process = {id: data for id, data in all_ct_members.items()}
+        # Add to this list all users which are not delivered by ChurchTools but are still in database
+        for person_id in users_in_pwd_db:
+            if person_id not in all_persons_to_process:
+                all_persons_to_process[person_id] = self._get_db_user(person_id, guid_to_room_mapping)
 
         
-        all_db_members = self.pwd_db.list_all_users()
+        for person_id, person in all_persons_to_process.items():
 
-        # The persons to give a new pwd are for sure the ones, who are currently member of a allowed ct group but are not part of the password database yet
-        to_update = {person_id for person_id in all_ct_members if person_id not in all_db_members}
-        
-        # Now look if there is any special case why we want to update the password of somebody
-        for ct_member in all_ct_members:
+            # Replace for all_ct_members the password with *** where appropriate
+            cmd = HidePwdCommand(self, person)
+            self._add_to_batch(batch, cmd)
 
-            # We do not check for the ones who are already to be updated
-            if ct_member in to_update:
+            # The persons to give a new pwd are for sure the ones, who are currently member of an allowed ct group but are not part of the password database yet
+            if person_id not in users_in_pwd_db:
+                cmd = NewPwdCommand(self, person)
+                self._add_to_batch(batch, cmd)
                 continue
 
-            # Check if thereare specific requests for a new pwd
+            # Check if this user should be deleted because it is no longer in a valid churchtools group
+            if person_id not in all_ct_members:
+                cmd = RemoveUserCommand(self, person)
+                self._add_to_batch(batch, cmd)
+                continue
+
+            # Check if there are specific requests for a new pwd
             # This function also deals with unknown commands
-            if self._is_reset_requested(ct_member):
-                to_update.add(ct_member)
+            reset_requested_cmd = self._get_reset_requested_cmd(person)
+            if reset_requested_cmd:
+                self._add_to_batch(batch, reset_requested_cmd)
                 continue
             
             # If there are no specific requests, check if we need to update the passwords, because they timed out
-            if self._password_timed_out(ct_member):
-                to_update.add(ct_member)
-
-        # Now give them a new password and send them a message
-        for ct_member in to_update:
-            # TODO: Comment out for testing purposes
-            print(f"Would have update the following member: {ct_member}")
-            self.generate_new_pwd(ct_member)
-
-
-        # Replace for all_ct_members the password with *** where appropriate
-        all_persons = set(all_ct_members + all_db_members)
-        for person_id in all_persons:
-            self._hide_passwords(person_id)
-
-        # At last, deal with the ones to be removed
-        to_remove = [person_id for person_id in all_db_members if person_id not in all_ct_members]
-        for person_id in to_remove:
-            # TODO: This function needs to be implemented
-            self._remove(person_id)
-
-
-    # TODO: Rewrite
-    def _get_existing_chat_room(self, person_id):
-
-        if not person_id in self.person_id_to_guid_mapping:
-            return None
+            pwd_timed_out_cmd = self._get_pwd_timed_out_cmd(person)
+            if pwd_timed_out_cmd:
+                self._add_to_batch(batch, pwd_timed_out_cmd)
+                continue
         
-        person_guid = self.person_id_to_guid_mapping[person_id]
-        full_chat_guid = self.chat_manager.username_from_guid(person_guid)
+        return batch
 
-        if not full_chat_guid in self.guid_to_room_mapping:
-            return None
 
-        return self.guid_to_room_mapping[full_chat_guid]
+    # TODO: Duplicate to the function in Command -> Make it part of a person object that is passed around
+    def _get_chat_room_id(self, person):
 
-    def _is_reset_requested(self, person_id):
+        personal_communication_config = self.config.getCommunicationConfigFor(person.id)
 
-        room_id = self._get_existing_chat_room(person_id)
+        # Firstly check if a chat room is given in the cusom settings
+        room_id = personal_communication_config.chat_room_id
+        if room_id:
+            return room_id
+
+        # Now check if a chat room already exists
+        room_id = person.chat_room_id
+        if room_id:
+            return room_id
+
+        return None
+
+    def _get_reset_requested_cmd(self, person):
+
+        room_id = self._get_chat_room_id(person)
 
         # If there is no chat room, there is no reset message
         if not room_id:
-            return []
+            return None
 
-        person_guid = self.person_id_to_guid_mapping[person_id]
-        last_message = self.chat_manager.last_message_sent(room_id, person_guid, must_be_last_message=True)
+        last_message = self.chat_manager.last_message_sent(room_id, person.guid, must_be_last_message=True)
 
         # Check if we found any last message
         if not last_message:
-            return []
+            return None
 
         # If we found one, check if it fits the personal reset command of this person
-        custom_com_settings = self.config.getCommunicationConfigFor(person_id)
+        custom_com_settings = self.config.getCommunicationConfigFor(person.id)
         if last_message["body"] == custom_com_settings.reset_command:
-            return [NewPwdCommand(self, person)]
+            return NewPwdCommand(self, person)
         else:
-            return [UnknownCommandCommand(self, person)]
+            return UnknownCommandCommand(self, person)
 
     # Important precondition here is, that the person must be in general eligible for a password
-    def _password_timed_out(self, person_id):
+    def _get_pwd_timed_out_cmd(self, person):
 
         # Check the auto_reset setting for this person_id
-        auto_reset = self.config.getCommunicationConfigFor(person_id).auto_reset
+        auto_reset = self.config.getCommunicationConfigFor(person.id).auto_reset
         if auto_reset < 0:
-            return []
+            return None
 
-        room_id = self._get_existing_chat_room(person_id)
+        room_id = self._get_chat_room_id(person)
 
         # If there is no chat room, the password should be timed out automatically, to prevent people from leaving a chatroom and maintaining their password
         if not room_id:
-            return [NewPwdCommand(self, person)]
+            return NewPwdCommand(self, person)
 
 
-        message_pattern = self._render_regex_template("password_message.mustache")
+        message_pattern = self.template_provider.render_regex_template("password_message.mustache")
         matching_messages = self.chat_manager.find_messages(room_id, message_pattern, self.my_guid)
 
         last_message = None
@@ -177,12 +236,12 @@ class CtPwdSyncProvider(RadiusRelevantApp):
 
         # There is no previous password message, as such the previous password should be timed out...
         if not last_message:
-            return [NewPwdCommand(self, person)]
+            return NewPwdCommand(self, person)
 
         if self._is_msg_out_of_date(last_message, auto_reset):
-            return [NewPwdCommand(self, person)]
+            return NewPwdCommand(self, person)
         else:
-            return []
+            return None
 
 
     def _is_msg_out_of_date(self, msg, timeout):
@@ -190,45 +249,22 @@ class CtPwdSyncProvider(RadiusRelevantApp):
         timeout_age = datetime.timedelta(minutes=timeout)
 
         return (age_of_msg >= timeout_age)
-        
-
-    def _remove(self, person_id):
-        # TODO: Delete person from database
-
-        # TODO: Retrieve additional information about the person from ChurchTools - if it fails continue as usual and ignore it (person might have been deleted from ChurchTools)
-
-        # TODO: Send them a message, informing them about their cancellation
-
-        # TODO: Replace all the passwords with ***
-
-        pass
-
-
     
 
-    def _get_person_data_for_templates(self, other_person_id):
-        # The other person id must be the ChurchTools person id and the following dict should be loaded for it
-        person_data = self.person_manager.get_person(other_person_id)
-        person = SimpleNamespace(
-            id=person_data["id"],
-            firstname=person_data["firstName"],
-            lastname=person_data["lastName"],
-            guid=person_data["guid"],
-            username=person_data[self.config.basic.username_field_name]
-        )
-
-        return person
-
-    
     def _generate_guid_room_mapping(self):
-        room_name = self._get_regex_room_title()
+        room_name = self.template_provider.render_regex_template("room_title.mustache")
         guid_room_mapping = self.chat_manager.find_private_rooms(room_name)
         return guid_room_mapping
 
+    def remove_empty_chats(self):
+        room_name = self.template_provider.render_regex_template("room_title.mustache")
 
-    def _get_regex_room_title(self):
-        # Load room title from mustache file, using the person object
-        return self._render_regex_template("room_title.mustache")
+        empty_rooms = self.chat_manager.find_empty_rooms(room_name)
+
+        for empty_room in empty_rooms:
+            self.chat_manager.delete_room(empty_room)
+            # We need to add a litlte delay, because obviously the matrix server doesn't like too many delete request after each other...
+            time.sleep(1)
     
 
 

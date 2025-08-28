@@ -1,4 +1,4 @@
-
+from Command import Command
 
 class PwdBasedCommand(Command):
 

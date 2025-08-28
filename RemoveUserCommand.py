@@ -11,14 +11,15 @@ class RemoveUserCommand(HidePwdCommand):
         super().execute()
 
         # Now delete the user from the database
-        self.pwd_db.deleteUser(person.id)
+        self.pwd_db.deleteUser(self.person.id)
 
         # Now send a msg that the WLAN access has been remove
         # The person object might not be fully valid, as the person might have been already deleted from ChurchTools
         room_id = self.get_chat_room_id()
 
         if room_id:
-            new_msg = 
+            delete_msg = self._get_removal_msg()
+            self.chat_manager.send_message(room_id, delete_msg)
 
     def _get_removal_msg(self):
         context = self.template_provider.merge_context(self.person)

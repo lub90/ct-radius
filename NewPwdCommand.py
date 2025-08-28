@@ -1,10 +1,11 @@
 from PwdBasedCommand import PwdBasedCommand
 from PasswordDatabase import PasswordDatabase
+import random
 
 class NewPwdCommand(PwdBasedCommand):
 
     def __init__(self, parent_app, person, new_pwd=None):
-        super().__init__(person, parent_app)
+        super().__init__(parent_app, person)
         self.new_pwd = new_pwd
 
     def execute(self):
@@ -33,18 +34,19 @@ class NewPwdCommand(PwdBasedCommand):
         # Update the person object
         self.person.chat_room_id = room_id
 
-    def _get_or_create_room(self, person):
+    def _get_or_create_room(self):
+
         room_id = self.get_chat_room_id()
 
         if room_id:
             return room_id
         
         # No chat room exists, generate room
-        room_name = self._get_room_title(person)
+        room_name = self._get_room_title()
         room_id = self.chat_manager.create_secure_room(room_name)
 
         # Invite user
-        self.chat_manager.invite_user_to_room(room_id, person.guid)
+        self.chat_manager.invite_user_to_room(room_id, self.person.guid)
         
         # Send first message
         first_message = self._get_first_msg()
@@ -52,9 +54,9 @@ class NewPwdCommand(PwdBasedCommand):
 
         return room_id
 
-    def _get_room_title(self, person):
+    def _get_room_title(self):
         # Load room name from mustache file, using person object
-        return self.template_provider.render_template("room_title.mustache", person)
+        return self.template_provider.render_template("room_title.mustache", self.person)
 
     def _get_first_msg(self):
         # Load first message from mustache file using the person object and config information
