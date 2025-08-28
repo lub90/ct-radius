@@ -1,41 +1,37 @@
-import radiusd
-
+import argparse
+import sys
 from CtAuthProvider import CtAuthProvider
 from AuthenticationError import AuthenticationError
 
+def main():
+    parser = argparse.ArgumentParser(description="ChurchTools RADIUS Authenticator")
+    parser.add_argument("--config", required=True, help="Path to your ChurchTools config file")
+    parser.add_argument("--env", required=True, help="Path to your .env file")
+    parser.add_argument("--username", required=True, help="Username for authentication")
 
-def authorize(p):
+    args = parser.parse_args()
 
     try:
-        config_path = p.get("Ct-Config-Path")
-        env_path = p.get("Ct-Env-Path")
+        ct = CtAuthProvider(args.config, args.env)
+        password, vlan_id = ct.authorize(args.username)
 
-        if not config_path or not env_path:
-            radiusd.radlog(radiusd.L_ERR, "[ChurchTools Error] Missing config or env path.")
-            p["Auth-Type"] = "Reject"
-            return radiusd.RLM_MODULE_FAIL
+        # RADIUS-compatible output
+        print(f"Cleartext-Password := {password}")
+        print("Ct-Tunnel-Type := 13")
+        print("Ct-Tunnel-Medium-Type := 6")
+        print(f"Ct-Tunnel-Private-Group-Id := {vlan_id}")
 
-        username_raw = p.get("User-Name", "")
-        ct = CtAuthProvider(config_path, env_path)
-        pwd, vlan_id = ct.authorize(username_raw)
+        sys.exit(0)
 
-        p["Cleartext-Password"] = pwd
-        p["Tunnel-Type"] = "13"
-        p["Tunnel-Medium-Type"] = "6"
-        p["Tunnel-Private-Group-Id"] = str(vlan_id)
-
-        radiusd.radlog(radiusd.L_INFO, f"ChurchTools Authentication successful for user {username_raw}, VLAN {vlan_id}")
-
-        return radiusd.RLM_MODULE_OK
-    
     except AuthenticationError as e:
+        print("Auth-Type := Reject", file=sys.stderr)
+        print(f"# ChurchTools Authentication Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
-        radiusd.radlog(radiusd.L_INFO, f"[ChurchTools Authentication Error] {e}")
-        p["Auth-Type"] = "Reject"
-        return radiusd.RLM_MODULE_FAIL
-    
     except Exception as e:
+        print("Auth-Type := Reject", file=sys.stderr)
+        print(f"# ChurchTools Internal Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
-        radiusd.radlog(radiusd.L_ERR, f"[ChurchTools Internal Error] {e}")
-        p["Auth-Type"] = "Reject"
-        return radiusd.RLM_MODULE_FAIL
+if __name__ == "__main__":
+    main()
