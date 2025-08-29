@@ -1,0 +1,90 @@
+server inner-tunnel {
+
+    # Local listener for inner-tunnel authentication
+    listen {
+        ipaddr = 127.0.0.1
+        port = 18120
+        type = auth
+    }
+
+    authorize {
+        # Validate User-Name format
+        filter_username
+
+        # Prevent spoofing between outer and inner identity
+        filter_inner_identity
+
+        # CtRADIUS: Call external script to fetch password and VLAN info
+        update {
+	    control: += `/usr/bin/python3 /home/lblock/git/ct-radius/authorize.py --config /home/lblock/git/ct-radius-test/test1.yaml --env /home/lblock/git/ct-radius-test/test1.env --username '%{User-Name}'`
+	}
+
+        # CtRADIUS: Copy VLAN attributes from control to reply
+        update reply {
+            Tunnel-Type := "%{control:Ct-Tunnel-Type}"
+            Tunnel-Medium-Type := "%{control:Ct-Tunnel-Medium-Type}"
+            Tunnel-Private-Group-Id := "%{control:Ct-Tunnel-Private-Group-Id}"
+        }
+
+        # Enable CHAP and MSCHAP detection
+        # Ct-radius disable chap because not secure
+        # chap
+        mschap
+
+        # Handle realm stripping and prevent proxying
+        suffix
+        update control {
+            &Proxy-To-Realm := LOCAL
+        }
+
+        # Handle EAP-MSCHAPv2 authentication
+        eap {
+            ok = return
+        }
+
+        # Enforce expiration and login time policies
+        expiration
+        logintime
+
+
+        # No Fallback to PAP because insecure
+        # pap
+    }
+
+    authenticate {
+        # Auth-Type PAP {
+        #    pap
+        #}
+        #Auth-Type CHAP {
+        #    chap
+        #}
+        Auth-Type MS-CHAP {
+            mschap
+        }
+
+        # Allow EAP authentication
+        mschap
+        eap
+    }
+
+    # Track simultaneous logins
+    session {
+        radutmp
+    }
+
+    post-auth {
+        # Handle Access-Reject responses
+        Post-Auth-Type REJECT {
+            attr_filter.access_reject
+            update outer.session-state {
+                &Module-Failure-Message := &request:Module-Failure-Message
+            }
+        }
+    }
+
+    # Optional proxy stages (not used)
+    pre-proxy {}
+    post-proxy {
+        eap
+    }
+}

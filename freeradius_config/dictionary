@@ -1,0 +1,4 @@
+# Custom attributes to copy them over from control to reply if necessary later on
+ATTRIBUTE	Ct-Tunnel-Type		3161	integer
+ATTRIBUTE	Ct-Tunnel-Medium-Type		3162	integer
+ATTRIBUTE	Ct-Tunnel-Private-Group-Id		3163	integer

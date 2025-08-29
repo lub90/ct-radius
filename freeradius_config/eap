@@ -1,0 +1,84 @@
+eap {
+    # Default EAP type used when no specific type is requested
+    default_eap_type = mschapv2
+
+    # Session timeout for EAP tracking
+    timer_expire = 60
+
+    # Reject unknown EAP types instead of proxying them
+    ignore_unknown_eap_types = no
+
+    # Workaround for Cisco AP username bug (disabled)
+    cisco_accounting_username_bug = no
+
+    # Limit number of concurrent EAP sessions
+    max_sessions = ${max_requests}
+
+    # Ct-Radius: EAP md5 disabled because not used
+    # Enable EAP-MD5 (used inside TTLS tunnel)
+    # md5 {}
+
+    # Ct-Radius: EAP-GTC md5 disabled because not used
+    # Enable EAP-GTC (used inside TTLS or PEAP)
+    # gtc {
+    #    auth_type = PAP
+    #}
+
+    # Common TLS configuration for PEAP, TTLS, TLS
+    tls-config tls-common {
+        private_key_password = $ENV{CT_RADIUS_PRIVATE_KEY_PWD}
+        private_key_file = /etc/ssl/private/ssl-cert-snakeoil.key
+        # private_key_file = ${certdir}/server.key
+        certificate_file = /etc/ssl/certs/ssl-cert-snakeoil.pem
+        # certificate_file = ${certdir}/server.pem
+        ca_file = /etc/ssl/certs/ca-certificates.crt
+        # ca_file = ${certdir}/ca.pem
+        # ca_path is optional if ca_file is set
+        # ca_path = ${cadir}
+        # dh_file = ${certdir}/dh
+        tls_min_version = "1.2"
+        tls_max_version = "1.2"
+        cipher_list = "DEFAULT"
+        cipher_server_preference = no
+        ecdh_curve = ""
+    }
+
+    # Ct-Radius: EAP-TLS disabled because not used
+    # EAP-TLS (client certificate-based authentication)
+    # tls {
+    #    tls = tls-common
+    #    # virtual_server = check-eap-tls (optional)
+    #}
+
+    # Ct-Radius: EAP=TTLS disabled because not used
+    # EAP-TTLS (tunneled authentication)
+    #ttls {
+    #    tls = tls-common
+    #    default_eap_type = md5
+    #    copy_request_to_tunnel = no
+
+    #    # CtRADIUS: Enable VLAN attributes from inner-tunnel
+    #    use_tunneled_reply = yes
+
+    #    virtual_server = "inner-tunnel"
+    #}
+
+    # EAP-PEAP (used by Windows clients)
+    peap {
+        tls = tls-common
+        default_eap_type = mschapv2
+        copy_request_to_tunnel = no
+
+        # CtRADIUS: Enable VLAN attributes from inner-tunnel
+        use_tunneled_reply = yes
+
+        virtual_server = "inner-tunnel"
+    }
+
+    # EAP-MSCHAPv2 (used inside PEAP tunnel)
+    mschapv2 {
+        # send_error = no (optional)
+        # identity = "FreeRADIUS" (optional)
+    }
+
+}

@@ -1,0 +1,143 @@
+server default {
+
+    # Listen for authentication requests on all IPv4 interfaces
+    listen {
+        type = auth
+        ipaddr = *
+        port = 0
+    }
+
+    # Listen for accounting requests
+    listen {
+        type = acct
+        ipaddr = *
+        port = 0
+    }
+
+    # Authorization phase: determine how to handle incoming requests
+    authorize {
+        # Sanitize User-Name input
+        filter_username
+
+        # Preprocess attributes (e.g. hints, huntgroups)
+        preprocess
+
+        # CHAP and MSCHAP detection
+        # Ct-Radius: chap not used because insecure
+        # chap
+        mschap
+
+        # CtRADIUS: Not used — digest authentication is disabled
+        # digest
+
+        # Handle realm suffixes (e.g. user@example.com)
+        suffix
+
+        # Handle EAP authentication (e.g. PEAP, TTLS)
+        eap {
+            ok = return
+        }
+
+        # CtRADIUS: Not used — local files, SQL, and LDAP are disabled
+        # files
+        # -sql
+        # -ldap
+
+        # Enforce expiration and login time policies
+        expiration
+        logintime
+
+        # No fallcbakc, because we do not want to use PAP if no other module sets Auth-Type
+        # pap
+    }
+
+    # Authentication phase: execute based on Auth-Type
+    authenticate {
+        # Ct-Radius: Not used
+        # Auth-Type PAP {
+        #    pap
+        #}
+        #Auth-Type CHAP {
+        #    chap
+        #}
+        Auth-Type MS-CHAP {
+            mschap
+        }
+
+        # Allow EAP authentication
+        eap
+
+        # CtRADIUS: Not used — digest and LDAP are disabled
+        # digest
+        # Auth-Type LDAP {
+        #     ldap
+        # }
+    }
+
+    # Accounting phase: log usage data
+    accounting {
+        detail
+        unix
+        exec
+        attr_filter.accounting_response
+
+        # CtRADIUS: Not used — SQL accounting disabled
+        # -sql
+    }
+
+    # Session tracking (e.g. Simultaneous-Use)
+    session {
+        # CtRADIUS: Not used — radutmp disabled
+        # radutmp
+    }
+
+    # Post-authentication phase: modify reply or handle failures
+    post-auth {
+        # Remove duplicate User-Name if identical to request
+        if (session-state:User-Name && reply:User-Name && request:User-Name && (reply:User-Name == request:User-Name)) {
+            update reply {
+                &User-Name !* ANY
+            }
+        }
+
+        # Merge session-state attributes into reply
+        update {
+            &reply: += &session-state:
+        }
+
+        # CtRADIUS: Not used — SQL logging disabled
+        # -sql
+
+        exec
+
+        # Remove Reply-Message if EAP is present
+        remove_reply_message_if_eap
+
+        # Handle Access-Reject responses
+        Post-Auth-Type REJECT {
+            # CtRADIUS: Not used — SQL logging disabled
+            # -sql
+            attr_filter.access_reject
+            eap
+            remove_reply_message_if_eap
+        }
+
+        # Handle Access-Challenge responses (optional)
+        Post-Auth-Type Challenge {
+            # remove_reply_message_if_eap
+            # attr_filter.access_challenge.post-auth
+        }
+    }
+
+    # Proxying stages (not used in CtRADIUS setup)
+    pre-proxy {
+        # files
+        # attr_filter.pre-proxy
+        # pre_proxy_log
+    }
+
+    post-proxy {
+        # attr_filter.post-proxy
+        eap
+    }
+}
