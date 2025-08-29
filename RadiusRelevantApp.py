@@ -24,4 +24,4 @@ class RadiusRelevantApp:
         )
 
         # Password database setup
-        self.pwd_db = PasswordDatabase(self.config.basic.path_to_pwd_db, self.config.basic.pwd_db_secret)
+        self.pwd_db = PasswordDatabase(self.config.basic.path_to_pwd_db, self.config.basic.ct_pwd_db_secret)

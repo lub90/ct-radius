@@ -23,7 +23,7 @@ class Config(AttrDict):
         "CT_SERVER_URL",
         "CT_API_USER",
         "CT_API_USER_PWD",
-        "PWD_DB_SECRET"
+        "CT_PWD_DB_SECRET"
     ]
 
     def __init__(self, config_path: str, env_file = None):
