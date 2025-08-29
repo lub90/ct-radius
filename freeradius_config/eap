@@ -26,13 +26,11 @@ eap {
 
     # Common TLS configuration for PEAP, TTLS, TLS
     tls-config tls-common {
-        private_key_password = $ENV{CT_RADIUS_PRIVATE_KEY_PWD}
-        private_key_file = /etc/ssl/private/ssl-cert-snakeoil.key
-        # private_key_file = ${certdir}/server.key
-        certificate_file = /etc/ssl/certs/ssl-cert-snakeoil.pem
-        # certificate_file = ${certdir}/server.pem
-        ca_file = /etc/ssl/certs/ca-certificates.crt
-        # ca_file = ${certdir}/ca.pem
+        # Key for your private server certificate, i.e. the server.key file
+        private_key_password = $ENV{CT_RADIUS_PRIVATE_SERVER_KEY_PWD}
+        private_key_file = ${certdir}/server.key
+        certificate_file = ${certdir}/server.pem
+        ca_file = ${certdir}/ca.pem
         # ca_path is optional if ca_file is set
         # ca_path = ${cadir}
         # dh_file = ${certdir}/dh
