@@ -3,6 +3,7 @@ import dbm
 import base64
 import string
 from cryptography.fernet import Fernet
+import time
 
 class PasswordDatabase:
     """
@@ -16,7 +17,36 @@ class PasswordDatabase:
         "!@#$%&*-_+=?."
     )
 
-    def __init__(self, db_path, encryption_password):
+    def open(path, mode="c", timeout=5.0, interval=0.05):
+        """
+        Attempts to open a DBM file with retries.
+        If the file is temporarily unavailable (e.g. locked by another process),
+        it waits and retries until the timeout is reached.
+
+        Parameters:
+            path (str): Path to the DBM file.
+            mode (str): Mode for opening the DBM file ('c' = create if needed).
+            timeout (float): Maximum time to wait in seconds.
+            interval (float): Time to wait between retries in seconds.
+
+        Returns:
+            dbm object if successful.
+
+        Raises:
+            TimeoutError: If the file could not be opened within the timeout.
+        """
+        start_time = time.time()
+        while True:
+            try:
+                db = dbm.open(path, mode)
+                return db  # Successfully opened
+            except (OSError, BlockingIOError):  # Backend-dependent errors
+                if time.time() - start_time > timeout:
+                    raise TimeoutError(f"Failed to open DBM file '{path}' within {timeout} seconds.")
+                time.sleep(interval)  # Wait before retrying
+
+
+    def __init__(self, db_path, encryption_password, open_timeout=5.0, open_interval=0.05):
         """
         Initializes the PasswordDatabase.
 
@@ -29,7 +59,7 @@ class PasswordDatabase:
         self.fernet = Fernet(self.key)
         # Take care of the home use sign ~
         db_path = os.path.expanduser(db_path)
-        self.db = dbm.open(db_path, 'c')  # Open/create DB file
+        self.db = PasswordDatabase.open(db_path, mode='c', timeout=open_timeout, interval=open_interval)  # Open/create DB file
 
     def __del__(self):
         """

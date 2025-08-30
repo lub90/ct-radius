@@ -1,7 +1,11 @@
 import os
 import tempfile
 import pytest
+import time
+import multiprocessing
 from PasswordDatabase import PasswordDatabase
+
+
 
 @pytest.fixture
 def temp_db_path():
@@ -73,3 +77,56 @@ def test_containsUser_consistency_across_sessions(temp_db_path):
         assert db2.containsUser(1004)
         assert db2.getPwd(1003) == "CheckMe!"
         assert db2.getPwd(1004) == "AlsoHere!"
+
+def test_list_all_users_persistence(temp_db_path):
+    # Session 1: add users
+    with PasswordDatabase(temp_db_path, encryption_password="sharedKey") as db1:
+        db1.setPwd(2001, "AlphaPass!")
+        db1.setPwd(2002, "BetaPass!")
+        db1.setPwd(2003, "GammaPass!")
+
+    # Session 2: verify list_all_users returns all IDs
+    with PasswordDatabase(temp_db_path, encryption_password="sharedKey") as db2:
+        users = db2.list_all_users()
+        assert sorted(users) == [2001, 2002, 2003]
+
+
+def test_open_available_file(temp_db_path):
+    db = PasswordDatabase.open(temp_db_path)
+    assert db is not None
+    db.close()
+
+def test_open_waits_and_succeeds_after_release(temp_db_path):
+    def hold_db(path):
+        db = PasswordDatabase.open(path)
+        time.sleep(1)  # hold for 1 second
+        db.close()
+
+    p = multiprocessing.Process(target=hold_db, args=(temp_db_path,))
+    p.start()
+    time.sleep(0.2)  # ensure instance 1 has locked the file
+
+    # Instance 2 tries to open and should succeed after instance 1 releases
+    db2 = PasswordDatabase.open(temp_db_path, timeout=3.0, interval=0.1)
+    assert db2 is not None
+    db2.close()
+
+    p.join()
+
+def test_open_times_out_when_file_is_held(temp_db_path):
+    def hold_db(path):
+        db = PasswordDatabase.open(path)
+        time.sleep(3)  # hold longer than instance 2's timeout
+        db.close()
+
+    p = multiprocessing.Process(target=hold_db, args=(temp_db_path,))
+    p.start()
+    time.sleep(0.2)
+
+    with pytest.raises(TimeoutError):
+        PasswordDatabase.open(temp_db_path, timeout=1.0, interval=0.1)
+
+    p.join()
+
+
+
