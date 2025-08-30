@@ -1,7 +1,7 @@
 import os
 import tempfile
 import pytest
-from PasswordDatabase import PasswordDatabase
+from ctradius import PasswordDatabase
 
 @pytest.fixture
 def pwd_db():

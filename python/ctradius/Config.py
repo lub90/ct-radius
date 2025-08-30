@@ -2,7 +2,7 @@ import os
 import yaml
 
 from types import SimpleNamespace
-from PasswordDatabase import PasswordDatabase
+from .PasswordDatabase import PasswordDatabase
 
 class AttrDict(dict):
     def __getattr__(self, item):

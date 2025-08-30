@@ -1,4 +1,4 @@
-from TemplateProvider import TemplateProvider
+from .TemplateProvider import TemplateProvider
 
 class Command:
 

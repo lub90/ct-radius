@@ -4,8 +4,7 @@ import os
 import pytest
 
 from unittest.mock import MagicMock, patch, PropertyMock
-from CtAuthProvider import CtAuthProvider
-from AuthenticationError import AuthenticationError
+from ctradius import CtAuthProvider, AuthenticationError
 
 import env_loader
 import authorization_loader

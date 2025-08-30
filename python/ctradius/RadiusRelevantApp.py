@@ -1,7 +1,6 @@
-from Config import Config
-from PasswordDatabase import PasswordDatabase
-from CtGroupManager import CtGroupManager
-from CtPersonManager import CtPersonManager
+from .Config import Config
+from .PasswordDatabase import PasswordDatabase
+from churchtools import CtGroupManager, CtPersonManager
 
 class RadiusRelevantApp:
     def __init__(self, config_path: str, env_file=None):

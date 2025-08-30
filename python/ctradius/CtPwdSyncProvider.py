@@ -7,14 +7,14 @@ import time
 
 from types import SimpleNamespace
 
-from RadiusRelevantApp import RadiusRelevantApp
-from CtChatManager import CtChatManager
-from PasswordDatabase import PasswordDatabase
-from TemplateProvider import TemplateProvider
-from HidePwdCommand import HidePwdCommand
-from NewPwdCommand import NewPwdCommand
-from RemoveUserCommand import RemoveUserCommand
-from UnknownCommandCommand import UnknownCommandCommand
+from .RadiusRelevantApp import RadiusRelevantApp
+from churchtools import CtChatManager
+from .PasswordDatabase import PasswordDatabase
+from .TemplateProvider import TemplateProvider
+from .HidePwdCommand import HidePwdCommand
+from .NewPwdCommand import NewPwdCommand
+from .RemoveUserCommand import RemoveUserCommand
+from .UnknownCommandCommand import UnknownCommandCommand
 
 
 class CtPwdSyncProvider(RadiusRelevantApp):

@@ -1,5 +1,5 @@
-from PwdBasedCommand import PwdBasedCommand
-from PasswordDatabase import PasswordDatabase
+from .PwdBasedCommand import PwdBasedCommand
+from .PasswordDatabase import PasswordDatabase
 import random
 
 class NewPwdCommand(PwdBasedCommand):

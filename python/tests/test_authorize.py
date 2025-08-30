@@ -7,8 +7,7 @@ from contextlib import redirect_stdout, redirect_stderr
 
 import pytest
 from unittest.mock import MagicMock, patch, PropertyMock
-from CtAuthProvider import CtAuthProvider
-from AuthenticationError import AuthenticationError
+from ctradius import CtAuthProvider, AuthenticationError
 from authorize import main
 
 import env_loader

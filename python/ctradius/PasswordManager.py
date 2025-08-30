@@ -1,4 +1,4 @@
-from RadiusRelevantApp import RadiusRelevantApp
+from .RadiusRelevantApp import RadiusRelevantApp
 
 class PasswordManager(RadiusRelevantApp):
     """

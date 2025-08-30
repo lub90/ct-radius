@@ -1,4 +1,4 @@
-from AbstractCtManager import AbstractCtManager
+from .AbstractCtManager import AbstractCtManager
 
 class CtPersonManager(AbstractCtManager):
 

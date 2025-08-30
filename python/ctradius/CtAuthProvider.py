@@ -1,9 +1,9 @@
 import os
 import yaml
-import RadiusUtils
 
-from RadiusRelevantApp import RadiusRelevantApp
-from AuthenticationError import AuthenticationError
+from .RadiusUtils import validate_username
+from .RadiusRelevantApp import RadiusRelevantApp
+from .AuthenticationError import AuthenticationError
 
 
 class CtAuthProvider(RadiusRelevantApp):
@@ -14,7 +14,7 @@ class CtAuthProvider(RadiusRelevantApp):
 
     def _cleanup_and_check_username(self, username):
         # Use the RadiusUtils to validate the username
-        username = RadiusUtils.validate_username(username)
+        username = validate_username(username)
 
         # Remove leading and trailing whitespace, convert to lowercase
         return username.strip().lower()

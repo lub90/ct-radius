@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from requests import Session
 from requests.exceptions import HTTPError
 
-from CtGroupManager import CtGroupManager
+from churchtools import CtGroupManager
 
 @pytest.fixture
 def manager():

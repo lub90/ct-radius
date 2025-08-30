@@ -1,6 +1,6 @@
 import requests
 
-from AbstractCtManager import AbstractCtManager
+from .AbstractCtManager import AbstractCtManager
 
 class CtGroupManager(AbstractCtManager):
 

@@ -1,16 +1,12 @@
 import argparse
 import sys
-from CtAuthProvider import CtAuthProvider
-from AuthenticationError import AuthenticationError
+from ctradius import CtAuthProvider, AuthenticationError
 
 def main():
     parser = argparse.ArgumentParser(description="ChurchTools RADIUS Authenticator")
     parser.add_argument("--config", required=True, help="Path to your ChurchTools config file")
     parser.add_argument("--env", required=True, help="Path to your .env file")
     parser.add_argument("--username", required=True, help="Username for authentication")
-
-    
-    
 
 
     try:

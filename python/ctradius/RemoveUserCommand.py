@@ -1,4 +1,4 @@
-from HidePwdCommand import HidePwdCommand
+from .HidePwdCommand import HidePwdCommand
 
 class RemoveUserCommand(HidePwdCommand):
 

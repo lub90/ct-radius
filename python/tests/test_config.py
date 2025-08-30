@@ -2,7 +2,7 @@ import os
 import pytest
 import tempfile
 import yaml
-from Config import Config
+from ctradius import Config
 import config_loader
 import env_loader
 

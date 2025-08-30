@@ -1,6 +1,6 @@
 import datetime
 
-from PwdBasedCommand import PwdBasedCommand
+from .PwdBasedCommand import PwdBasedCommand
 
 
 class HidePwdCommand(PwdBasedCommand):

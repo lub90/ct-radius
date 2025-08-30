@@ -3,7 +3,7 @@ import tempfile
 import pytest
 import time
 import multiprocessing
-from PasswordDatabase import PasswordDatabase
+from ctradius import PasswordDatabase
 
 
 
