@@ -74,7 +74,7 @@ def test_config_reads_env(patch_env_valid, config_file):
     assert cfg.basic.ct_server_url == os.getenv("CT_SERVER_URL")
     assert cfg.basic.ct_api_user == os.getenv("CT_API_USER")
     assert cfg.basic.ct_api_user_pwd == os.getenv("CT_API_USER_PWD")
-    assert cfg.basic.pwd_db_secret == os.getenv("PWD_DB_SECRET")
+    assert cfg.basic.ct_pwd_db_secret == os.getenv("CT_PWD_DB_SECRET")
 
 
 # --- INVALID TEST CASES ---
@@ -97,7 +97,7 @@ def test_env_file_loading(config_file):
     assert cfg.basic.ct_server_url == "https://example.church.tools"
     assert cfg.basic.ct_api_user == "radius@example.com"
     assert cfg.basic.ct_api_user_pwd == "1990Fish!"
-    assert cfg.basic.pwd_db_secret == "Blubb123456789"
+    assert cfg.basic.ct_pwd_db_secret == "Blubb123456789"
 
 def test_missing_config_file():
     with pytest.raises(FileNotFoundError):

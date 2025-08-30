@@ -124,3 +124,21 @@ def test_deleteUser_does_not_affect_other_users(pwd_db):
 
     assert pwd_db.getPwd(800) == "FirstPass123!"
     assert pwd_db.getPwd(802) == "ThirdPass123!"
+
+
+def test_list_all_users_empty(pwd_db):
+    assert pwd_db.list_all_users() == []
+
+def test_list_all_users_three_users(pwd_db):
+    users = [1001, 1002, 1003]
+    for uid in users:
+        pwd_db.setPwd(uid, f"ValidPass{uid}")
+    result = pwd_db.list_all_users()
+    assert sorted(result) == sorted(users)
+
+def test_list_all_users_twenty_users(pwd_db):
+    users = list(range(2001, 2021))  # 20 users
+    for uid in users:
+        pwd_db.setPwd(uid, f"Complex#Password{uid}")
+    result = pwd_db.list_all_users()
+    assert sorted(result) == sorted(users)
