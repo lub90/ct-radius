@@ -23,5 +23,9 @@ class RadiusRelevantApp:
             self.config.basic.timeout
         )
 
-        # Password database setup
-        self.pwd_db = PasswordDatabase(self.config.basic.path_to_pwd_db, self.config.basic.ct_pwd_db_secret)
+    @property
+    def pwd_db(self):
+        # Setup the pwd database on each request to prevent long locking times of the file
+        # Should not be too resource intensive
+        # Yet, is bad for transaction based stuff, that we do not really have here
+        return PasswordDatabase(self.config.basic.path_to_pwd_db, self.config.basic.ct_pwd_db_secret)

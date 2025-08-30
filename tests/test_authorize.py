@@ -6,7 +6,7 @@ import io
 from contextlib import redirect_stdout, redirect_stderr
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, PropertyMock
 from CtAuthProvider import CtAuthProvider
 from AuthenticationError import AuthenticationError
 from authorize import main
@@ -33,9 +33,18 @@ def authorizer(request):
     app.group_manager.get_members_by_id_and_attribute.side_effect = lambda gid, attr: members.get(gid, {})
     app.group_manager.get_user_groups.side_effect = authorization_loader.get_user_groups()
 
-    app.pwd_db = MagicMock()
-    app.pwd_db.db = None
-    app.pwd_db.getPwd.side_effect = authorization_loader.get_user_pwds()
+
+    # Prepare mock for pwd_db
+    mock_pwd_db = MagicMock()
+    mock_pwd_db.db = None
+    mock_pwd_db.getPwd.side_effect = authorization_loader.get_user_pwds()
+
+    # Patch the pwd_db property to return our mock
+    patcher = patch.object(type(app), "pwd_db", new_callable=PropertyMock, return_value=mock_pwd_db)
+    patcher.start()
+
+    # Ensure patcher is stopped after test
+    request.addfinalizer(patcher.stop)
 
     return app
 
