@@ -13,9 +13,12 @@ services:
       - '../../../ct-radius-test/server.pem:/etc/freeradius/3.0/certs/server.pem'
       - '../../../ct-radius-test/ca.pem:/etc/freeradius/3.0/certs/ca.pem'
       - '../../../ct-radius-test/clients.conf:/etc/freeradius/3.0/clients.conf'
+      # Mount the logging part
       - '../../../ct-radius-test/radius.log:/var/log/freeradius/radius.log'
+      - '../../../ct-radius-test/authorize.log:/ct-radius/authorize.log'
       # Mount the config file and the database file
       - '../../../ct-radius-test/test1.yaml:/ct-radius/config.yaml'
       - '../../../ct-radius-test/database.db:/ct-radius/database.db'
       - '../../../ct-radius-test/test1.env:/ct-radius/var.env'
+      
     restart: unless-stopped

@@ -94,13 +94,13 @@ def test_user_not_in_pwd_db(authorizer, not_allowed):
     with patch("authorize.CtAuthProvider", return_value=authorizer):
         code, out, err = run_main("someConfigPath", not_allowed)
 
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
 
 
 
@@ -121,13 +121,13 @@ def test_empty_username(authorizer, empty_users):
     with patch("authorize.CtAuthProvider", return_value=authorizer):
         code, out, err = run_main("someConfigPath", empty_users)
     
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
 
 
 
@@ -163,13 +163,13 @@ def test_invalid_vlan_request(authorizer, username_pwd_vlan):
     with patch("authorize.CtAuthProvider", return_value=authorizer):
         code, out, err = run_main("someConfigPath", full_username)
     
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
 
 
 
@@ -201,13 +201,13 @@ def test_non_numeric_vlan_request(authorizer, username_pwd_vlan):
     with patch("authorize.CtAuthProvider", return_value=authorizer):
         code, out, err = run_main("someConfigPath", full_username)
     
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
 
 
 
@@ -221,13 +221,13 @@ def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
     with patch("authorize.CtAuthProvider", return_value=authorizer):
         code, out, err = run_main("someConfigPath", full_username)
     
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
 
 
 
@@ -239,13 +239,13 @@ def test_invalid_usernames(authorizer, username):
     with patch("authorize.CtAuthProvider", return_value=authorizer):
         code, out, err = run_main("someConfigPath", username)
     
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
 
 
 @pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
@@ -291,13 +291,13 @@ def test_invalid_config_file_assignment(authorizer, username_pwd_vlan):
 
     code, out, err = run_main_args_list(args)
 
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
 
 @pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
 def test_invalid_config_file_assignment(authorizer, username_pwd_vlan):
@@ -312,10 +312,10 @@ def test_invalid_config_file_assignment(authorizer, username_pwd_vlan):
 
     code, out, err = run_main_args_list(args)
 
-    expected_stderr = [
+    expected_out = [
         "Auth-Type := Reject"
     ]
 
     assert code == 1
-    assert out.splitlines() == []
-    assert err.splitlines() == expected_stderr
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
