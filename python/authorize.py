@@ -17,7 +17,7 @@ def main():
     except Exception as e:
         print("Auth-Type := Reject")
         # We need to print directly, because logging module has not been setup yet...
-        logging.error(f"Internal Error: {e}")
+        print(f"Internal Error: {e}")
         sys.exit(1)
 
 
@@ -29,6 +29,8 @@ def main():
             datefmt='%Y-%m-%d %H:%M:%S'
         )
 
+    # Setup is finished, now run the real stuff here
+
     try:
         ct = CtAuthProvider(args.config, args.env)
         password, vlan_id = ct.authorize(args.username)
@@ -39,7 +41,7 @@ def main():
         print("Ct-Tunnel-Medium-Type := 6")
         print(f"Ct-Tunnel-Private-Group-Id := {vlan_id}")
 
-        logging.info(f"Successfully authorized {args.username} for VLAN {vlan_id}.")
+        logging.info(f"Successfully retrieved data for user with id {args.username} and VLAN {vlan_id}.")
 
         sys.exit(0)
 

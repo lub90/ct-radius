@@ -239,12 +239,11 @@ def test_invalid_usernames(authorizer, username):
     with patch("authorize.CtAuthProvider", return_value=authorizer):
         code, out, err = run_main("someConfigPath", username)
     
-    expected_out = [
-        "Auth-Type := Reject"
-    ]
+    expected_out = "Auth-Type := Reject"
 
     assert code == 1
-    assert out.splitlines() == expected_out
+    # Some of the user names might trigger an argparse and then we want to print something else after rejecting the output
+    assert out.splitlines()[0] == expected_out
     assert err.splitlines() == []
 
 
