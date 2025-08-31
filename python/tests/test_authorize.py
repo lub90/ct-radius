@@ -59,10 +59,9 @@ def run_main_args_list(args_list):
             return e.code, stdout.getvalue(), stderr.getvalue()
 
 
-def run_main(config, env, username):
+def run_main(config, username):
     args = [
         "--config", config,
-        "--env", env,
         "--username", username
     ]
     return run_main_args_list(args)
@@ -74,7 +73,7 @@ def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", username)
+        code, out, err = run_main("someConfigPath", username)
 
     expected_out = [
         f"Cleartext-Password := {expected_pwd}",
@@ -93,7 +92,7 @@ def test_valid_user_with_assignment(authorizer, username_pwd_vlan):
 def test_user_not_in_pwd_db(authorizer, not_allowed):
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", not_allowed)
+        code, out, err = run_main("someConfigPath", not_allowed)
 
     expected_stderr = [
         "Auth-Type := Reject"
@@ -120,7 +119,7 @@ def test_user_not_in_pwd_db(authorizer, not_allowed):
 def test_empty_username(authorizer, empty_users):
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", empty_users)
+        code, out, err = run_main("someConfigPath", empty_users)
     
     expected_stderr = [
         "Auth-Type := Reject"
@@ -141,7 +140,7 @@ def test_valid_requested_assignment(authorizer, username_pwd_vlan):
     full_username = username + authorizer.config.basic.vlan_separator + str(requested_vlan)
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", full_username)
+        code, out, err = run_main("someConfigPath", full_username)
 
     expected_out = [
         f"Cleartext-Password := {expected_pwd}",
@@ -162,7 +161,7 @@ def test_invalid_vlan_request(authorizer, username_pwd_vlan):
     full_username = username + authorizer.config.basic.vlan_separator + str(requested_vlan)
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", full_username)
+        code, out, err = run_main("someConfigPath", full_username)
     
     expected_stderr = [
         "Auth-Type := Reject"
@@ -179,7 +178,7 @@ def test_username_cleanup_and_case(authorizer, username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", username)
+        code, out, err = run_main("someConfigPath", username)
 
     expected_out = [
         f"Cleartext-Password := {expected_pwd}",
@@ -200,7 +199,7 @@ def test_non_numeric_vlan_request(authorizer, username_pwd_vlan):
     full_username = username + authorizer.config.basic.vlan_separator + chr(username_pwd_vlan[2]) + "te"
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", full_username)
+        code, out, err = run_main("someConfigPath", full_username)
     
     expected_stderr = [
         "Auth-Type := Reject"
@@ -220,7 +219,7 @@ def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
     full_username = username + authorizer.config.basic.vlan_separator
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", full_username)
+        code, out, err = run_main("someConfigPath", full_username)
     
     expected_stderr = [
         "Auth-Type := Reject"
@@ -238,7 +237,7 @@ def test_empty_numeric_vlan_request(authorizer, username_pwd_vlan):
 def test_invalid_usernames(authorizer, username):
 
     with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main("someConfigPath", "Ct-Env-Path", username)
+        code, out, err = run_main("someConfigPath", username)
     
     expected_stderr = [
         "Auth-Type := Reject"
@@ -256,22 +255,6 @@ def test_missing_config_path(authorizer, username_pwd_vlan):
     # No Ct-Config-Path
     args = [
         "--env", "tests/test.env",
-        "--username", username
-    ]
-
-    with patch("authorize.CtAuthProvider", return_value=authorizer):
-        code, out, err = run_main_args_list(args)
-
-    assert code == 2
-
-
-@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
-def test_missing_env_path(authorizer, username_pwd_vlan):
-    username, expected_pwd, expected_vlan = username_pwd_vlan
-
-    # No env-Path
-    args = [
-        "--config", "tests/valid_config_1.yaml",
         "--username", username
     ]
 

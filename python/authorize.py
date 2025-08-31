@@ -5,7 +5,7 @@ from ctradius import CtAuthProvider, AuthenticationError
 def main():
     parser = argparse.ArgumentParser(description="ChurchTools RADIUS Authenticator")
     parser.add_argument("--config", required=True, help="Path to your ChurchTools config file")
-    parser.add_argument("--env", required=True, help="Path to your .env file")
+    parser.add_argument("--env", required=False, help="Path to your .env file")
     parser.add_argument("--username", required=True, help="Username for authentication")
 
 
@@ -28,13 +28,13 @@ def main():
     except AuthenticationError as e:
         print("Auth-Type := Reject", file=sys.stderr)
         # TODO: Move to log
-        # print(f"# ChurchTools Authentication Error: {e}", file=sys.stderr)
+        print(f"# ChurchTools Authentication Error: {e}", file=sys.stderr)
         sys.exit(1)
 
     except Exception as e:
         print("Auth-Type := Reject", file=sys.stderr)
         # TODO: Move to log
-        # print(f"# ChurchTools Internal Error: {e}", file=sys.stderr)
+        print(f"# ChurchTools Internal Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
