@@ -1,0 +1,21 @@
+services:
+  ct-radius-server:
+    container_name: ct-radius-server
+    image: ct-radius-server:latest
+    ports:
+      - "1812-1813:1812-1813/udp"
+    env_file:
+      - '../../../ct-radius-test/test1.env'
+    # Volumes store your data between container upgrades
+    volumes:
+      # Mount everything for radius
+      - '../../../ct-radius-test/server.key:/etc/freeradius/3.0/certs/server.key'
+      - '../../../ct-radius-test/server.pem:/etc/freeradius/3.0/certs/server.pem'
+      - '../../../ct-radius-test/ca.pem:/etc/freeradius/3.0/certs/ca.pem'
+      - '../../../ct-radius-test/clients.conf:/etc/freeradius/3.0/clients.conf'
+      - '../../../ct-radius-test/radius.log:/var/log/freeradius/radius.log'
+      # Mount the config file and the database file
+      - '../../../ct-radius-test/test1.yaml:/ct-radius/config.yaml'
+      - '../../../ct-radius-test/database.db:/ct-radius/database.db'
+      - '../../../ct-radius-test/test1.env:/ct-radius/var.env'
+    restart: unless-stopped
