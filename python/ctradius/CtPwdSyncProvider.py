@@ -4,6 +4,7 @@ import re
 import random
 import datetime
 import time
+import logging
 
 from types import SimpleNamespace
 
@@ -100,20 +101,18 @@ class CtPwdSyncProvider(RadiusRelevantApp):
             batch.append(element)
 
     def sync(self):
-        print("===================================================")
-        print("Starting to sync password database with ChurchTools")
+        logging.info("Starting to sync password database with ChurchTools")
 
         command_batch = self.generate_update_batch()
 
         for cmd in command_batch:
             # We try to execute each command on its own, if it fails, we continue with the next one
             try:
-                print(f"Executing {type(cmd)} for {cmd.person.id}...")
+                logging.info(f"Executing {cmd.__class__.__name__} for {cmd.person.id}...")
                 cmd.execute()
-                print("Execution successfull!")
+                logging.info("Execution successfull!")
             except Exception as e:
-                # TODO: Implement logging functionality here
-                print(f"Execution failed: {e}")
+                logging.error(f"Execution failed: {e}")
                 raise e
 
         self.remove_empty_chats()
@@ -133,7 +132,8 @@ class CtPwdSyncProvider(RadiusRelevantApp):
 
         # Generate a list of all persons to process
         all_persons_to_process = {id: data for id, data in all_ct_members.items()}
-        # Add to this list all users which are not delivered by ChurchTools but are still in database
+
+        # Add to this list all users which are not in ChurchTools but are still in pwd database
         for person_id in users_in_pwd_db:
             if person_id not in all_persons_to_process:
                 all_persons_to_process[person_id] = self._get_db_user(person_id, guid_to_room_mapping)
@@ -145,7 +145,7 @@ class CtPwdSyncProvider(RadiusRelevantApp):
             cmd = HidePwdCommand(self, person)
             self._add_to_batch(batch, cmd)
 
-            # The persons to give a new pwd are for sure the ones, who are currently member of an allowed ct group but are not part of the password database yet
+            # The persons to give a new pwd are for sure the ones, who are currently a member of an allowed ct group but are not part of the password database yet
             if person_id not in users_in_pwd_db:
                 cmd = NewPwdCommand(self, person)
                 self._add_to_batch(batch, cmd)
@@ -154,6 +154,17 @@ class CtPwdSyncProvider(RadiusRelevantApp):
             # Check if this user should be deleted because it is no longer in a valid churchtools group
             if person_id not in all_ct_members:
                 cmd = RemoveUserCommand(self, person)
+                self._add_to_batch(batch, cmd)
+                continue
+
+            # All persons from this point on are valid wifi users
+
+
+            # Check if there is a room id, if not - set a new password because the person has left the room
+            room_id = self._get_chat_room_id(person)
+            # If there is no chat room, there is no reset message
+            if not room_id:
+                cmd = NewPwdCommand(self, person)
                 self._add_to_batch(batch, cmd)
                 continue
 

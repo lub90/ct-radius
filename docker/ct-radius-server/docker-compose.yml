@@ -6,7 +6,6 @@ services:
       - "1812-1813:1812-1813/udp"
     env_file:
       - '../../../ct-radius-test/var.env'
-    # Volumes store your data between container upgrades
     volumes:
       # Mount everything for radius
       - '../../../ct-radius-test/server.key:/etc/freeradius/3.0/certs/server.key'

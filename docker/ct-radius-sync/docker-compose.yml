@@ -1,0 +1,15 @@
+services:
+  ct-radius-sync:
+    container_name: ct-radius-sync
+    image: ct-radius-sync:latest
+    env_file:
+      - '../../../ct-radius-test/var.env'
+    volumes:
+      # Mount the logging part
+      - '../../../ct-radius-test/synchronize.log:/ct-radius/synchronize.log'
+      # Mount the config file and the database file
+      - '../../../ct-radius-test/config.yaml:/ct-radius/config.yaml'
+      - '../../../ct-radius-test/database.db:/ct-radius/database.db'
+      - '../../../ct-radius-test/var.env:/ct-radius/var.env'
+      
+    restart: unless-stopped

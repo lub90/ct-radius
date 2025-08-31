@@ -6,6 +6,7 @@ FREERAD_GID=998
 # Files that need write access
 WRITABLE_FILES=(
   "authorize.log"
+  "synchronize.log"
   "radius.log"
   "database.db"
 )
