@@ -49,7 +49,7 @@ class Config(AttrDict):
         result.chat_room_id = None
 
         if person_id in self.communication.custom_settings:
-            result.__dict__.update(self.communication.custom_settings[person_id].__dict__)
+            result.__dict__.update(self.communication.custom_settings[person_id])
 
         return result
 
