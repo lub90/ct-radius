@@ -72,7 +72,7 @@ class CtPwdSyncProvider(RadiusRelevantApp):
         return result
 
         
-    def _get_db_user(self, person_id, guid_to_room_mapping):
+    def _get_person_from_ct(self, person_id, guid_to_room_mapping):
         try:
             person_data = self.person_manager.get_person(person_id)
             new_person = SimpleNamespace(
@@ -104,7 +104,19 @@ class CtPwdSyncProvider(RadiusRelevantApp):
         logging.info("Starting to sync password database with ChurchTools")
 
         command_batch = self.generate_update_batch()
+        self.execute_cmd_batch(command_batch)
+        self.remove_empty_chats()
 
+    
+    def add_user(self, person_id, new_pwd=None):
+        logging.info("Starting to add new user manually to database")
+
+        command_batch = self.generate_new_user_batch(person_id, new_pwd)
+        self.execute_cmd_batch(command_batch)
+        self.remove_empty_chats()
+
+
+    def execute_cmd_batch(self, command_batch):
         for cmd in command_batch:
             # We try to execute each command on its own, if it fails, we continue with the next one
             try:
@@ -115,7 +127,18 @@ class CtPwdSyncProvider(RadiusRelevantApp):
                 logging.error(f"Execution failed: {e}")
                 raise e
 
-        self.remove_empty_chats()
+
+    def generate_new_user_batch(self, person_id, new_pwd=None):
+        batch = []
+
+        guid_to_room_mapping = self._generate_guid_room_mapping()
+
+        person = self._get_person_from_ct(person_id, guid_to_room_mapping)
+
+        cmd = NewPwdCommand(self, person, new_pwd=new_pwd)
+        self._add_to_batch(batch, cmd)
+
+        return batch
 
 
     def generate_update_batch(self):
@@ -136,7 +159,7 @@ class CtPwdSyncProvider(RadiusRelevantApp):
         # Add to this list all users which are not in ChurchTools but are still in pwd database
         for person_id in users_in_pwd_db:
             if person_id not in all_persons_to_process:
-                all_persons_to_process[person_id] = self._get_db_user(person_id, guid_to_room_mapping)
+                all_persons_to_process[person_id] = self._get_person_from_ct(person_id, guid_to_room_mapping)
 
         
         for person_id, person in all_persons_to_process.items():
