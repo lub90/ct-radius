@@ -65,7 +65,7 @@ class PasswordDatabase:
         """
         Ensures database is closed when the instance is destroyed.
         """
-        if self.db is not None:
+        if hasattr(self, "db") and (self.db is not None):
             self.db.close()
 
     def __enter__(self):
