@@ -5,7 +5,7 @@ services:
     ports:
       - "1812-1813:1812-1813/udp"
     env_file:
-      - '../../../ct-radius-test/test1.env'
+      - '../../../ct-radius-test/var.env'
     # Volumes store your data between container upgrades
     volumes:
       # Mount everything for radius
@@ -17,8 +17,8 @@ services:
       - '../../../ct-radius-test/radius.log:/var/log/freeradius/radius.log'
       - '../../../ct-radius-test/authorize.log:/ct-radius/authorize.log'
       # Mount the config file and the database file
-      - '../../../ct-radius-test/test1.yaml:/ct-radius/config.yaml'
+      - '../../../ct-radius-test/config.yaml:/ct-radius/config.yaml'
       - '../../../ct-radius-test/database.db:/ct-radius/database.db'
-      - '../../../ct-radius-test/test1.env:/ct-radius/var.env'
+      - '../../../ct-radius-test/var.env:/ct-radius/var.env'
       
     restart: unless-stopped
