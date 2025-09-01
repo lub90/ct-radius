@@ -20,8 +20,7 @@ VALID_PASSWORDS = [
     "AlphaBeta123$",
     "MixUPdown7?",
     "Symbols.",
-    "DigitsOnly123456",
-    "Complex#Password1"
+    "DigitsOnly123456"
 ]
 
 # Invalid passwords due to disallowed characters, short length, or format
@@ -37,7 +36,8 @@ INVALID_PASSWORDS = [
     "Back\\Slash12",   # unlisted symbol
     "ValidPass)",
     "AlphaBeta123$}",
-    "Symbols.>"
+    "Symbols.>",
+    "Complex#Password1"
 ]
 
 # --- Valid password operations ---
@@ -139,6 +139,6 @@ def test_list_all_users_three_users(pwd_db):
 def test_list_all_users_twenty_users(pwd_db):
     users = list(range(2001, 2021))  # 20 users
     for uid in users:
-        pwd_db.setPwd(uid, f"Complex#Password{uid}")
+        pwd_db.setPwd(uid, f"Complex!Password{uid}")
     result = pwd_db.list_all_users()
     assert sorted(result) == sorted(users)
