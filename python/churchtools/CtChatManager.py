@@ -2,6 +2,7 @@ import requests
 import uuid
 import re
 import json
+import time
 
 from datetime import datetime
 
@@ -25,9 +26,7 @@ class CtChatManager:
             },
             "password": self.password
         }
-        login_response = requests.post(login_url, json=login_payload)
-
-        login_response.raise_for_status()
+        login_response = self._request("post", login_url, json=login_payload)
 
         if not "access_token" in login_response.json():
             raise Exception("Login failed: No access token received.")
@@ -59,6 +58,26 @@ class CtChatManager:
         }
         return headers
 
+    def _request(self, method, url, **kwargs):
+
+        max_retries = kwargs.pop("max_retries", 5)
+
+        for attempt in range(max_retries):
+            response = requests.request(method, url, **kwargs)
+
+            if response.status_code == 429:
+                # We add an additional buffer of a quarter second
+                retry_after = (response.json().get("retry_after_ms", 1000) + 250.0) / 1000.0
+                print(f"429 Too Many Requests – Warte {retry_after:.2f}s (Versuch {attempt + 1}/{max_retries})...")
+                time.sleep(retry_after)
+                continue
+            else:
+                response.raise_for_status()
+
+            return response
+
+        raise Exception(f"Maximale Anzahl an Wiederholungen erreicht für URL: {url}")
+
     def create_room(self, room_name):
         create_room_url = f"{self.server_url}/_matrix/client/v3/createRoom"
         headers = self._headers_with_token()
@@ -67,8 +86,7 @@ class CtChatManager:
             "preset": "private_chat",
             "visibility": "private"
         }
-        create_response = requests.post(create_room_url, headers=headers, json=room_payload)
-        create_response.raise_for_status()
+        create_response = self._request("post", create_room_url, headers=headers, json=room_payload)
 
         if not "room_id" in create_response.json():
              raise Exception("Room creation failed: No room_id returned.")
@@ -94,9 +112,7 @@ class CtChatManager:
             "events_default": 0
         }
 
-        response = requests.put(power_levels_url, headers=headers, json=power_levels_payload)
-
-        response.raise_for_status()
+        response = self._request("put", power_levels_url, headers=headers, json=power_levels_payload)
 
         return room_id
 
@@ -107,8 +123,7 @@ class CtChatManager:
         invite_payload = {
             "user_id": self.username_from_guid(other_guid)
         }
-        invite_response = requests.post(invite_url, headers=headers, json=invite_payload)
-        invite_response.raise_for_status()
+        invite_response = self._request("post", invite_url, headers=headers, json=invite_payload)
         return True
 
 
@@ -121,7 +136,7 @@ class CtChatManager:
             "body": message
         }
         
-        send_response = requests.put(send_url, headers=headers, json=message_payload)
+        send_response = self._request("put", send_url, headers=headers, json=message_payload)
         send_response.raise_for_status()
 
         # Return message / event_id
@@ -133,7 +148,7 @@ class CtChatManager:
         payload = {
             "reason": "Manual Deletion"
         }
-        response = requests.put(redaction_url, headers=headers, json=payload)
+        response = self._request("put", redaction_url, headers=headers, json=payload)
         response.raise_for_status()
         return True
 
@@ -153,8 +168,7 @@ class CtChatManager:
                 "event_id": original_event_id
             }
         }
-        response = requests.put(edit_url, headers=headers, json=edit_payload)
-        response.raise_for_status()
+        response = self._request("put", edit_url, headers=headers, json=edit_payload)
 
         return new_event_id
 
@@ -173,8 +187,8 @@ class CtChatManager:
             })
         }
 
-        response = requests.get(messages_url, headers=headers, params=params)
-        response.raise_for_status()
+        response = self._request("get", messages_url, headers=headers, params=params)
+
         events = response.json().get("chunk", [])
 
         pattern = re.compile(regex_pattern)
@@ -221,8 +235,8 @@ class CtChatManager:
             })
         }
 
-        response = requests.get(messages_url, headers=headers, params=params)
-        response.raise_for_status()
+        response = self._request("get", messages_url, headers=headers, params=params)
+
         events = response.json().get("chunk", [])
 
         for event in events:
@@ -253,8 +267,8 @@ class CtChatManager:
     def get_all_rooms(self):
         joined_url = f"{self.server_url}/_matrix/client/v3/joined_rooms"
         headers = self._headers_with_token()
-        response = requests.get(joined_url, headers=headers)
-        response.raise_for_status()
+        response = self._request("get", joined_url, headers=headers)
+
         return response.json().get("joined_rooms", [])
 
     def find_rooms(self, title_pattern):
@@ -271,8 +285,8 @@ class CtChatManager:
             # Step 2: Get room name
             name_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/state/m.room.name"
             try:
-                name_response = requests.get(name_url, headers=self._headers_with_token())
-                name_response.raise_for_status()
+                name_response = self._request("get", name_url, headers=self._headers_with_token())
+                
                 room_name = name_response.json().get("name", "")
             except requests.exceptions.HTTPError:
                 continue  # Skip rooms with no name
@@ -293,7 +307,7 @@ class CtChatManager:
 
             # Get room members
             members_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/members"
-            members_response = requests.get(members_url, headers=self._headers_with_token())
+            members_response = self._request("get", members_url, headers=self._headers_with_token())
             members_response.raise_for_status()
             members = members_response.json().get("chunk", [])
 
@@ -321,8 +335,8 @@ class CtChatManager:
 
             # Get room members
             members_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/members"
-            members_response = requests.get(members_url, headers=self._headers_with_token())
-            members_response.raise_for_status()
+            members_response = self._request("get", members_url, headers=self._headers_with_token())
+
             members = members_response.json().get("chunk", [])
 
             # Filter actual members (joined or invited)
@@ -352,8 +366,8 @@ class CtChatManager:
 
             # Step 3: Get room members
             members_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/members"
-            members_response = requests.get(members_url, headers=self._headers_with_token())
-            members_response.raise_for_status()
+            members_response = self._request("get", members_url, headers=self._headers_with_token())
+
             members = members_response.json().get("chunk", [])
 
             # Filter actual members (joined or invited)
@@ -379,12 +393,12 @@ class CtChatManager:
 
         # Step 1: Leave the room
         leave_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/leave"
-        leave_response = requests.post(leave_url, headers=headers)
+        leave_response = self._request("post", leave_url, headers=headers)
         leave_response.raise_for_status()
 
         # Step 2: Forget the room
         forget_url = f"{self.server_url}/_matrix/client/v3/rooms/{room_id}/forget"
-        forget_response = requests.post(forget_url, headers=headers)
+        forget_response = self._request("post", forget_url, headers=headers)
         forget_response.raise_for_status()
 
         return True
