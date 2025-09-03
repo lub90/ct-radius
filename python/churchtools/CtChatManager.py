@@ -3,6 +3,7 @@ import uuid
 import re
 import json
 import time
+import logging
 
 from datetime import datetime
 
@@ -66,9 +67,9 @@ class CtChatManager:
             response = requests.request(method, url, **kwargs)
 
             if response.status_code == 429:
-                # We add an additional buffer of a quarter second
-                retry_after = (response.json().get("retry_after_ms", 1000) + 250.0) / 1000.0
-                print(f"429 Too Many Requests – Warte {retry_after:.2f}s (Versuch {attempt + 1}/{max_retries})...")
+                # We add an additional buffer
+                retry_after = (response.json().get("retry_after_ms", 1000) + 100.0) / 1000.0
+                logging.warning(f"429 Too Many Requests – Warte {retry_after:.2f}s (Versuch {attempt + 1}/{max_retries})...")
                 time.sleep(retry_after)
                 continue
             else:
@@ -76,7 +77,9 @@ class CtChatManager:
 
             return response
 
-        raise Exception(f"Maximale Anzahl an Wiederholungen erreicht für URL: {url}")
+        # If we arrive here, we reached the maximum number of retries!
+        logging.warning(f"Reached maximum number of retries for URL: {url}")
+        response.raise_for_status()
 
     def create_room(self, room_name):
         create_room_url = f"{self.server_url}/_matrix/client/v3/createRoom"
