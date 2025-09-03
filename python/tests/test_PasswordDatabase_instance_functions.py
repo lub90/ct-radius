@@ -17,10 +17,13 @@ def pwd_db():
 VALID_PASSWORDS = [
     "Secure123!",
     "ValidPass",
-    "AlphaBeta123$",
+    "AlphaBeta*123",
     "MixUPdown7?",
     "Symbols.",
-    "DigitsOnly123456"
+    "1234568910",
+    "Hello_World",
+    "Bla+Bla1990",
+    "Very-Secure-Password"
 ]
 
 # Invalid passwords due to disallowed characters, short length, or format
@@ -37,7 +40,10 @@ INVALID_PASSWORDS = [
     "ValidPass)",
     "AlphaBeta123$}",
     "Symbols.>",
-    "Complex#Password1"
+    "Complex#Password1",
+    "AlphaBeta!123$",
+    "test@example",
+    "Not/Allowed/Password123"
 ]
 
 # --- Valid password operations ---

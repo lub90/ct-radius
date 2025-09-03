@@ -12,9 +12,10 @@ class PasswordDatabase:
     """
 
     MIN_PASSWORD_LENGTH = 8
+    # $&@# are not allowed, because they mess up radius
     ALLOWED_CHARS = (
         string.ascii_letters + string.digits +
-        "!@$%&*-_+=?."
+        "*-_+?.!"
     )
 
     def open(path, mode="c", timeout=5.0, interval=0.05):
