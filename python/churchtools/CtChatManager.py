@@ -323,7 +323,8 @@ class CtChatManager:
             ]
 
             # Check if room has the other user after removing me
-            active_members.remove(self.username)
+            if self.username in active_members:
+                active_members.remove(self.username)
             if len(set(active_members)) == 0:
                 result.append(room_id)
 
@@ -351,7 +352,8 @@ class CtChatManager:
             ]
 
             # Check if room has the other user after removing me
-            active_members.remove(self.username)
+            if self.username in active_members:
+                active_members.remove(self.username)
             if len(set(active_members)) == 1:
                 other_username = active_members[0]
                 other_guid = self.guid_from_username(other_username)
