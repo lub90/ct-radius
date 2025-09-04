@@ -95,7 +95,7 @@ class CtChatManager:
         create_response = self._request("post", create_room_url, headers=headers, json=room_payload)
 
         if not "room_id" in create_response.json():
-             raise Exception("Room creation failed: No room_id returned.")
+             raise ValueError("Room creation failed: No room_id returned.")
 
         return create_response.json()["room_id"]
 

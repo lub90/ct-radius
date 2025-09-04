@@ -20,10 +20,10 @@ class MockRequests:
             raise RuntimeError(f"Requests.{method_name} should not be called!")
         return _raise
 
-    def _dispatch_request(self, method, url, **kwargs):
+    def _dispatch_request(self, method, url, headers=None, json=None):
         method = method.lower()
         if hasattr(self, method):
-            return getattr(self, method)(url, **kwargs)
+            return getattr(self, method)(url, headers=headers, json=json)
         raise RuntimeError(f"Requests.{method.upper()} not implemented in mock.")
 
 

@@ -10,10 +10,6 @@ import data_loader
 
 @pytest.fixture
 def mocked_requests(monkeypatch):
-    """
-    Stellt ein MockRequests-Objekt bereit, bei dem alle HTTP-Methoden
-    standardmäßig Fehler werfen. Kann im Test angepasst werden.
-    """
     result = MockRequests()
     patch_mock_request(monkeypatch, result)
     return result
@@ -23,7 +19,7 @@ def test_login_sends_correct_request(monkeypatch, mocked_requests, server_url, g
     manager = CtChatManager(server_url, guid_user, password)
 
     # Override post
-    def mock_post(url, json):
+    def mock_post(url, json=None, headers=None):
         assert url == f"{server_url}/_matrix/client/v3/login"
         assert json["identifier"]["user"] == data_loader.username_from_guid(guid_user)
         assert json["identifier"]["type"] == "m.id.user"
@@ -48,7 +44,7 @@ def test_login_sets_access_token_and_returns_true(mocked_requests, access_token)
     )
 
     # Override .post method to simulate successful login
-    def mock_post(url, json):
+    def mock_post(url,  json=None, headers=None):
         return types.SimpleNamespace(
             status_code=200,
             json=lambda: {"access_token": access_token},
@@ -71,7 +67,7 @@ def test_login_raises_on_client_error(mocked_requests, status_code):
     )
 
     # Simulate a response object with raise_for_status that throws
-    def mock_post(url, json):
+    def mock_post(url, json=None, headers=None):
         return types.SimpleNamespace(
             status_code=status_code,
             json=lambda: {},
