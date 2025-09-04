@@ -11,6 +11,9 @@ from datetime import datetime
 class CtChatManager:
 
     def __init__(self, server_url, guid_user, password):
+        if not server_url or not guid_user or not password:
+            raise ValueError("All parameters for CtChatManager must be non-empty strings.")
+
         self.server_url = server_url
         self.guid_user = guid_user
         self.password = password
