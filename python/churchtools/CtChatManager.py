@@ -10,17 +10,23 @@ from datetime import datetime
 
 class CtChatManager:
 
-    def __init__(self, server_url, guid_user, password):
-        if not server_url or not guid_user or not password:
-            raise ValueError("All parameters for CtChatManager must be non-empty strings.")
+    def __init__(self, server_url, guid_user, password=None, access_token=None):
+        if not server_url or not guid_user:
+            raise ValueError("Server url and guid of the user for CtChatManager must be non-empty strings.")
+
+        if not password and not access_token:
+            raise ValueError("Either password or access_token must be set for CtChatManager.")
 
         self.server_url = server_url
         self.guid_user = guid_user
         self.password = password
-        self.access_token = None
+        self.access_token = access_token
 
     
     def login(self):
+        if not self.password:
+            raise ValueError("To call the login funcction, a password must be given in the constructor!")
+
         login_url = f"{self.server_url}/_matrix/client/v3/login"
         login_payload = {
             "type": "m.login.password",
