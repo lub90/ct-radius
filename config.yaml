@@ -9,8 +9,6 @@ basic:
   vlan_separator: "#"
   # The timeout in seconds for contacting the churchtools server
   timeout: 5
-  # Path to the PasswordDatabase file
-  path_to_pwd_db: ~/git/ChurchtoolsRadius/passwords.db
   # The field name in ChurchTools person database, in which the username is stored. Leave unchanged for most instances.
   username_field_name: cmsUserId
   

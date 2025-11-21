@@ -37,7 +37,6 @@ def test_valid_config_reads_correctly(patch_env_valid, config_file):
     assert cfg.basic.include_assignment_groups_in_access_groups == basic["include_assignment_groups_in_access_groups"]
     assert cfg.basic.vlan_separator == basic["vlan_separator"]
     assert cfg.basic.timeout == basic["timeout"]
-    assert cfg.basic.path_to_pwd_db == basic["path_to_pwd_db"]
     assert cfg.basic.username_field_name == basic["username_field_name"]
 
     # VLAN section checks

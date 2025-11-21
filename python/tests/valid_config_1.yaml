@@ -4,9 +4,7 @@ basic:
   include_assignment_groups_in_access_groups: True
   vlan_separator: "#"
   timeout: 5
-  path_to_pwd_db: database.db
   username_field_name: cmsUserId
-  pwd_length: 8
   
 
 vlans:
