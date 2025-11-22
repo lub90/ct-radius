@@ -22,7 +22,7 @@ class CtPersonManager(CtBasedService):
 
         data = response.json()
         if "data" not in data:
-            raise ValueError("Keine gültigen Personendaten in der Antwort.")
+            raise ValueError("No valid person data in the response.")
 
         return data["data"]
 
