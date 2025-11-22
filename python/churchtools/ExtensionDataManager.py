@@ -1,13 +1,13 @@
 import json
 from typing import Optional, List, Dict, Any
-from .AbstractCtManager import AbstractCtManager  # adjust import path as needed
+from .CtBasedService import CtBasedService
+from .ChurchtoolsClient import ChurchtoolsClient
 
 
-class ExtensionDataManager(AbstractCtManager):
+class ExtensionDataManager(CtBasedService):
 
-    def __init__(self, server_url: str, api_user: str, api_pwd: str, timeout: int, extension_key: str) -> None:
-        super().__init__(server_url, api_user, api_pwd, timeout)
-        self.login()
+    def __init__(self, ctClient: ChurchtoolsClient, extension_key: str) -> None:
+        super().__init__(ctClient)
 
         self.extension_key: str = extension_key
         self.module_id: Optional[int] = None
@@ -17,8 +17,7 @@ class ExtensionDataManager(AbstractCtManager):
         if self.module_id is not None:
             return self.module_id
 
-        url = f"{self.server_url}/api/custommodules/{self.extension_key}"
-        resp = self.session.get(url, timeout=self.timeout)
+        resp = self.churchtoolsClient.get(f"/custommodules/{self.extension_key}")
         resp.raise_for_status()
         data = resp.json()
 
@@ -33,8 +32,7 @@ class ExtensionDataManager(AbstractCtManager):
             return self.categories
 
         module_id = self._resolve_module_id()
-        url = f"{self.server_url}/api/custommodules/{module_id}/customdatacategories"
-        resp = self.session.get(url, timeout=self.timeout)
+        resp = self.churchtoolsClient.get(f"/custommodules/{module_id}/customdatacategories")
         resp.raise_for_status()
         self.categories = resp.json()["data"]
         return self.categories
@@ -48,8 +46,7 @@ class ExtensionDataManager(AbstractCtManager):
 
     def get_category_data(self, name: str, single: bool = False) -> Any:
         category = self.get_category_by_name(name)
-        url = f"{self.server_url}/api/custommodules/{category['customModuleId']}/customdatacategories/{category['id']}/customdatavalues"
-        resp = self.session.get(url, timeout=self.timeout)
+        resp = self.churchtoolsClient.get(f"/custommodules/{category['customModuleId']}/customdatacategories/{category['id']}/customdatavalues")
         resp.raise_for_status()
         result = resp.json()["data"]
 
@@ -66,8 +63,7 @@ class ExtensionDataManager(AbstractCtManager):
             "value": json.dumps(data),
         }
 
-        url = f"{self.server_url}/api/custommodules/{module_id}/customdatacategories/{category['id']}/customdatavalues"
-        resp = self.session.post(url, json=payload, timeout=self.timeout)
+        resp = self.churchtoolsClient.post(f"/custommodules/{module_id}/customdatacategories/{category['id']}/customdatavalues", json=payload)
         resp.raise_for_status()
         body = resp.json()
 
@@ -86,8 +82,7 @@ class ExtensionDataManager(AbstractCtManager):
             "value": json.dumps(data),
         }
 
-        url = f"{self.server_url}/api/custommodules/{module_id}/customdatacategories/{category['id']}/customdatavalues/{value_id}"
-        resp = self.session.put(url, json=payload, timeout=self.timeout)
+        resp = self.churchtoolsClient.put(f"/custommodules/{module_id}/customdatacategories/{category['id']}/customdatavalues/{value_id}", json=payload)
         resp.raise_for_status()
         body = resp.json()
 
@@ -100,6 +95,5 @@ class ExtensionDataManager(AbstractCtManager):
         module_id = self._resolve_module_id()
         category = self.get_category_by_name(name)
 
-        url = f"{self.server_url}/api/custommodules/{module_id}/customdatacategories/{category['id']}/customdatavalues/{value_id}"
-        resp = self.session.delete(url, timeout=self.timeout)
+        resp = self.churchtoolsClient.delete(f"/custommodules/{module_id}/customdatacategories/{category['id']}/customdatavalues/{value_id}")
         resp.raise_for_status()

@@ -1,20 +1,23 @@
 import base64
 from cryptography.fernet import Fernet
 from typing import Optional
+import requests
 import os
 import base64
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
-from churchtools import ExtensionDataManager
 import json
+from churchtools import ChurchtoolsClient
+from churchtools import ExtensionDataManager
+from churchtools import CtBasedService
 from churchtools import CtPersonManager
 
 
-class PasswordDatabase:
+class PasswordDatabase(CtBasedService):
     """
-    Minimal password storage system using symmetric encryption.
+    Minimal password storage system using asymmetric encryption.
     Storage backend is abstracted (to be replaced with HTTP calls).
     """
 
@@ -28,7 +31,9 @@ class PasswordDatabase:
     CT_ENCRYPTED_PWD_FIELD = 'secondaryPwd'
 
 
-    def __init__(self, pem_path: str, pem_password: str, extensionDataManger: ExtensionDataManager):
+    def __init__(self, ctClient: ChurchtoolsClient, pem_path: str, pem_password: str):
+        super().__init__(ctClient)
+
         # Expand ~ in path
         pem_path = os.path.expanduser(pem_path)
 
@@ -43,7 +48,8 @@ class PasswordDatabase:
             backend=default_backend()
         )
 
-        self._extensionDataManager = extensionDataManger
+        # TODO: Move string to general config or somwhere else
+        self._extensionDataManager = ExtensionDataManager(self.churchtoolsClient, "ctpassstore")
 
     # ----------------------------
     # Backend abstraction methods
@@ -68,27 +74,22 @@ class PasswordDatabase:
 
         # 2. Whoami to get current uscler id
         person_mgr = CtPersonManager(
-            self._extensionDataManager.server_url,
-            self._extensionDataManager.api_user,
-            self._extensionDataManager.api_pwd,
-            self._extensionDataManager.timeout,
+            self.churchtoolsClient
         )
-        person_mgr.login()
         whoami_data = person_mgr.who_am_i()
         current_user_id = whoami_data["id"]
 
         # 3. Get login token for that user
-        url = f"{self._extensionDataManager.server_url}/api/persons/{current_user_id}/logintoken"
-        resp = self._extensionDataManager.session.get(url, timeout=self._extensionDataManager.timeout)
+        resp = self.churchtoolsClient.get(f"/persons/{current_user_id}/logintoken")
         resp.raise_for_status()
         login_token = resp.json()["data"]
 
         # 4. Call backend /entries/{user_id} with token
         headers = {"Authorization": f"Login {login_token}"}
-        resp = self._extensionDataManager.session.get(
+        resp = requests.get(
             f"{backend_url}/entries/{user_id}",
             headers=headers,
-            timeout=self._extensionDataManager.timeout,
+            timeout=self.churchtoolsClient.timeout,
         )
         resp.raise_for_status()
         data = resp.json()
