@@ -1,6 +1,6 @@
 
 basic:
-  # Login credentials for churchtools, the radius shared secret and the secret for the password database are to be set via the associated environment variables
+  # Login credentials for churchtools, the private key for the password database etc. are to be set via the associated environment variables
   # All users of these churchtools groups have access to the wifi
   wifi_access_groups: [194]
   # Whether we want to automatically include the assignemt groups in the wifi access groups, even if they are not specifically listed there
@@ -9,37 +9,21 @@ basic:
   vlan_separator: "#"
   # The timeout in seconds for contacting the churchtools server
   timeout: 5
+  # Path to the privateKey for encrypting the passwords in the ctpassstore backend
+  path_to_private_decryption_key: /ct-radius/privateDecryptionKey.pem
   # The field name in ChurchTools person database, in which the username is stored. Leave unchanged for most instances.
   username_field_name: cmsUserId
   
 
 vlans:
-  # The default vlan to sort everybody in, if the do not have higher priority via any of the following vlan assignments
+  # The default vlan to sort everybody in, if they do not have higher priority via any of the following vlan assignments
   default_vlan: 30
   # This is a dictionary which maps churchtools group ids to vlans, to which the user will be assigned. Priority is in decreasing order. If the user is a member of the first inserted group he will be assigned to this vlan and all following assignments will be ignored.
   assignments:
-    # VLAN: 10/Verwaltung
-    101: 10 # Ältestenkreis
-    147: 10 # Pastoren
-    107: 10 # Verwaltung
-    104: 10 # Vorstand
-    # VLAN: 20/Veranstaltungstechnik
-    139: 20 # Band Friedrich
-    202: 20 # Band Myri
-    136: 20 # Band Ulli
-    74: 20 # Bands und Lobpreisleiter
-    83: 20 # Beamertechnik
-    197: 20 # Gottesdienstverantwortliche
-    80: 20 # Lichttechnik
-    86: 20 # Moderation
-    71: 20 # Predigt
-    77: 20 # Tontechnik
-    132: 20 # Videotechnik
-    # VLAN: 1/LAN for the management layer
-    177: 1 # Netzwerkadmin
+    71: 20
+    132: 20
   # This is a dictionary which maps churchtools group ids to vlans, to which the user will be assigned only if requested. Priority is again in decreasing order.
   assignments_if_requested:
-    231: 110 # Hausautomatisierung
-    77: 120 # Tontechnik
-
-
+    231: 110
+    77: 120
+    
