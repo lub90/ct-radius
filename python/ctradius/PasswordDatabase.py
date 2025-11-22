@@ -35,21 +35,29 @@ class PasswordDatabase(CtBasedService):
         super().__init__(ctClient)
 
         # Expand ~ in path
-        pem_path = os.path.expanduser(pem_path)
-
-        # Read the PEM file
-        with open(pem_path, "rb") as pem_file:
-            pem_data = pem_file.read()
-
-        # Load the private key using the provided password
-        self._privateKey = serialization.load_pem_private_key(
-            pem_data,
-            password=pem_password.encode("utf-8"),
-            backend=default_backend()
-        )
+        self._pem_path = os.path.expanduser(pem_path)
+        self._pem_password = pem_password
+        self._private_key = None
 
         # TODO: Move string to general config or somwhere else
         self._extensionDataManager = ExtensionDataManager(self.churchtoolsClient, "ctpassstore")
+        
+    def _get_private_key(self):
+        # If it has not been loaded yet, create it
+        if self._private_key is None:
+            # Read the PEM file
+            with open(self._pem_path, "rb") as pem_file:
+                pem_data = pem_file.read()
+            
+            # Load the private key using the provided password
+            self._private_key = serialization.load_pem_private_key(
+                pem_data,
+                password=self._pem_password.encode("utf-8"),
+                backend=default_backend()
+            )
+            
+        # Return it
+        return self._private_key
 
     # ----------------------------
     # Backend abstraction methods
@@ -122,7 +130,7 @@ class PasswordDatabase(CtBasedService):
         Returns:
             bytes: The decrypted plaintext.
         """
-        return self._privateKey.decrypt(
+        return self._get_private_key().decrypt(
             encrypted,
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
