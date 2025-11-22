@@ -124,8 +124,8 @@ class PasswordDatabase:
         return self._privateKey.decrypt(
             encrypted,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA1()),
-                algorithm=hashes.SHA1(),
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
                 label=None
             )
         )
