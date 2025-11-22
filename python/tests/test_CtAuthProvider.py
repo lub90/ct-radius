@@ -11,34 +11,29 @@ import authorization_loader
 
 
 
-@pytest.fixture(params=env_loader.VALID_ENVS, autouse=True)
+@pytest.fixture(params=env_loader.get_valid_envs(), autouse=True)
 def patch_env_valid(request, monkeypatch):
     for key, val in request.param.items():
         monkeypatch.setenv(key, val)
 
 # Fixture for mocked CtAuthProvider
-@pytest.fixture(params=authorization_loader.VALID_CONFIGS)
+@pytest.fixture(params=authorization_loader.get_valid_configs())
 def authorizer(request):
     app = CtAuthProvider(request.param)
 
     # Mock user ID resolution via ChurchTools
     members = authorization_loader.get_group_members()
-    app.group_manager = MagicMock()
-    app.group_manager.login.return_value = None
-    app.group_manager.get_members_by_id_and_attribute.side_effect = lambda gid, attr: members.get(gid, {})
-    app.group_manager.get_user_groups.side_effect = authorization_loader.get_user_groups()
+    app._group_manager = MagicMock()
+    app._group_manager.get_members_by_id_and_attribute.side_effect = lambda gid, attr: members.get(gid, {})
+    app._group_manager.get_user_groups.side_effect = authorization_loader.get_user_groups()
+    
+    app._churchtoolsClient = MagicMock()
+    app._churchtoolsClient.login.return_value = None
 
     # Prepare mock for pwd_db
-    mock_pwd_db = MagicMock()
-    mock_pwd_db.db = None
-    mock_pwd_db.getPwd.side_effect = authorization_loader.get_user_pwds()
-
-    # Patch the pwd_db property to return our mock
-    patcher = patch.object(type(app), "pwd_db", new_callable=PropertyMock, return_value=mock_pwd_db)
-    patcher.start()
-
-    # Ensure patcher is stopped after test
-    request.addfinalizer(patcher.stop)
+    app._pwd_db = MagicMock()
+    app._pwd_db.db = None
+    app._pwd_db.getPwd.side_effect = authorization_loader.get_user_pwds()
 
     return app
 
@@ -119,8 +114,8 @@ def test_empty_string_password_handling(authorizer, username_pwd_vlan):
 
 @pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
 def test_group_lookup_failure(authorizer, username_pwd_vlan):
-    authorizer.group_manager.get_user_groups.side_effect = None
-    authorizer.group_manager.get_user_groups.return_value = []
+    authorizer._group_manager.get_user_groups.side_effect = None
+    authorizer._group_manager.get_user_groups.return_value = []
     pwd, vlan = authorizer.authorize(username_pwd_vlan[0])
     assert vlan == authorizer.config.vlans.default_vlan
 
@@ -135,7 +130,7 @@ def test_invalid_env_file_assignment(username_pwd_vlan):
     username, expected_pwd, expected_vlan = username_pwd_vlan
 
 
-@pytest.mark.parametrize("valid_configs", authorization_loader.VALID_CONFIGS)
+@pytest.mark.parametrize("valid_configs", authorization_loader.get_valid_configs())
 def test_invalid_env_file_assignment(valid_configs):
     with pytest.raises(FileNotFoundError):
         CtAuthProvider(valid_configs, "nonexistent.env")

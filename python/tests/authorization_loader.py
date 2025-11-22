@@ -1,8 +1,9 @@
 import os
 
-VALID_CONFIGS = [
-    os.path.join(os.path.dirname(__file__), "./valid_config_1.yaml")
-]
+def get_valid_configs():
+    return [
+        os.path.join(os.path.dirname(__file__), "./fixtures/valid_configs/valid_config_1.yaml")
+    ]
 
 PERSON_DATA = {
     "1": {
