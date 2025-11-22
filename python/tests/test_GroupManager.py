@@ -3,23 +3,24 @@ from unittest.mock import MagicMock
 from requests import Session
 from requests.exceptions import HTTPError
 
-from churchtools import CtGroupManager
+from churchtools import CtGroupManager, ChurchtoolsClient
 
 @pytest.fixture
 def manager():
-    mgr = CtGroupManager("http://testserver", "user", "pwd", timeout=5)
-    mgr.session = MagicMock(spec=Session)
+    ctClient = ChurchtoolsClient("http://testserver", "user", "pwd", timeout=5)
+    ctClient.session = MagicMock(spec=Session)
+    ctClient.login()
+    mgr = CtGroupManager(ctClient)
     return mgr
 
 @pytest.mark.parametrize("method,args", [
-    ("login", ()),
     ("get_user_groups", (1,)),
     ("get_all_members_by_id", (1,)),
     ("get_members_by_id_and_attribute", (1, "username")),
 ])
 def test_http_error_raised(manager, method, args):
-    manager.session.get.side_effect = HTTPError("Mocked error")
-    manager.session.post.side_effect = HTTPError("Mocked error")
+    manager.churchtoolsClient.session.get.side_effect = HTTPError("Mocked error")
+    manager.churchtoolsClient.session.post.side_effect = HTTPError("Mocked error")
 
     with pytest.raises(HTTPError):
         getattr(manager, method)(*args)
@@ -45,7 +46,7 @@ def test_get_user_groups_valid_response(manager, group_data, expected):
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
     mock_response.json.return_value = {"data": group_data}
-    manager.session.get.return_value = mock_response
+    manager.churchtoolsClient.session.get.return_value = mock_response
 
     assert manager.get_user_groups(123) == expected
 
@@ -112,7 +113,7 @@ def test_get_members_pagination(manager, pages_data, expected):
     mock_response.raise_for_status.return_value = None
     mock_response.json.side_effect = pages_data
 
-    manager.session.get.return_value = mock_response
+    manager.churchtoolsClient.session.get.return_value = mock_response
 
     result = manager.get_members(group_id=1)
     assert result == expected
