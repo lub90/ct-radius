@@ -87,6 +87,9 @@ class Config(AttrDict):
 
         if "vlan_separator" not in basic:
             raise ValueError("Missing key: basic.vlan_separator")
+        
+        if not isinstance(self.basic.vlan_separator, str):
+            raise TypeError("basic.vlan_separator must be a string")
 
         if "timeout" not in basic:
             raise ValueError("Missing key: basic.timeout")
@@ -99,9 +102,15 @@ class Config(AttrDict):
 
         if "username_field_name" not in basic:
             raise ValueError("Missing key: basic.username_field_name")
+        
+        if not isinstance(self.basic.username_field_name, str):
+            raise TypeError("basic.username_field_name must be a string")
 
         if "path_to_private_decryption_key" not in basic:
             raise ValueError("Missing key: basic.path_to_private_decryption_key")
+
+        if not isinstance(self.basic.path_to_private_decryption_key, str):
+            raise TypeError("basic.path_to_private_decryption_key must be a string")
 
         # Check required vlans fields
         if "default_vlan" not in vlans:

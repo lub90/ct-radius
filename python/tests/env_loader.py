@@ -1,74 +1,36 @@
-# --- ENV configs for different scenarios ---
-FULL_ENV_1 = {
-    "CT_SERVER_URL": "https://example.com",
-    "CT_API_USER": "admin",
-    "CT_API_USER_PWD": "securepassword",
-    "CT_PWD_DB_SECRET": "topsecret"
-}
+from pathlib import Path
+from typing import List, Dict
+from dotenv import dotenv_values
+from fixture_loader import get_all_files
 
-FULL_ENV_2 = {
-    "CT_SERVER_URL": "https://api.devcloud.io",
-    "CT_API_USER": "user_dev_93",
-    "CT_API_USER_PWD": "d3vP@ssw0rd!",
-    "CT_PWD_DB_SECRET": "alpha_secret_01"
-}
-
-FULL_ENV_3 = {
-    "CT_SERVER_URL": "https://services.staginghub.net",
-    "CT_API_USER": "stage_user_17",
-    "CT_API_USER_PWD": "St@g3Acc3ss#2025",
-    "CT_PWD_DB_SECRET": "beta_secret_02"
-}
-
-FULL_ENV_4 = {
-    "CT_SERVER_URL": "https://backend.testingzone.org",
-    "CT_API_USER": "test_admin_42",
-    "CT_API_USER_PWD": "T3st!ngP@ss987",
-    "CT_PWD_DB_SECRET": "gamma_secret_03"
-}
-
-FULL_ENV_5 = {
-    "CT_SERVER_URL": "https://platform.prodengine.com",
-    "CT_API_USER": "prod_user_88",
-    "CT_API_USER_PWD": "Pr0duct!0n#Key",
-    "CT_PWD_DB_SECRET": "delta_secret_04"
-}
-
-PARTIAL_ENV_CT_SERVER_URL = {
-    "CT_SERVER_URL": None,
-    "CT_API_USER": "admin",
-    "CT_API_USER_PWD": "securepassword",
-    "CT_PWD_DB_SECRET": "topsecret"
-}
-
-PARTIAL_ENV_CT_API_USER = {
-    "CT_SERVER_URL": "https://example.com",
-    "CT_API_USER": None,
-    "CT_API_USER_PWD": "securepassword",
-    "CT_PWD_DB_SECRET": "topsecret"
-}
-
-PARTIAL_ENV_CT_API_USER_PWD = {
-    "CT_SERVER_URL": "https://example.com",
-    "CT_API_USER": "admin",
-    "CT_API_USER_PWD": None,
-    "CT_PWD_DB_SECRET": "topsecret"
-}
-
-PARTIAL_ENV_PWD_DB_SECRET = {
-    "CT_SERVER_URL": "https://example.com",
-    "CT_API_USER": "admin",
-    "CT_API_USER_PWD": "securepassword",
-    "CT_PWD_DB_SECRET": None
-}
-
-EMPTY_ENV = {
-    "CT_SERVER_URL": "",
-    "CT_API_USER": "",
-    "CT_API_USER_PWD": "",
-    "CT_PWD_DB_SECRET": ""
-}
+def get_all_env_files(subfolder: str) -> List[Path]:
+    return get_all_files(subfolder, ["*.env"])
 
 
-VALID_ENVS = [FULL_ENV_1, FULL_ENV_2, FULL_ENV_3, FULL_ENV_4, FULL_ENV_5]
-INVALID_ENVS = [PARTIAL_ENV_CT_SERVER_URL, PARTIAL_ENV_CT_API_USER, PARTIAL_ENV_CT_API_USER_PWD, PARTIAL_ENV_PWD_DB_SECRET, EMPTY_ENV]
+def load_env_file(env_file: Path) -> Dict[str, str]:
+    """
+    Load a single .env file and return its contents as a dictionary.
+
+    Args:
+        env_file (Path): Path to the .env file.
+
+    Returns:
+        Dict[str, str]: Key-value pairs from the .env file.
+    """
+    return dotenv_values(env_file)
+
+
+def get_invalid_envs() -> List[Dict[str, str]]:
+    """
+    Load all .env files from fixtures/invalid_envs and return them as dictionaries.
+    """
+    env_files = get_all_env_files("invalid_envs")
+    return [load_env_file(f) for f in env_files]
+
+
+def get_valid_envs() -> List[Dict[str, str]]:
+    """
+    Load all .env files from fixtures/valid_envs and return them as dictionaries.
+    """
+    env_files = get_all_env_files("valid_envs")
+    return [load_env_file(f) for f in env_files]
