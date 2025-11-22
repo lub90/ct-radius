@@ -22,7 +22,7 @@ class Config(AttrDict):
         "CT_SERVER_URL",
         "CT_API_USER",
         "CT_API_USER_PWD",
-        "CT_PWD_DB_SECRET"
+        "CT_PRIVATE_DECRYPTION_KEY_PWD"
     ]
 
     def __init__(self, config_path: str, env_file = None):
@@ -38,19 +38,6 @@ class Config(AttrDict):
         self._merge_env_into_basic()
         self._validate_native_vars()
         self._build_all_wifi_access_groups()
-
-
-    def getCommunicationConfigFor(self, person_id):
-        result = SimpleNamespace()
-        result.pwd_display_time = self.communication.pwd_display_time
-        result.reset_command = self.communication.reset_command
-        result.auto_reset = self.communication.auto_reset
-        result.chat_room_id = None
-
-        if person_id in self.communication.custom_settings:
-            result.__dict__.update(self.communication.custom_settings[person_id])
-
-        return result
 
 
     def _load_yaml(self, path: str):
@@ -82,12 +69,8 @@ class Config(AttrDict):
         if "vlans" not in self or not self.vlans:
             raise ValueError("vlans must be present and non-empty.")
 
-        if "communication" not in self or not self.vlans:
-            raise ValueError("communication must be present and non-empty.")
-
         basic = self.basic
         vlans = self.vlans
-        communication = self.communication
 
         # Check required basic fields
         if "wifi_access_groups" not in basic or not basic.wifi_access_groups:
@@ -116,6 +99,9 @@ class Config(AttrDict):
 
         if "username_field_name" not in basic:
             raise ValueError("Missing key: basic.username_field_name")
+
+        if "path_to_private_decryption_key" not in basic:
+            raise ValueError("Missing key: basic.path_to_private_decryption_key")
 
         # Check required vlans fields
         if "default_vlan" not in vlans:
@@ -153,56 +139,6 @@ class Config(AttrDict):
 
         if any(v < 0 for v in self.vlans.assignments_if_requested.values()):
             raise ValueError("The vlan ids for vlans.assignments_if_requested are only allowed to be equalt to or greather than 0")
-
-        if "server_url" not in communication:
-            raise ValueError("Missing key: communication.server_url")
-
-        if not isinstance(self.communication.server_url, str):
-            raise TypeError("communication.server_url must be a string")
-
-        if "language" not in communication:
-            raise ValueError("Missing key: communication.language")
-
-        if not isinstance(self.communication.language, str):
-            raise TypeError("communication.language must be a string")
-
-        if "pwd_display_time" not in communication:
-            raise ValueError("Missing key: communication.pwd_display_time")
-
-        if not isinstance(self.communication.pwd_display_time, int):
-            raise TypeError("communication.pwd_display_time must be an integer")
-
-        if "reset_command" not in communication:
-            raise ValueError("Missing key: communication.reset_command")
-
-        if not isinstance(self.communication.reset_command, str):
-            raise TypeError("communication.reset_command must be a string")
-
-        if "auto_reset" not in communication:
-            raise ValueError("communication.auto_reset must be set")
-
-        if not isinstance(self.communication.auto_reset, int):
-            raise TypeError("communication.auto_reset must be an integer")
-
-        if "custom_settings" in communication:
-            for custom_setting_id, custom_setting in communication.custom_settings.items():
-                self._validate_custom_communication_setting(custom_setting_id, custom_setting)
-
-    def _validate_custom_communication_setting(self, custom_setting_id, custom_setting):
-        if (not isinstance(custom_setting_id, int)) or (custom_setting_id < 0):
-            raise TypeError("The key for custom settings in the communication part must be of type integer and greater than/equal to 0, representing a ChurchTools person id.")
-
-        if ("pwd_display_time" in custom_setting) and not isinstance(custom_setting["pwd_display_time"], int):
-            raise TypeError("custom_setting.pwd_display_time must be an integer")
-
-        if ("reset_command" in custom_setting) and not isinstance(custom_setting["reset_command"], str):
-            raise TypeError("custom_setting.reset_command must be a string")
-
-        if ("chat_room_id" in custom_setting) and not isinstance(custom_setting["chat_room_id"], str):
-            raise TypeError("custom_setting.chat_room_id must be a string")
-
-        if ("auto_reset"in custom_setting) and not isinstance(custom_setting["auto_reset"], int):
-            raise TypeError("custom_setting.auto_reset must be an integer")
 
     def _build_all_wifi_access_groups(self):
         basic = self.basic

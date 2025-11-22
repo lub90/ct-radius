@@ -15,7 +15,7 @@ class CtGroupManager(CtBasedService):
             raise ValueError(f"Person ID must be a positive integer, got {person_id} instead!")
 
         # Fetch the groups for the given person ID
-        r = self.churchtoolsClient.get(f"/persons/{person_id}/groups", timeout=self.timeout)
+        r = self.churchtoolsClient.get(f"/persons/{person_id}/groups")
         r.raise_for_status()
         return {int(g["group"]["domainIdentifier"]) for g in r.json()["data"]}
 
@@ -52,8 +52,7 @@ class CtGroupManager(CtBasedService):
 
             response = self.churchtoolsClient.get(
                 f"/groups/{group_id}/members",
-                params=params,
-                timeout=self.timeout
+                params=params
             )
 
             response.raise_for_status()
