@@ -6,9 +6,7 @@ FREERAD_GID=998
 # Files that need write access
 WRITABLE_FILES=(
   "authorize.log"
-  "synchronize.log"
   "radius.log"
-  "database.db"
 )
 
 # Files that should be read-only
@@ -19,6 +17,7 @@ READONLY_FILES=(
   "server.key"
   "server.pem"
   "var.env"
+  "decryption.pem"
 )
 
 echo "🔧 Setting group ownership to freerad (GID $FREERAD_GID)..."

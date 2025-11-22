@@ -1,4 +1,4 @@
-# Certificate Generation
+# Radius Server Certificate Generation
 
 This guide explains how to create a custom Certificate Authority (CA) and a server certificate for Ct-Radius using FreeRADIUS. Please note that certificates are security-critical components. The following instructions offer general guidance but should always be adapted to your specific environment, requirements, and authentication mechanisms.
 

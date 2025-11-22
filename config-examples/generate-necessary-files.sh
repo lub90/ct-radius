@@ -4,7 +4,6 @@
 LOG_FILES=(
   "radius.log"
   "authorize.log"
-  "synchronize.log"
 )
 
 echo "📝 Creating empty log files..."
@@ -18,7 +17,6 @@ for file in "${LOG_FILES[@]}"; do
   fi
 done
 
-echo "📦 Creating empty password database file: database.db"
-python3 -c 'import dbm; dbm.open("database.db", "c").close()'
+# TODO: Add generation of config.yaml and var.env
 
 echo "🚀 Done. Add your config.yaml, var.env, clients.conf, server.key, server.pem and ca.pem. Run set-mount-permission.sh afterwards to finish setup."
