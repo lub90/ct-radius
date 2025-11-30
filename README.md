@@ -37,6 +37,17 @@ Additionally, we are currently working on another extension to ChurchTools that 
 
 Setting up ct-radius requires a few steps, but is - in general - easy. Please follow the instructions [here](./docs/setup.md) to setup an individual instance of ct-radius for your church.
 
+## 🤝 Contribution
+
+We welcome contributions of all kinds!  
+If you’ve discovered a bug, have an idea for improvement, or already prepared a fix, feel free to get involved.  
+
+You can reach out and share your feedback or code either through:  
+- [GitHub](https://github.com/lub90/)  
+- [ChurchTools Forum](https://forum.church.tools/user/lubl)  
+
+Together we can make this project stronger.
+
 
 ## 📝 TODOs
 
