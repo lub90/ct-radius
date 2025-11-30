@@ -9,8 +9,8 @@ basic:
   vlan_separator: "#"
   # The timeout in seconds for contacting the churchtools server
   timeout: 5
-  # Path to the privateKey for encrypting the passwords in the ctpassstore backend
-  path_to_private_decryption_key: /ct-radius/privateDecryptionKey.pem
+  # Path to the privateKey for encrypting the passwords in the ctpassstore backend. Leave unchanged for most instances.
+  path_to_private_decryption_key: /ct-radius/decryption.pem
   # The field name in ChurchTools person database, in which the username is stored. Leave unchanged for most instances.
   username_field_name: cmsUserId
   
