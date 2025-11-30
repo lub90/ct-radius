@@ -312,3 +312,41 @@ def test_invalid_config_file_assignment(authorizer, username_pwd_vlan):
     assert code == 1
     assert out.splitlines() == expected_out
     assert err.splitlines() == []
+    
+    
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
+def test_password_db_generic_exception(authorizer, username_pwd_vlan):
+    username, expected_pwd, expected_vlan = username_pwd_vlan
+
+    # Simuliere generischen Fehler in PasswordDatabase
+    authorizer._pwd_db.getPwd.side_effect = Exception("DB failure")
+
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
+        code, out, err = run_main("someConfigPath", username)
+
+    expected_out = [
+        "Auth-Type := Reject"
+    ]
+
+    assert code == 1
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []
+
+
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
+def test_password_db_user_not_found_error(authorizer, username_pwd_vlan):
+    username, expected_pwd, expected_vlan = username_pwd_vlan
+
+    # Simuliere KeyError in PasswordDatabase
+    authorizer._pwd_db.getPwd.side_effect = KeyError(f"User ID {username} not found.")
+
+    with patch("authorize.CtAuthProvider", return_value=authorizer):
+        code, out, err = run_main("someConfigPath", username)
+
+    expected_out = [
+        "Auth-Type := Reject"
+    ]
+
+    assert code == 1
+    assert out.splitlines() == expected_out
+    assert err.splitlines() == []

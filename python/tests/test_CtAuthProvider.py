@@ -134,3 +134,22 @@ def test_invalid_env_file_assignment(username_pwd_vlan):
 def test_invalid_env_file_assignment(valid_configs):
     with pytest.raises(FileNotFoundError):
         CtAuthProvider(valid_configs, "nonexistent.env")
+        
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
+def test_password_db_exception(authorizer, username_pwd_vlan):
+    # Simulate that password database throws an exception
+    authorizer._pwd_db.getPwd.side_effect = Exception("DB failure")
+
+    # Expect that authorize does not take care and just forwards the Exception
+    with pytest.raises(Exception) as excinfo:
+        authorizer.authorize(username_pwd_vlan[0])
+    assert "DB failure" in str(excinfo.value)
+
+@pytest.mark.parametrize("username_pwd_vlan", authorization_loader.get_user_names_pwds_default_vlan())
+def test_password_db_user_not_found_error(authorizer, username_pwd_vlan):
+    # Simulate that password database throws a KeyError because user was not found
+    authorizer._pwd_db.getPwd.side_effect = KeyError(f"User ID {username_pwd_vlan[0]} not found.")
+
+    # Expect that authorize does take care of this error and changes it into an AuthorizationException
+    with pytest.raises(AuthenticationError) as excinfo:
+        authorizer.authorize(username_pwd_vlan[0])

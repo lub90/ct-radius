@@ -99,6 +99,12 @@ class PasswordDatabase(CtBasedService):
             headers=headers,
             timeout=self.churchtoolsClient.timeout,
         )
+        
+        # If we were unable to get the user, return None
+        if resp.status_code == 404:
+            return None
+        
+        # All other exceptions with the backend should be forwarded
         resp.raise_for_status()
         data = resp.json()
 
