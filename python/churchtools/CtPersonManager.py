@@ -1,11 +1,9 @@
-from .AbstractCtManager import AbstractCtManager
+from .CtBasedService import CtBasedService
 
-class CtPersonManager(AbstractCtManager):
+class CtPersonManager(CtBasedService):
 
     def who_am_i(self):
-
-        url = f"{self.server_url}/api/whoami"
-        response = self.session.get(url, timeout=self.timeout)
+        response = self.churchtoolsClient.get("whoami")
 
         response.raise_for_status()
 
@@ -19,13 +17,12 @@ class CtPersonManager(AbstractCtManager):
 
 
     def get_person(self, person_id: int) -> dict:
-        url = f"{self.server_url}/api/persons/{person_id}"
-        response = self.session.get(url, timeout=self.timeout)
+        response = self.churchtoolsClient.get(f"/persons/{person_id}")
         response.raise_for_status()
 
         data = response.json()
         if "data" not in data:
-            raise ValueError("Keine gültigen Personendaten in der Antwort.")
+            raise ValueError("No valid person data in the response.")
 
         return data["data"]
 

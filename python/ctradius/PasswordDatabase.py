@@ -1,210 +1,140 @@
-import os
-import dbm
 import base64
-import string
 from cryptography.fernet import Fernet
-import time
+from typing import Optional
+import requests
+import os
+import base64
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+import json
+from churchtools import ChurchtoolsClient
+from churchtools import ExtensionDataManager
+from churchtools import CtBasedService
+from churchtools import CtPersonManager
 
-class PasswordDatabase:
+
+class PasswordDatabase(CtBasedService):
     """
-    A simple password storage system using DBM and symmetric encryption.
-    Stores encrypted passwords keyed by user ID.
+    Minimal password storage system using asymmetric encryption.
+    Storage backend is abstracted (to be replaced with HTTP calls).
     """
 
-    MIN_PASSWORD_LENGTH = 8
-    # $&@# are not allowed, because they mess up radius
-    ALLOWED_CHARS = (
-        string.ascii_letters + string.digits +
-        "*-_+?.!"
-    )
+    """
+    Loads an encrypted private PEM file using a password.
+    Stores the private key object in self.privateKey.
+    """
 
-    def open(path, mode="c", timeout=5.0, interval=0.05):
+    SETTINGS_CATEGORY_NAME = 'settings'
+    SETTINGS_BASE_URL_FIELD_NAME = 'backendUrl'
+    CT_ENCRYPTED_PWD_FIELD = 'secondaryPwd'
+
+
+    def __init__(self, ctClient: ChurchtoolsClient, pem_path: str, pem_password: str):
+        super().__init__(ctClient)
+
+        # Expand ~ in path
+        self._pem_path = os.path.expanduser(pem_path)
+        self._pem_password = pem_password
+        self._private_key = None
+
+        # TODO: Move string to general config or somwhere else
+        self._extensionDataManager = ExtensionDataManager(self.churchtoolsClient, "ctpassstore")
+        
+    def _get_private_key(self):
+        # If it has not been loaded yet, create it
+        if self._private_key is None:
+            # Read the PEM file
+            with open(self._pem_path, "rb") as pem_file:
+                pem_data = pem_file.read()
+            
+            # Load the private key using the provided password
+            self._private_key = serialization.load_pem_private_key(
+                pem_data,
+                password=self._pem_password.encode("utf-8"),
+                backend=default_backend()
+            )
+            
+        # Return it
+        return self._private_key
+
+    # ----------------------------
+    # Backend abstraction methods
+    # ----------------------------
+    def _get(self, user_id: int) -> Optional[bytes]:
         """
-        Attempts to open a DBM file with retries.
-        If the file is temporarily unavailable (e.g. locked by another process),
-        it waits and retries until the timeout is reached.
-
-        Parameters:
-            path (str): Path to the DBM file.
-            mode (str): Mode for opening the DBM file ('c' = create if needed).
-            timeout (float): Maximum time to wait in seconds.
-            interval (float): Time to wait between retries in seconds.
-
-        Returns:
-            dbm object if successful.
-
-        Raises:
-            TimeoutError: If the file could not be opened within the timeout.
+        Retrieve raw encrypted value by user_id.
+        Steps:
+          1. Get settings category data (single=True).
+          2. Extract backendUrl.
+          3. Call /api/whoami via CtPersonManager to get current user id.
+          4. Call /api/persons/{id}/logintoken to get login token.
+          5. Call backendUrl/entries/{user_id} with that token.
+          6. Return the encrypted password field (decoded from base64).
         """
-        start_time = time.time()
-        while True:
-            try:
-                db = dbm.open(path, mode)
-                return db  # Successfully opened
-            except (OSError, BlockingIOError):  # Backend-dependent errors
-                if time.time() - start_time > timeout:
-                    raise TimeoutError(f"Failed to open DBM file '{path}' within {timeout} seconds.")
-                time.sleep(interval)  # Wait before retrying
+        # 1. Get settings category data
+        rawSettings = self._extensionDataManager.get_category_data(
+            self.SETTINGS_CATEGORY_NAME, single=True
+        )
+        settings = json.loads(rawSettings["value"])
+        backend_url = settings[self.SETTINGS_BASE_URL_FIELD_NAME]
+
+        # 2. Whoami to get current uscler id
+        person_mgr = CtPersonManager(
+            self.churchtoolsClient
+        )
+        whoami_data = person_mgr.who_am_i()
+        current_user_id = whoami_data["id"]
+
+        # 3. Get login token for that user
+        resp = self.churchtoolsClient.get(f"/persons/{current_user_id}/logintoken")
+        resp.raise_for_status()
+        login_token = resp.json()["data"]
+
+        # 4. Call backend /entries/{user_id} with token
+        headers = {"Authorization": f"Login {login_token}"}
+        resp = requests.get(
+            f"{backend_url}/entries/{user_id}",
+            headers=headers,
+            timeout=self.churchtoolsClient.timeout,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        # 5. Extract encrypted password field
+        encrypted_b64 = data[self.CT_ENCRYPTED_PWD_FIELD]
+        return base64.b64decode(encrypted_b64)
 
 
-    def __init__(self, db_path, encryption_password, open_timeout=5.0, open_interval=0.05):
-        """
-        Initializes the PasswordDatabase.
-
-        Args:
-            db_path (str): Path to the DBM database file.
-            encryption_password (str): Password used to derive the encryption key.
-        """
-        # Pad/truncate password to 32 bytes and encode as Fernet key
-        self.key = base64.urlsafe_b64encode(encryption_password.ljust(32).encode("utf-8")[:32])
-        self.fernet = Fernet(self.key)
-        # Take care of the home use sign ~
-        db_path = os.path.expanduser(db_path)
-        self.db = PasswordDatabase.open(db_path, mode='c', timeout=open_timeout, interval=open_interval)  # Open/create DB file
-
-    def __del__(self):
-        """
-        Ensures database is closed when the instance is destroyed.
-        """
-        if hasattr(self, "db") and (self.db is not None):
-            self.db.close()
-
-    def __enter__(self):
-        """
-        Enables context manager support.
-        Returns:
-            self
-        """
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Closes the database upon exiting context manager.
-        """
-        if self.db is not None:
-            self.db.close()
-
-    def _to_key(self, user_id: int) -> bytes:
-        """
-        Converts user ID to byte key for DB access.
-
-        Args:
-            user_id (int): Numeric user ID.
-
-        Returns:
-            bytes: Encoded user ID key.
-
-        Raises:
-            TypeError: If user_id is not an integer.
-            ValueError: If user_id is negative.
-        """
-        if not isinstance(user_id, int):
-            raise TypeError(f"user_id must be an int, got {type(user_id).__name__}")
-        if user_id < 0:
-            raise ValueError(f"The user_id must be a positive int, got {user_id}")
-        return str(user_id).encode("utf-8")
-
-    def _validate_password(self, password: str) -> None:
-        """
-        Validates password format against length and character set.
-
-        Args:
-            password (str): Password to validate.
-
-        Raises:
-            TypeError: If password is not a string.
-            ValueError: If password is too short or contains disallowed characters.
-        """
-        if not isinstance(password, str):
-            raise TypeError(f"Password must be a string, got {type(password).__name__}")
-        if len(password) < self.MIN_PASSWORD_LENGTH:
-            raise ValueError(f"Password must be at least {self.MIN_PASSWORD_LENGTH} characters long.")
-        if not all(char in self.ALLOWED_CHARS for char in password):
-            raise ValueError("Password contains invalid characters.")
-
+    # ----------------------------
+    # Public API
+    # ----------------------------
     def containsUser(self, user_id: int) -> bool:
-        """
-        Checks if a user ID exists in the database.
-
-        Args:
-            user_id (int): User identifier.
-
-        Returns:
-            bool: True if user exists, False otherwise.
-        """
-        return self._to_key(user_id) in self.db
+        return self._get(user_id) is not None
 
     def getPwd(self, user_id: int) -> str:
-        """
-        Retrieves the decrypted password for the specified user.
-
-        Args:
-            user_id (int): User identifier.
-
-        Returns:
-            str: Decrypted password.
-
-        Raises:
-            KeyError: If the user ID does not exist.
-        """
-        key = self._to_key(user_id)
-        if key not in self.db:
+        encrypted = self._get(user_id)
+        if encrypted is None:
             raise KeyError(f"User ID {user_id} not found.")
-        encrypted = self.db[key]
-        decrypted = self.fernet.decrypt(encrypted)
+        decrypted = self._decrypt(encrypted)
         return decrypted.decode("utf-8")
 
-    def setPwd(self, user_id: int, password: str) -> None:
+    def _decrypt(self, encrypted: bytes) -> bytes:
         """
-        Stores a new encrypted password for a user.
+        Decrypts RSA‑encrypted data using the loaded private key.
 
         Args:
-            user_id (int): User identifier.
-            password (str): Password to store.
-
-        Raises:
-            TypeError, ValueError: If inputs are invalid.
-        """
-        self._validate_password(password)
-        key = self._to_key(user_id)
-        encrypted = self.fernet.encrypt(password.encode("utf-8"))
-        self.db[key] = encrypted
-
-    def update(self, user_id: int, password: str) -> None:
-        """
-        Updates the password for an existing user.
-
-        Args:
-            user_id (int): User identifier.
-            password (str): New password to store.
-
-        Raises:
-            TypeError, ValueError: If inputs are invalid.
-            KeyError: If user does not exist.
-        """
-        self._validate_password(password)
-        key = self._to_key(user_id)
-        if key not in self.db:
-            raise KeyError(f"Cannot update password: User ID {user_id} not found.")
-        encrypted = self.fernet.encrypt(password.encode("utf-8"))
-        self.db[key] = encrypted
-
-    def deleteUser(self, user_id: int) -> None:
-        """
-        Deletes the password entry for a user.
-
-        Args:
-            user_id (int): User identifier.
-        """
-        key = self._to_key(user_id)
-        if key in self.db:
-            del self.db[key]
-
-    def list_all_users(self) -> list[int]:
-        """
-        Returns a list of all user IDs stored in the password database.
+            encrypted (bytes): The ciphertext to decrypt.
 
         Returns:
-            list[int]: List of user IDs.
+            bytes: The decrypted plaintext.
         """
-        return [int(user_id.decode("utf-8")) for user_id in self.db.keys()]
+        return self._get_private_key().decrypt(
+            encrypted,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )

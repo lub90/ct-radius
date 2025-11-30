@@ -1,11 +1,14 @@
-from .AbstractCtManager import AbstractCtManager
-from .CtChatManager import CtChatManager
+from .ChurchtoolsClient import ChurchtoolsClient
+from .CtBasedService import CtBasedService
 from .CtGroupManager import CtGroupManager
 from .CtPersonManager import CtPersonManager
+from .ExtensionDataManager import ExtensionDataManager
 
 __all__ = [
-    "AbstractCtManager",
+    "ChurchtoolsClient",
+    "CtBasedService",
     "CtChatManager",
     "CtGroupManager",
-    "CtPersonManager"
+    "CtPersonManager",
+    "ExtensionDataManager"
 ]

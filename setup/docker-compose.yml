@@ -1,0 +1,23 @@
+services:
+  ct-radius-server:
+    container_name: ct-radius-server
+    image: ct-radius-server:latest
+    ports:
+      - "1812-1813:1812-1813/udp"
+    env_file:
+      - './var.env'
+    volumes:
+      # Mount everything for radius
+      - './server.key:/etc/freeradius/3.0/certs/server.key'
+      - './server.pem:/etc/freeradius/3.0/certs/server.pem'
+      - './ca.pem:/etc/freeradius/3.0/certs/ca.pem'
+      - './clients.conf:/etc/freeradius/3.0/clients.conf'
+      # Mount the logging part
+      - './radius.log:/var/log/freeradius/radius.log'
+      - './authorize.log:/ct-radius/authorize.log'
+      # Mount the config file and the enxryption key for the ChurchTools database
+      - './config.yaml:/ct-radius/config.yaml'
+      - './decryption.pem:/ct-radius/decryption.pem'
+      - './var.env:/ct-radius/var.env'
+      
+    restart: unless-stopped

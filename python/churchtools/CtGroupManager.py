@@ -1,8 +1,8 @@
 import requests
 
-from .AbstractCtManager import AbstractCtManager
+from .CtBasedService import CtBasedService
 
-class CtGroupManager(AbstractCtManager):
+class CtGroupManager(CtBasedService):
 
     def get_user_groups(self, person_id):
         if not isinstance(person_id, int):
@@ -15,7 +15,7 @@ class CtGroupManager(AbstractCtManager):
             raise ValueError(f"Person ID must be a positive integer, got {person_id} instead!")
 
         # Fetch the groups for the given person ID
-        r = self.session.get(f"{self.server_url}/api/persons/{person_id}/groups", timeout=self.timeout)
+        r = self.churchtoolsClient.get(f"/persons/{person_id}/groups")
         r.raise_for_status()
         return {int(g["group"]["domainIdentifier"]) for g in r.json()["data"]}
 
@@ -50,10 +50,9 @@ class CtGroupManager(AbstractCtManager):
 
             params["page"] = page
 
-            response = self.session.get(
-                f"{self.server_url}/api/groups/{group_id}/members",
-                params=params,
-                timeout=self.timeout
+            response = self.churchtoolsClient.get(
+                f"/groups/{group_id}/members",
+                params=params
             )
 
             response.raise_for_status()

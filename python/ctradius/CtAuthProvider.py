@@ -21,7 +21,7 @@ class CtAuthProvider(RadiusRelevantApp):
 
 
     def authorize(self, raw_username):
-        self.group_manager.login()
+        self.churchtoolsClient.login()
 
         username, requested_vlan = self._split_username(raw_username)
         ct_person_id = self._get_person_id(username)
