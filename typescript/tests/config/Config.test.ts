@@ -144,4 +144,133 @@ describe("Config validation using fixtures", () => {
   // TODO: Currently, we do not check the .env files to be correct in the Config.ts, maybe we will add that later on...
 
 
+  // -----------------------------
+  // CONFIG + ENV COMBINED
+  // -----------------------------
+  describe("config + env combined", () => {
+    const fixtures = new FixtureLoader();
+    const consoleChecker = new ConsoleChecker();
+
+    beforeEach(() => {
+      consoleChecker.setup();
+    });
+
+    afterEach(() => {
+      consoleChecker.teardown();
+    });
+
+    it("should load config and env together correctly", () => {
+      const mocker = new FileMocker();
+
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+
+      const envPath = mocker.createFileFromPath(
+        "var.env",
+        fixtures.getValidEnvs()[0]
+      );
+
+      const config = new Config(configPath, envPath).get();
+
+      expect(config).toBeDefined();
+      expect(typeof config).toBe("object");
+
+      // Snapshot ensures structure is stable
+      expect(config).toMatchSnapshot();
+
+      consoleChecker.checkNoOutput();
+    });
+  });
+
+  // -----------------------------
+  // PROCESS.ENV IMMUTABILITY
+  // -----------------------------
+  describe("process.env immutability", () => {
+    const fixtures = new FixtureLoader();
+    const consoleChecker = new ConsoleChecker();
+
+    beforeEach(() => {
+      consoleChecker.setup();
+    });
+
+    afterEach(() => {
+      consoleChecker.teardown();
+    });
+
+    it("should not mutate unrelated process.env variables", () => {
+      process.env.TEST_TEMP = "123";
+
+      const mocker = new FileMocker();
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+      const envPath = mocker.createFileFromPath(
+        "var.env",
+        fixtures.getValidEnvs()[0]
+      );
+
+      new Config(configPath, envPath).get();
+
+      expect(process.env.TEST_TEMP).toBe("123");
+
+      consoleChecker.checkNoOutput();
+    });
+  });
+
+  // -----------------------------
+  // MISSING ENV FILE
+  // -----------------------------
+  describe("missing env file", () => {
+    const fixtures = new FixtureLoader();
+    const consoleChecker = new ConsoleChecker();
+
+    beforeEach(() => {
+      consoleChecker.setup();
+    });
+
+    afterEach(() => {
+      consoleChecker.teardown();
+    });
+
+    it("should throw if env file is missing", () => {
+      const mocker = new FileMocker();
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+
+      expect(() => {
+        new Config(configPath, "/path/does/not/exist.env").get();
+      }).toThrow();
+
+      consoleChecker.checkNoOutput();
+    });
+  });
+
+  // -----------------------------
+  // MISSING CONFIG FILE
+  // -----------------------------
+  describe("missing config file", () => {
+    const consoleChecker = new ConsoleChecker();
+
+    beforeEach(() => {
+      consoleChecker.setup();
+    });
+
+    afterEach(() => {
+      consoleChecker.teardown();
+    });
+
+    it("should throw if config file is missing", () => {
+      expect(() => {
+        new Config("/path/does/not/exist.json").get();
+      }).toThrow();
+
+      consoleChecker.checkNoOutput();
+    });
+  });
+
 });

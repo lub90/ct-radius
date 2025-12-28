@@ -8,11 +8,27 @@ export class Config {
 
   constructor(configPath: string, envPath?: string) {
     if (envPath) {
-      dotenv.config({ path: envPath, quiet: true });
+        this.loadEnv(envPath);
     }
 
     this.config = this.loadConfig(configPath);
   }
+
+  private loadEnv(envPath: string): void {
+    // Check if file exists before loading
+    if (!fs.existsSync(envPath)) {
+        throw new Error(`Env file not found at path: ${envPath}`);
+    }
+
+    // Load environment variables
+    const result = dotenv.config({ path: envPath, quiet: true });
+
+    // dotenv only throws on file read errors, not syntax errors
+    if (result.error) {
+        throw new Error(`Failed to load env file '${envPath}': ${result.error.message}`);
+    }
+  }
+
 
   private loadConfig(configPath: string): AppConfig {
 

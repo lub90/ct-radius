@@ -1,5 +1,40 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Config validation using fixtures > config + env combined > should load config and env together correctly 1`] = `
+{
+  "allowRequestedVlan": true,
+  "ct-groups": {
+    "backendConfig": {
+      "timeout": 5,
+      "usernameFieldName": "cmsUserId",
+    },
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/ct-radius/cache/personCache.json",
+    "pathToPrivateDecryptionKey": "/ct-radius/privateDecryptionKey.pem",
+    "vlanMapping": {
+      "assignments": {
+        "1": 10,
+        "2": 20,
+        "3": 30,
+      },
+      "assignmentsIfRequested": {
+        "4": 40,
+        "5": 50,
+      },
+      "defaultVlan": 1,
+    },
+    "wifiAccessGroups": [
+      100,
+      200,
+    ],
+  },
+  "modules": [
+    "ct-groups",
+  ],
+  "vlanSeparator": "#",
+}
+`;
+
 exports[`Config validation using fixtures > valid configs > valid config /home/lblock/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_1.json should load successfully 1`] = `
 {
   "allowRequestedVlan": true,
