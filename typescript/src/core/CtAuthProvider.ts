@@ -1,0 +1,116 @@
+import { Config } from "./Config.js";
+import { RejectResponse, RadiusResponse } from "../types/RadiusResponse.js";
+import type { AuthModule } from "./AuthModule.js";
+import type { AppConfig } from "./Config.js";
+import { AuthenticationError } from "../errors/AuthenticationError.js";
+import type { UserRequest } from "../types/UserRequest.js";
+import { CtGroupsModule } from "./modules/CtGroupsModule.js";
+import pino from "pino";
+
+export class CtAuthProvider {
+
+  private readonly modules: AuthModule[];
+  private readonly config: AppConfig;
+  private readonly logger: pino.Logger;
+
+  private readonly moduleRegistry: Record<string, (cfg: any, logger: pino.Logger) => AuthModule> = {
+        "ct-groups": (cfg, logger) => new CtGroupsModule(cfg, logger)
+    };
+
+  constructor(configPath: string, envPath: string | undefined, logger: pino.Logger) {
+    this.logger = logger;
+    this.config = new Config(configPath, envPath).get();
+    this.modules = this.loadModules(this.config);
+  }
+
+  private loadModules(config: AppConfig): AuthModule[] {
+    
+
+    return config.modules.map((name) => {
+        // Get the module-specific config
+        const moduleConfig = config[name] ?? {};
+
+        // The factory method to generate the module
+        const factory = this.moduleRegistry[name];
+        if (!factory) {
+            throw new Error(`Unknown authorization module '${name}' in config!`);
+        }
+
+        // Create the module and return it
+        return factory(moduleConfig, this.logger);
+    });
+  }
+
+
+  async authorize(username: string): Promise<RadiusResponse> {
+
+    // Get the cleaned up username, if an error occurs it will be caught in the index.ts
+    const cleaned: UserRequest = this.cleanUsername(username, this.config);
+
+    for (const module of this.modules) {
+      const result = await module.authorize(cleaned);
+      if (result) return result;
+    }
+
+    return new RejectResponse();
+  }
+
+    private cleanUsername(raw: string, config: AppConfig): UserRequest {
+        const trimmed = raw.trim();
+
+        if (!trimmed) {
+            throw new AuthenticationError("The provided username is empty");
+        }
+
+        // If VLAN requests are disabled → simple case
+        if (!config.allowRequestedVlan) {
+            return {
+                username: trimmed.toLowerCase()
+            };
+        }
+
+        // VLAN requests enabled → split by separator
+        const sep = config.vlanSeparator;
+
+        // If separator not present → no VLAN requested
+        if (!trimmed.includes(sep)) {
+            return {
+                username: trimmed.toLowerCase()
+            };
+        }
+
+        // Seperator is present → separate
+        const [userPart, vlanPart] = trimmed.split(sep, 2);
+        const username = userPart!.trim();
+        const vlanString = vlanPart?.trim();
+
+        if (!username) {
+            throw new AuthenticationError(
+                `Invalid username format: expected '<username>${sep}<vlanId>', but the username part before '${sep}' is empty.`
+            );
+        }
+
+        if (!vlanString) {
+            throw new AuthenticationError(
+                `Invalid username format: expected '<username>${sep}<vlanId>', but no VLAN ID was provided after '${sep}'.`
+            );
+        }
+
+        // Becomes NaN if vlanString is not a number → the following check will fail
+        const vlanId = Number(vlanString);
+
+        if (!Number.isInteger(vlanId) || vlanId < 0) {
+            throw new AuthenticationError(
+                `Invalid VLAN ID '${vlanString}'. VLAN IDs must be a non-negative integer (0 or higher).`
+            );
+        }
+
+        return {
+            username: username.toLowerCase(),
+            requestedVlanId: vlanId,
+        };
+    }
+
+
+}
+
