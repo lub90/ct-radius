@@ -36,10 +36,11 @@ export async function main() {
     /*
      * Setup is finished, now run the real stuff here
      */
-    await authenticateUser(args, logger);
+    const exitCode = await authenticateUser(args, logger);
+    await safeExit(logger, exitCode);
 }
 
-export async function authenticateUser(args: OptionValues, logger: pino.Logger) {
+export async function authenticateUser(args: OptionValues, logger: pino.Logger): Promise<number> {
 
     try {
 
@@ -50,7 +51,9 @@ export async function authenticateUser(args: OptionValues, logger: pino.Logger) 
         // Print RADIUS-compatible output
         console.log(response.toString());
         logger.info(`Retrieved data for user ${args.username}.`);
-        await safeExit(logger, 0);
+        
+        // Everything is fine - exit with 0
+        return 0;
 
     } catch (err: unknown) {
 
@@ -67,7 +70,8 @@ export async function authenticateUser(args: OptionValues, logger: pino.Logger) 
             logger.error(`Internal Error: ${message}`);
         }
 
-        await safeExit(logger, 1);
+        // Something went wrong - return with exit code 1
+        return 1;
 
     }
 

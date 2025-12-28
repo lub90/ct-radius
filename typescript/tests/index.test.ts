@@ -25,7 +25,6 @@ describe('authenticateUser', () => {
       username: 'user',
     };
 
-    process.exit = vi.fn() as any;
   });
 
   afterEach(() => {
@@ -42,11 +41,11 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      await authenticateUser(mockArgs, mockLogger);
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
 
+      expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Accept');
       expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Retrieved data for user user.' }]);
-      expect(process.exit).toHaveBeenCalledWith(0);
     });
 
     it('should handle RejectResponse', async () => {
@@ -56,11 +55,11 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      await authenticateUser(mockArgs, mockLogger);
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
 
+      expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Retrieved data for user user.' }]);
-      expect(process.exit).toHaveBeenCalledWith(0);
     });
 
     it('should handle ChallengeResponse', async () => {
@@ -70,11 +69,11 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      await authenticateUser(mockArgs, mockLogger);
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
 
+      expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Cleartext-Password := password');
       expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Retrieved data for user user.' }]);
-      expect(process.exit).toHaveBeenCalledWith(0);
     });
   });
 
@@ -85,11 +84,11 @@ describe('authenticateUser', () => {
         throw new AuthenticationError("auth error");
       });
 
-      await authenticateUser(mockArgs, mockLogger);
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
 
+      expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(mockLogger.logs).toEqual([{ level: 'warn', msg: 'Authentication Error: auth error' }]);
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
 
     it('should handle Error from CtAuthProvider constructor', async () => {
@@ -98,11 +97,11 @@ describe('authenticateUser', () => {
         throw new Error('internal error');
       });
 
-      await authenticateUser(mockArgs, mockLogger);
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
 
+      expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(mockLogger.logs).toEqual([{ level: 'error', msg: 'Internal Error: internal error' }]);
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
 
     it('should handle AuthenticationError from authorize', async () => {
@@ -112,11 +111,11 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      await authenticateUser(mockArgs, mockLogger);
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
 
+      expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(mockLogger.logs).toEqual([{ level: 'warn', msg: 'Authentication Error: auth error' }]);
-      expect(process.exit).toHaveBeenCalledWith(1);
     });
 
     it('should handle Error from authorize', async () => {
@@ -126,11 +125,65 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      await authenticateUser(mockArgs, mockLogger);
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
 
+      expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(mockLogger.logs).toEqual([{ level: 'error', msg: 'Internal Error: internal error' }]);
-      expect(process.exit).toHaveBeenCalledWith(1);
+    });
+
+    it('should handle string thrown from CtAuthProvider constructor', async () => {
+      const CtAuthProviderMock = vi.mocked(CtAuthProvider);
+      CtAuthProviderMock.mockImplementation(function () {
+        throw 'string error';
+      });
+
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
+
+      expect(exitCode).toBe(1);
+      expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
+      expect(mockLogger.logs).toEqual([{ level: 'error', msg: 'Internal Error: string error' }]);
+    });
+
+    it('should handle object thrown from CtAuthProvider constructor', async () => {
+      const CtAuthProviderMock = vi.mocked(CtAuthProvider);
+      CtAuthProviderMock.mockImplementation(function () {
+        throw { custom: 'error' };
+      });
+
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
+
+      expect(exitCode).toBe(1);
+      expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
+      expect(mockLogger.logs).toEqual([{ level: 'error', msg: 'Internal Error: [object Object]' }]);
+    });
+
+    it('should handle string thrown from authorize', async () => {
+      const CtAuthProviderMock = vi.mocked(CtAuthProvider);
+      const mockCt = { authorize: vi.fn().mockRejectedValue('string error') };
+      CtAuthProviderMock.mockImplementation(function () {
+        return mockCt as unknown as CtAuthProvider;
+      });
+
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
+
+      expect(exitCode).toBe(1);
+      expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
+      expect(mockLogger.logs).toEqual([{ level: 'error', msg: 'Internal Error: string error' }]);
+    });
+
+    it('should handle object thrown from authorize', async () => {
+      const CtAuthProviderMock = vi.mocked(CtAuthProvider);
+      const mockCt = { authorize: vi.fn().mockRejectedValue({ custom: 'error' }) };
+      CtAuthProviderMock.mockImplementation(function () {
+        return mockCt as unknown as CtAuthProvider;
+      });
+
+      const exitCode = await authenticateUser(mockArgs, mockLogger);
+
+      expect(exitCode).toBe(1);
+      expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
+      expect(mockLogger.logs).toEqual([{ level: 'error', msg: 'Internal Error: [object Object]' }]);
     });
   });
 });
