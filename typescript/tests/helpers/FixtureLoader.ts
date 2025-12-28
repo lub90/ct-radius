@@ -28,23 +28,13 @@ export class FixtureLoader {
   // -----------------------------
   // ENV fixtures
   // -----------------------------
-  getValidEnvs(): FileMocker[] {
-    return this.loadEnvFixtures("valid_envs");
+
+  getValidEnvs(): string[] {
+    return this.loadFilesFrom("valid_envs", ".env");
   }
 
-  getInvalidEnvs(): FileMocker[] {
-    return this.loadEnvFixtures("invalid_envs");
-  }
-
-  private loadEnvFixtures(subdir: string): FileMocker[] {
-    const files = this.loadFilesFrom(subdir, ".env");
-
-    return files.map(envPath => {
-      const mocker = new FileMocker();
-      const content = fs.readFileSync(envPath, "utf-8");
-      mocker.createFile("var.env", content);
-      return mocker;
-    });
+  getInvalidEnvs(): string[] {
+    return this.loadFilesFrom("invalid_envs", ".env");
   }
 
   // -----------------------------
