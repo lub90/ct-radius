@@ -24,8 +24,12 @@ describe("Config validation using fixtures", () => {
         // so we just pass the path to Config
         const config = new Config(configPath).get();
 
+        // Semantics sanity check
         expect(config).toBeDefined();
         expect(typeof config).toBe("object");
+
+        // Content wise check
+        expect(config).toMatchSnapshot();
       });
     }
   });
