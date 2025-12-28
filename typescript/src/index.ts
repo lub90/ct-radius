@@ -77,7 +77,15 @@ function createLogger(logPath?: string) {
   const destination = logPath ?? "./authorize.log";
 
   return pino(
-    { level: "info" },
+    {
+        level: "info",
+        timestamp: () => `,"time":"${new Date().toISOString()}"`,
+        formatters: {
+            level(label, number) {
+                return { level: label.toUpperCase(), levelNum: number };
+            }
+        }
+    },
     pino.transport({
       target: "pino/file",
       options: { destination }
