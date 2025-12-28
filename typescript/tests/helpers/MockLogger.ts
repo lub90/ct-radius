@@ -6,6 +6,7 @@ export class MockLogger {
 
   // Required by pino.Logger interface
   level = "debug";
+  msgPrefix: string = "";
 
   // Generic log collector
   private push(level: string, msg: any) {
@@ -13,6 +14,10 @@ export class MockLogger {
   }
 
   // Implement the log methods you use
+  trace(msg: any, ..._args: any[]) {
+    this.push("trace", msg);
+  }
+
   debug(msg: any, ..._args: any[]) {
     this.push("debug", msg);
   }
@@ -41,6 +46,11 @@ export class MockLogger {
   child(): MockLogger {
     return this;
     }
+
+  // Flush method for pino compatibility
+  async flush() {
+    // No-op for mock
+  }
 
   // Optional: clear logs between tests
   clear() {

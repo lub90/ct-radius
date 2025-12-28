@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, type OptionValues } from "commander";
 import pino from "pino";
 import { CtAuthProvider } from "./core/CtAuthProvider.js";
 import { RejectResponse } from "./types/RadiusResponse.js";
@@ -36,6 +36,11 @@ export async function main() {
     /*
      * Setup is finished, now run the real stuff here
      */
+    await authenticateUser(args, logger);
+}
+
+export async function authenticateUser(args: OptionValues, logger: pino.Logger) {
+
     try {
 
         const ct = new CtAuthProvider(args.config, args.env, logger);
@@ -65,7 +70,7 @@ export async function main() {
         await safeExit(logger, 1);
 
     }
-    
+
 }
 
 async function safeExit(logger: pino.Logger, code: number) {
