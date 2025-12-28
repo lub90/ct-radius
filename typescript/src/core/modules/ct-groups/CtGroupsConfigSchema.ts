@@ -5,8 +5,22 @@ import { z } from "zod";
  */
 const BackendConfigSchema = z.object({
   timeout: z.number().int().positive().default(5),
-  usernameFieldName: z.string().min(1)
+
+  usernameFieldName: z.string().min(1),
+
+  // Delivered as environment variables
+  serverUrl: z.string().url().min(1),
+
+  // Delivered as environment variables
+  apiUser: z.string().min(1),
+
+  // Delivered as environment variables
+  apiUserPassword: z.string().min(1),
+
+  // Delivered as environment variables
+  privateDecryptionKeyPassword: z.string().min(1)
 });
+
 
 /**
  * VLAN MAPPING SECTION (optional)

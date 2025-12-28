@@ -44,7 +44,7 @@ export async function main() {
         
         // Print RADIUS-compatible output
         console.log(response.toString());
-        logger.info(`Successfully retrieved data for user ${args.username}.`);
+        logger.info(`Retrieved data for user ${args.username}.`);
         await safeExit(logger, 0);
 
     } catch (err: unknown) {

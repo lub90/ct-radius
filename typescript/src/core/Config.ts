@@ -8,7 +8,7 @@ export class Config {
 
   constructor(configPath: string, envPath?: string) {
     if (envPath) {
-      dotenv.config({ path: envPath });
+      dotenv.config({ path: envPath, quiet: true });
     }
 
     this.config = this.loadConfig(configPath);
@@ -36,7 +36,7 @@ export class Config {
         );
     }
 
-    let json: unknown;
+    let json: any;
     try {
         json = JSON.parse(raw);
     } catch (err) {
@@ -46,11 +46,13 @@ export class Config {
         );
     }
 
-    // TODO: Optionally merge environment variables
-    // TODO: Especially for modules...
+    // No env variable to merge
+    const merged = {
+        ...json
+    };
 
     // Validate global config
-    const parsed = AppConfigSchema.safeParse(json);
+    const parsed = AppConfigSchema.safeParse(merged);
     if (!parsed.success) {
         const errors = parsed.error.issues
             .map(e => `- ${e.path.join(".")}: ${e.message}`)
