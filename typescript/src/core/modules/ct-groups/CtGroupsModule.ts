@@ -1,7 +1,7 @@
 import type { AuthModule } from "../../AuthModule.js";
 import type { UserRequest } from "../../../types/UserRequest.js";
 import type { RadiusResponse } from "../../../types/RadiusResponse.js";
-import type { CtGroupsConfig } from "./CtGroupsConfig.js";
+import type { CtGroupsConfig } from "./CtGroupsConfigSchema.js";
 import type pino from "pino";
 
 export class CtGroupsModule implements AuthModule {
