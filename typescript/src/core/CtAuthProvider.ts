@@ -1,10 +1,10 @@
 import { Config } from "./Config.js";
 import { RejectResponse, RadiusResponse } from "../types/RadiusResponse.js";
 import type { AuthModule } from "./AuthModule.js";
-import type { AppConfig } from "./Config.js";
+import type { AppConfig } from "./AppConfigSchema.js";
 import { AuthenticationError } from "../errors/AuthenticationError.js";
 import type { UserRequest } from "../types/UserRequest.js";
-import { CtGroupsModule } from "./modules/CtGroupsModule.js";
+import { CtGroupsModule } from "./modules/ct-groups/CtGroupsModule.js";
 import pino from "pino";
 
 export class CtAuthProvider {

@@ -1,16 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
-
-export interface AppConfig {
-    allowRequestedVlan: boolean; // whether users may request VLANs
-    // TODO: Must be set and have at least one char, if allowRequestedVlan is true
-    vlanSeparator: string; // e.g. "#", ".", "-", "_vlan_"
-    modules: string[];
-
-    // Module-specific configs
-    [moduleName: string]: unknown;
-}
+import { AppConfigSchema, type AppConfig } from "./AppConfigSchema.js";
 
 export class Config {
   private config: AppConfig;
@@ -24,6 +15,7 @@ export class Config {
   }
 
   private loadConfig(configPath: string): AppConfig {
+
     const absolute = path.resolve(configPath);
 
     // Check if file exists before reading
@@ -57,7 +49,16 @@ export class Config {
     // TODO: Optionally merge environment variables
     // TODO: Especially for modules...
 
-    return json as AppConfig;
+    // Validate global config
+    const parsed = AppConfigSchema.safeParse(json);
+    if (!parsed.success) {
+        const errors = parsed.error.issues
+            .map(e => `- ${e.path.join(".")}: ${e.message}`)
+            .join("\n");
+        throw new Error(`Invalid configuration:\n${errors}`);
+    }
+    
+    return parsed.data;
   }
 
   get(): AppConfig {
