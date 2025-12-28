@@ -70,6 +70,7 @@ ct-radius already provides quite extensive tests of its core modules to ensure r
 - Audit all classes for unnecessary imports and remove them to streamline the codebase.
 - Allow `assignments` and `assignments_if_requested` to be empty, ensuring flexibility in configuration (see also associated tests).
 - Extend support to **EAP-TTLS with PAP** as a fallback option, providing resilience if PEAP-MSCHAPv2 becomes deprecated (e.g., TLS 1.3 compatibility concerns).  
+- Add a README for contributors, explaining the architecture, the reasoning behind it and how to run the tests
 - Explore scenarios for WPA Enterprise login without VLAN assignment to ensure broader applicability.  
 
 
