@@ -4,7 +4,7 @@ import type { AuthModule } from "./AuthModule.js";
 import type { AppConfig } from "./AppConfigSchema.js";
 import { AuthenticationError } from "../errors/AuthenticationError.js";
 import type { UserRequest } from "../types/UserRequest.js";
-import { CtGroupsModule } from "./modules/ct-groups/CtGroupsModule.js";
+import { moduleRegistry } from "./ModuleRegistry.js";
 import pino from "pino";
 
 export class CtAuthProvider {
@@ -12,10 +12,6 @@ export class CtAuthProvider {
   private readonly modules: AuthModule[];
   private readonly config: AppConfig;
   private readonly logger: pino.Logger;
-
-  private readonly moduleRegistry: Record<string, (cfg: any, logger: pino.Logger) => AuthModule> = {
-        "ct-groups": (cfg, logger) => new CtGroupsModule(cfg, logger)
-    };
 
   constructor(configPath: string, envPath: string | undefined, logger: pino.Logger) {
     this.logger = logger;
@@ -31,7 +27,7 @@ export class CtAuthProvider {
         const moduleConfig = config[name] ?? {};
 
         // The factory method to generate the module
-        const factory = this.moduleRegistry[name];
+        const factory = moduleRegistry[name];
         if (!factory) {
             throw new Error(`Unknown authorization module '${name}' in config!`);
         }

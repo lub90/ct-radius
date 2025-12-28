@@ -20,6 +20,11 @@ export class FileMocker {
     return filePath;
   }
 
+  createFileFromPath(filename: string, sourcePath: string): string {
+    const content = fs.readFileSync(sourcePath, "utf-8");
+    return this.createFile(filename, content);
+  }
+
   /**
    * Creates a JSON file from an object.
    */

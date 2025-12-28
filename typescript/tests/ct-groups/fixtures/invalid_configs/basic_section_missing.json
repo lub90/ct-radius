@@ -1,0 +1,13 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+  "modules": ["ct-groups"],
+  "ct-groups": {
+    "pathToCacheFile": "/ct-radius/cache/personCache.json",
+    "vlanMapping": {
+      "defaultVlan": 10,
+      "assignments": {},
+      "assignmentsIfRequested": {}
+    }
+  }
+}

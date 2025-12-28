@@ -1,0 +1,16 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+  "modules": ["ct-groups"],
+  "ct-groups": {
+    "wifiAccessGroups": [101],
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToPrivateDecryptionKey": "/ct-radius/key.pem",
+    "pathToCacheFile": "/ct-radius/cache/personCache.json",
+    "vlanMapping": {
+      "defaultVlan": 10,
+      "assignments": {},
+      "assignmentsIfRequested": {}
+    }
+  }
+}

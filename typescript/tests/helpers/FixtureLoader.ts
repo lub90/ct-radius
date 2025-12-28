@@ -6,7 +6,7 @@ export class FixtureLoader {
   private baseDir: string;
 
   constructor() {
-    this.baseDir = path.resolve("tests/fixtures");
+    this.baseDir = path.resolve("./tests/fixtures");
   }
 
   // -----------------------------
@@ -50,22 +50,12 @@ export class FixtureLoader {
   // -----------------------------
   // JSON config fixtures
   // -----------------------------
-  getValidConfigs(): FileMocker[] {
-    return this.loadJsonFixtures("valid_configs");
+  getValidConfigs(): string[] {
+    return this.loadFilesFrom("valid_configs", ".json");
   }
 
-  getInvalidConfigs(): FileMocker[] {
-    return this.loadJsonFixtures("invalid_configs");
+  getInvalidConfigs(): string[] {
+    return this.loadFilesFrom("invalid_configs", ".json");
   }
 
-  private loadJsonFixtures(subdir: string): FileMocker[] {
-    const files = this.loadFilesFrom(subdir, ".json");
-
-    return files.map(jsonPath => {
-      const mocker = new FileMocker();
-      const content = fs.readFileSync(jsonPath, "utf-8");
-      mocker.createFile("config.json", content);
-      return mocker;
-    });
-  }
 }

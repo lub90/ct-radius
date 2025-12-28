@@ -1,0 +1,24 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+  "modules": ["ct-groups"],
+  "ct-groups": {
+    "wifiAccessGroups": [101, 102],
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToPrivateDecryptionKey": "/ct-radius/privateDecryptionKey2.pem",
+    "pathToCacheFile": "/ct-radius/cache/personCache.json",
+    "backendConfig": {
+      "timeout": 5,
+      "usernameFieldName": "cmsUserId"
+    },
+    "vlanMapping": {
+      "defaultVlan": 10,
+      "assignments": {
+        "101": 10
+      },
+      "assignmentsIfRequested": {
+        "77": 120
+      }
+    }
+  }
+}
