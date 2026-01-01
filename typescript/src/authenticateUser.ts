@@ -5,6 +5,15 @@ import pino from "pino";
 
 export async function authenticateUser(config: string, env: string, username: string, logger: pino.Logger): Promise<number> {
 
+    // Firstly, check that the logger is valid
+    // All other checks are left to the CtAuthProvider class
+    if (!logger) {
+        console.log("Auth-Type := Reject");
+        console.error("Internal Error: Logger instance is undefined or null but logger is required.");
+        return 1;
+    }
+
+
     try {
 
         const ct = new CtAuthProvider(config, env, logger);
