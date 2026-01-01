@@ -46,23 +46,23 @@ async function safeExit(logger: pino.Logger, code: number) {
 }
 
 function createLogger(logPath?: string) {
-  const destination = logPath ?? "./authorize.log";
+    const destination = logPath ?? "./authorize.log";
 
-  return pino(
-    {
-        level: "info",
-        timestamp: () => `,"time":"${new Date().toISOString()}"`,
-        formatters: {
-            level(label, number) {
-                return { level: label.toUpperCase(), levelNum: number };
+    return pino(
+        {
+            level: "info",
+            timestamp: () => `,"time":"${new Date().toISOString()}"`,
+            formatters: {
+                level(label, number) {
+                    return { level: label.toUpperCase(), levelNum: number };
+                }
             }
-        }
-    },
-    pino.transport({
-      target: "pino/file",
-      options: { destination }
-    })
-  );
+        },
+        pino.transport({
+            target: "pino/file",
+            options: { destination }
+        })
+    );
 }
 
 
