@@ -19,11 +19,11 @@ export async function authenticateUser(config: string, env: string, username: st
         const ct = new CtAuthProvider(config, env, logger);
         // authorize() returns a RadiusResponse instance (Accept, Reject, Challenge)
         const response = await ct.authorize(username);
-        
+
         // Print RADIUS-compatible output
         console.log(response.toString());
         logger.info(`Retrieved data for user ${username}.`);
-        
+
         // Everything is fine - exit with 0
         return 0;
 
@@ -32,7 +32,7 @@ export async function authenticateUser(config: string, env: string, username: st
         // Error → Reject
         const reject = new RejectResponse();
         console.log(reject.toString());
-        
+
         if (err instanceof AuthenticationError) {
             // Authentication error
             logger.warn(`Authentication Error: ${err.message}`);

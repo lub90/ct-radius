@@ -9,54 +9,54 @@ import pino from "pino";
 
 export class CtAuthProvider {
 
-  private readonly modules: AuthModule[];
-  private readonly config: AppConfig;
-  private readonly logger: pino.Logger;
+    private readonly modules: AuthModule[];
+    private readonly config: AppConfig;
+    private readonly logger: pino.Logger;
 
-  constructor(configPath: string, envPath: string | undefined, logger: pino.Logger) {
-    this.logger = logger;
-    this.config = new Config(configPath, envPath).get();
-    this.modules = this.loadModules(this.config);
-  }
-
-  private loadModules(config: AppConfig): AuthModule[] {
-    
-
-    return config.modules.map((name) => {
-        // Get the module-specific config
-        const moduleConfig = config[name] ?? {};
-
-        // The factory method to generate the module
-        const factory = moduleRegistry[name];
-        if (!factory) {
-            throw new Error(`Unknown authorization module '${name}' in config!`);
-        }
-
-        // Create the module and return it
-        return factory(moduleConfig, this.logger);
-    });
-  }
-
-
-  async authorize(username: string): Promise<RadiusResponse> {
-
-    // Get the cleaned up username, if an error occurs it will be caught in the index.ts
-    const cleaned: UserRequest = this.cleanUsername(username, this.config);
-
-    for (const module of this.modules) {
-        const result = await module.authorize(cleaned);
-
-        if (result === null || result === undefined) continue;
-
-        if (!(result instanceof RadiusResponse)) {
-            throw new Error("Invalid response from authorization module");
-        }
-
-        return result;
+    constructor(configPath: string, envPath: string | undefined, logger: pino.Logger) {
+        this.logger = logger;
+        this.config = new Config(configPath, envPath).get();
+        this.modules = this.loadModules(this.config);
     }
 
-    return new RejectResponse();
-  }
+    private loadModules(config: AppConfig): AuthModule[] {
+
+
+        return config.modules.map((name) => {
+            // Get the module-specific config
+            const moduleConfig = config[name] ?? {};
+
+            // The factory method to generate the module
+            const factory = moduleRegistry[name];
+            if (!factory) {
+                throw new Error(`Unknown authorization module '${name}' in config!`);
+            }
+
+            // Create the module and return it
+            return factory(moduleConfig, this.logger);
+        });
+    }
+
+
+    async authorize(username: string): Promise<RadiusResponse> {
+
+        // Get the cleaned up username, if an error occurs it will be caught in the index.ts
+        const cleaned: UserRequest = this.cleanUsername(username, this.config);
+
+        for (const module of this.modules) {
+            const result = await module.authorize(cleaned);
+
+            if (result === null || result === undefined) continue;
+
+            if (!(result instanceof RadiusResponse)) {
+                throw new Error("Invalid response from authorization module");
+            }
+
+            return result;
+        }
+
+        return new RejectResponse();
+    }
 
     private cleanUsername(raw: string, config: AppConfig): UserRequest {
         const trimmed = (raw ?? "").trim();

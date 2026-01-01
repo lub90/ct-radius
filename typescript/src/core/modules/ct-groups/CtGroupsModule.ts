@@ -10,13 +10,13 @@ export class CtGroupsModule implements AuthModule {
 
   private readonly config: CtGroupsConfig;
   private readonly logger: pino.Logger
- 
+
 
   constructor(config: any, logger: pino.Logger) {
     this.logger = logger;
     this.config = this.loadConfig(config);
   }
-    
+
   private loadConfig(rawConfig: any): CtGroupsConfig {
     // Merge environment variables into the raw config
     const merged = {
@@ -42,10 +42,10 @@ export class CtGroupsModule implements AuthModule {
     // Validate and return the final config
     const parsed = CtGroupsConfigSchema.safeParse(merged);
     if (!parsed.success) {
-        const errors = parsed.error.issues
-            .map(e => `- ${e.path.join(".")}: ${e.message}`)
-            .join("\n");
-        throw new Error(`Invalid configuration:\n${errors}`);
+      const errors = parsed.error.issues
+        .map(e => `- ${e.path.join(".")}: ${e.message}`)
+        .join("\n");
+      throw new Error(`Invalid configuration:\n${errors}`);
     }
     return parsed.data;
   }
