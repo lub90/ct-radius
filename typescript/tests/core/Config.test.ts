@@ -250,6 +250,39 @@ describe("Config validation using fixtures", () => {
     });
   });
 
+  
+
+  describe("missing config file", () => {
+    const consoleChecker = new ConsoleChecker();
+
+    beforeEach(() => {
+      consoleChecker.setup();
+    });
+
+    afterEach(() => {
+      consoleChecker.teardown();
+    });
+    
+    it("should not load any env variables when envPath is undefined", () => {
+      const mocker = new FileMocker();
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+
+      // Backup env
+      const originalEnv = { ...process.env };
+
+      new Config(configPath, undefined).get();
+
+      // Ensure no new env vars were added
+      expect(process.env).toEqual(originalEnv);
+
+      consoleChecker.checkNoOutput();
+    });
+  });
+
+
   // -----------------------------
   // MISSING CONFIG FILE
   // -----------------------------
