@@ -52,7 +52,7 @@ export class CtAuthProvider {
   }
 
     private cleanUsername(raw: string, config: AppConfig): UserRequest {
-        const trimmed = raw.trim();
+        const trimmed = (raw ?? "").trim();
 
         if (!trimmed) {
             throw new AuthenticationError("The provided username is empty");
@@ -76,7 +76,14 @@ export class CtAuthProvider {
         }
 
         // Seperator is present → separate
-        const [userPart, vlanPart] = trimmed.split(sep, 2);
+        const parts = trimmed.split(sep);
+        // Too many separators
+        if (parts.length > 2) {
+            throw new AuthenticationError(
+                `Invalid username format: too many '${sep}' separators. Expected '<username>${sep}<vlanId>'.`
+            );
+        }
+        const [userPart, vlanPart] = parts;
         const username = userPart!.trim();
         const vlanString = vlanPart?.trim();
 
