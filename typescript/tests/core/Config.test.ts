@@ -250,7 +250,7 @@ describe("Config validation using fixtures", () => {
     });
   });
 
-  
+
 
   describe("missing config file", () => {
     const consoleChecker = new ConsoleChecker();
@@ -262,7 +262,7 @@ describe("Config validation using fixtures", () => {
     afterEach(() => {
       consoleChecker.teardown();
     });
-    
+
     it("should not load any env variables when envPath is undefined", () => {
       const mocker = new FileMocker();
       const configPath = mocker.createFileFromPath(

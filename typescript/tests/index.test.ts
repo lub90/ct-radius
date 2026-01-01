@@ -15,8 +15,8 @@ describe("main", () => {
 
     // process.exit mock to prevent real ending, we are then catching the error and checking for correct return type
     vi.spyOn(process, "exit").mockImplementation((code: number) => { throw new Error(`EXIT_${code}`); });
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => { });
+    vi.spyOn(console, "log").mockImplementation(() => { });
   });
 
   afterEach(() => {
