@@ -4,13 +4,13 @@ import pino from "pino";
 // --- Mocks ------------------------------------------------------------------
 
 vi.mock("../../../src/core/Config.js", () => ({
-  Config: vi.fn().mockImplementation(function () {
-    return { get: vi.fn() };
-  })
+    Config: vi.fn().mockImplementation(function () {
+        return { get: vi.fn() };
+    })
 }));
 
 vi.mock("../../../src/core/ModuleRegistry.js", () => ({
-  moduleRegistry: {}
+    moduleRegistry: {}
 }));
 
 import { CtAuthProvider } from "../../../src/core/CtAuthProvider.js";
@@ -22,183 +22,183 @@ const fakeLogger = pino({ level: "silent" });
 
 // Helper: create fake module factories
 const createFakeModule = (name: string) =>
-  vi.fn().mockImplementation((cfg, logger) => ({
-    name,
-    cfg,
-    logger,
-    authorize: vi.fn()
-  }));
+    vi.fn().mockImplementation((cfg, logger) => ({
+        name,
+        cfg,
+        logger,
+        authorize: vi.fn()
+    }));
 
 
 // Helper: Generate a fake module factory
 function registerModules(names: string[]) {
-  const result: Record<string, any> = {};
+    const result: Record<string, any> = {};
 
-  for (const name of names) {
-    const mod = createFakeModule(name);
-    moduleRegistry[name] = mod;
-    result[name] = mod;
-  }
+    for (const name of names) {
+        const mod = createFakeModule(name);
+        moduleRegistry[name] = mod;
+        result[name] = mod;
+    }
 
-  return result;
+    return result;
 }
 
 
 // ---------------------------------------------------------------------------
 
 describe("CtAuthProvider constructor", () => {
-  let mockConfigInstance: any;
+    let mockConfigInstance: any;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+    beforeEach(() => {
+        vi.clearAllMocks();
 
-    // Reset moduleRegistry for each test
-    Object.keys(moduleRegistry).forEach((k) => delete moduleRegistry[k]);
-    registerModules(["A", "B", "C", "D", "E"]);
+        // Reset moduleRegistry for each test
+        Object.keys(moduleRegistry).forEach((k) => delete moduleRegistry[k]);
+        registerModules(["A", "B", "C", "D", "E"]);
 
-    // Capture the Config mock instance
-    mockConfigInstance = {
-      get: vi.fn()
-    };
-    (Config as any).mockImplementation(function () { return mockConfigInstance; });
-  });
-
-  // -------------------------------------------------------------------------
-  // CONFIG TESTS
-  // -------------------------------------------------------------------------
-
-  it("stores the config returned by Config.get()", () => {
-    const cfg = { modules: [] };
-    mockConfigInstance.get.mockReturnValue(cfg);
-
-    const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
-
-    expect(provider["config"]).toBe(cfg);
-    expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
-  });
-
-
-  it("passes the correct parameters to Config", () => {
-    mockConfigInstance.get.mockReturnValue({ modules: [] });
-
-    const provider = new CtAuthProvider("config.json", "envfile", fakeLogger);
-
-    expect(Config).toHaveBeenCalledTimes(1);
-    expect(Config).toHaveBeenCalledWith("config.json", "envfile");
-    expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
-  });
-
-
-  it("passes undefined envPath correctly to Config", () => {
-    mockConfigInstance.get.mockReturnValue({ modules: [] });
-
-    const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
-
-    expect(Config).toHaveBeenCalledWith("config.json", undefined);
-    expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
-  });
-
-
-  it("rethrows errors from Config constructor", () => {
-    Config.mockImplementation(() => {
-      throw new Error("Config failed");
+        // Capture the Config mock instance
+        mockConfigInstance = {
+            get: vi.fn()
+        };
+        (Config as any).mockImplementation(function () { return mockConfigInstance; });
     });
 
-    expect(() => new CtAuthProvider("x", undefined, fakeLogger))
-      .toThrow("Config failed");
-  });
+    // -------------------------------------------------------------------------
+    // CONFIG TESTS
+    // -------------------------------------------------------------------------
 
-  it("rethrows errors from Config.get()", () => {
-    mockConfigInstance.get.mockImplementation(() => {
-      throw new Error("get() failed");
+    it("stores the config returned by Config.get()", () => {
+        const cfg = { modules: [] };
+        mockConfigInstance.get.mockReturnValue(cfg);
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(provider["config"]).toBe(cfg);
+        expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
     });
 
-    expect(() => new CtAuthProvider("x", undefined, fakeLogger))
-      .toThrow("get() failed");
-  });
 
-  // -------------------------------------------------------------------------
-  // LOGGER TEST
-  // -------------------------------------------------------------------------
+    it("passes the correct parameters to Config", () => {
+        mockConfigInstance.get.mockReturnValue({ modules: [] });
 
-  it("stores the logger instance", () => {
-    mockConfigInstance.get.mockReturnValue({ modules: [] });
+        const provider = new CtAuthProvider("config.json", "envfile", fakeLogger);
 
-    const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
-
-    expect(provider["logger"]).toBe(fakeLogger);
-  });
-
-  // -------------------------------------------------------------------------
-  // MODULE LOADING TESTS
-  // -------------------------------------------------------------------------
-
-  it("loads one module correctly", () => {
-    mockConfigInstance.get.mockReturnValue({
-      modules: ["A"],
-      A: { foo: 1 }
+        expect(Config).toHaveBeenCalledTimes(1);
+        expect(Config).toHaveBeenCalledWith("config.json", "envfile");
+        expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
     });
 
-    const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
 
-    expect(provider["modules"]).toHaveLength(1);
-    expect(provider["modules"][0].name).toBe("A");
-    expect(moduleRegistry["A"]).toHaveBeenCalledWith({ foo: 1 }, fakeLogger);
-  });
+    it("passes undefined envPath correctly to Config", () => {
+        mockConfigInstance.get.mockReturnValue({ modules: [] });
 
-  it("loads two modules correctly", () => {
-    mockConfigInstance.get.mockReturnValue({
-      modules: ["A", "B"],
-      A: { a: 1 },
-      B: { b: 2 }
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(Config).toHaveBeenCalledWith("config.json", undefined);
+        expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
     });
 
-    const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
 
-    expect(provider["modules"]).toHaveLength(2);
-    expect(provider["modules"].map((m) => m.name)).toEqual(["A", "B"]);
-  });
+    it("rethrows errors from Config constructor", () => {
+        Config.mockImplementation(() => {
+            throw new Error("Config failed");
+        });
 
-  it("loads all five modules correctly", () => {
-    const names = ["A", "B", "C", "D", "E"];
-
-    mockConfigInstance.get.mockReturnValue({
-      modules: names,
-      A: {}, B: {}, C: {}, D: {}, E: {}
+        expect(() => new CtAuthProvider("x", undefined, fakeLogger))
+            .toThrow("Config failed");
     });
 
-    const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+    it("rethrows errors from Config.get()", () => {
+        mockConfigInstance.get.mockImplementation(() => {
+            throw new Error("get() failed");
+        });
 
-    expect(provider["modules"]).toHaveLength(5);
-    expect(provider["modules"].map((m) => m.name)).toEqual(names);
-  });
-
-  it("creates an empty modules array when no modules are configured", () => {
-    mockConfigInstance.get.mockReturnValue({
-      modules: []
+        expect(() => new CtAuthProvider("x", undefined, fakeLogger))
+            .toThrow("get() failed");
     });
 
-    const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+    // -------------------------------------------------------------------------
+    // LOGGER TEST
+    // -------------------------------------------------------------------------
 
-    expect(provider["modules"]).toHaveLength(0);
-  });
+    it("stores the logger instance", () => {
+        mockConfigInstance.get.mockReturnValue({ modules: [] });
 
-  it("throws when an unknown module is configured", () => {
-    mockConfigInstance.get.mockReturnValue({
-      modules: ["Unknown"]
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(provider["logger"]).toBe(fakeLogger);
     });
 
-    expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
-      .toThrow("Unknown authorization module 'Unknown' in config!");
-  });
+    // -------------------------------------------------------------------------
+    // MODULE LOADING TESTS
+    // -------------------------------------------------------------------------
 
-  it("throws when unknown module is mixed with known modules", () => {
-    mockConfigInstance.get.mockReturnValue({
-      modules: ["A", "Unknown"],
-      A: {}
+    it("loads one module correctly", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["A"],
+            A: { foo: 1 }
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(provider["modules"]).toHaveLength(1);
+        expect(provider["modules"][0].name).toBe("A");
+        expect(moduleRegistry["A"]).toHaveBeenCalledWith({ foo: 1 }, fakeLogger);
     });
 
-    expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
-      .toThrow("Unknown authorization module 'Unknown' in config!");
-  });
+    it("loads two modules correctly", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["A", "B"],
+            A: { a: 1 },
+            B: { b: 2 }
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(provider["modules"]).toHaveLength(2);
+        expect(provider["modules"].map((m) => m.name)).toEqual(["A", "B"]);
+    });
+
+    it("loads all five modules correctly", () => {
+        const names = ["A", "B", "C", "D", "E"];
+
+        mockConfigInstance.get.mockReturnValue({
+            modules: names,
+            A: {}, B: {}, C: {}, D: {}, E: {}
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(provider["modules"]).toHaveLength(5);
+        expect(provider["modules"].map((m) => m.name)).toEqual(names);
+    });
+
+    it("creates an empty modules array when no modules are configured", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: []
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(provider["modules"]).toHaveLength(0);
+    });
+
+    it("throws when an unknown module is configured", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["Unknown"]
+        });
+
+        expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
+            .toThrow("Unknown authorization module 'Unknown' in config!");
+    });
+
+    it("throws when unknown module is mixed with known modules", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["A", "Unknown"],
+            A: {}
+        });
+
+        expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
+            .toThrow("Unknown authorization module 'Unknown' in config!");
+    });
 });

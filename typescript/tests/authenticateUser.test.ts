@@ -43,7 +43,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Accept');
@@ -60,7 +60,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -77,7 +77,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Cleartext-Password := password');
@@ -95,7 +95,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -110,7 +110,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -126,7 +126,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -143,7 +143,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -159,7 +159,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -174,7 +174,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -190,7 +190,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -207,7 +207,7 @@ describe('authenticateUser', () => {
 
       const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith( mockArgs.config, mockArgs.env, mockLogger );
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
