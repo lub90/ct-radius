@@ -8,7 +8,7 @@ export async function main() {
     // Custom error handling
     program.configureOutput({
         writeErr: (str) => {
-            console.error("Auth-Type := Reject");
+            console.log("Auth-Type := Reject");
             console.error("Internal Error:", str.trim());
             process.exit(1);
         }
