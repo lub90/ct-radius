@@ -1,8 +1,6 @@
 import { Command, type OptionValues } from "commander";
 import pino from "pino";
-import { CtAuthProvider } from "./core/CtAuthProvider.js";
-import { RejectResponse } from "./types/RadiusResponse.js";
-import { AuthenticationError } from "./errors/AuthenticationError.js";
+import { authenticateUser } from "./authenticateUser.js";
 
 export async function main() {
     const program = new Command();
@@ -36,46 +34,11 @@ export async function main() {
     /*
      * Setup is finished, now run the real stuff here
      */
-    const exitCode = await authenticateUser(args, logger);
+    const exitCode = await authenticateUser(args.config, args.env, args.username, logger);
     await safeExit(logger, exitCode);
 }
 
-export async function authenticateUser(args: OptionValues, logger: pino.Logger): Promise<number> {
 
-    try {
-
-        const ct = new CtAuthProvider(args.config, args.env, logger);
-        // authorize() returns a RadiusResponse instance (Accept, Reject, Challenge)
-        const response = await ct.authorize(args.username);
-        
-        // Print RADIUS-compatible output
-        console.log(response.toString());
-        logger.info(`Retrieved data for user ${args.username}.`);
-        
-        // Everything is fine - exit with 0
-        return 0;
-
-    } catch (err: unknown) {
-
-        // Error → Reject
-        const reject = new RejectResponse();
-        console.log(reject.toString());
-        
-        if (err instanceof AuthenticationError) {
-            // Authentication error
-            logger.warn(`Authentication Error: ${err.message}`);
-        } else {
-            // Some internal error
-            const message = err instanceof Error ? err.message : String(err);
-            logger.error(`Internal Error: ${message}`);
-        }
-
-        // Something went wrong - return with exit code 1
-        return 1;
-
-    }
-
-}
 
 async function safeExit(logger: pino.Logger, code: number) {
     await logger.flush();
