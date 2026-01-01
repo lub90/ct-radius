@@ -44,8 +44,15 @@ export class CtAuthProvider {
     const cleaned: UserRequest = this.cleanUsername(username, this.config);
 
     for (const module of this.modules) {
-      const result = await module.authorize(cleaned);
-      if (result) return result;
+        const result = await module.authorize(cleaned);
+
+        if (result === null || result === undefined) continue;
+
+        if (!(result instanceof RadiusResponse)) {
+            throw new Error("Invalid response from authorization module");
+        }
+
+        return result;
     }
 
     return new RejectResponse();
