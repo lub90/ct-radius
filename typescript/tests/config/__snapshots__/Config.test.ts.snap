@@ -35,7 +35,7 @@ exports[`Config validation using fixtures > config + env combined > should load 
 }
 `;
 
-exports[`Config validation using fixtures > valid configs > valid config /home/lblock/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_1.json should load successfully 1`] = `
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_1.json should load successfully 1`] = `
 {
   "allowRequestedVlan": true,
   "ct-groups": {
@@ -70,7 +70,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
 }
 `;
 
-exports[`Config validation using fixtures > valid configs > valid config /home/lblock/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_2.json should load successfully 1`] = `
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_2.json should load successfully 1`] = `
 {
   "allowRequestedVlan": true,
   "ct-groups": {
@@ -102,7 +102,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
 }
 `;
 
-exports[`Config validation using fixtures > valid configs > valid config /home/lblock/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_3.json should load successfully 1`] = `
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_3.json should load successfully 1`] = `
 {
   "allowRequestedVlan": true,
   "ct-groups": {
@@ -129,7 +129,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
 }
 `;
 
-exports[`Config validation using fixtures > valid configs > valid config /home/lblock/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_4.json should load successfully 1`] = `
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_4.json should load successfully 1`] = `
 {
   "allowRequestedVlan": true,
   "ct-groups": {
