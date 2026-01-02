@@ -10,6 +10,9 @@ export class CtPasswordService {
     private apiToken: string;
     private serverUrl: string;
 
+    // Buffer for the private key once loaded
+    private privateKeyBuffer: KeyObject | null = null;
+
     constructor(pathToPrivateKey: string, privateKeyPwd: string, apiToken: string, serverUrl: string) {
         // We want to prevent accidental use of unencrypted private keys
         if (!privateKeyPwd || privateKeyPwd.trim() === "") {
@@ -17,20 +20,24 @@ export class CtPasswordService {
         }
 
         // Parameter validation described in Module Description
-        if (pathToPrivateKey === undefined || privateKeyPwd === undefined || apiToken === undefined || serverUrl === undefined) {
+        if (!pathToPrivateKey || pathToPrivateKey.trim() === ""
+            || !privateKeyPwd || privateKeyPwd.trim() === ""
+            || !apiToken || apiToken.trim() === ""
+            || !serverUrl || serverUrl.trim() === "" || !serverUrl.startsWith("https://")
+        ) {
             throw new Error("Missing constructor argument");
         }
 
-        this.pathToPrivateKey = pathToPrivateKey;
-        this.privateKeyPwd = privateKeyPwd;
-        this.apiToken = apiToken;
-        this.serverUrl = serverUrl;
+        this.pathToPrivateKey = pathToPrivateKey.trim();
+        this.privateKeyPwd = privateKeyPwd.trim();
+        this.apiToken = apiToken.trim();
+        this.serverUrl = serverUrl.trim();
     }
 
     // Returns the cleartext password or undefined if not present
     async getCleartextPwd(userId: number): Promise<string | undefined> {
         const enc = await this.getEncryptedPwd(userId);
-        if (enc === undefined || enc === null) return undefined;
+        if (!enc) return undefined;
         return await this.decryptPwd(enc);
     }
 
@@ -49,35 +56,39 @@ export class CtPasswordService {
         });
 
         if (res.status === 200) {
+
             let body: any;
             try {
                 body = await res.json();
             } catch (e) {
                 throw new Error("Failed to parse JSON response from backend");
             }
+
             const pwd = body.secondaryPassword;
-            if (typeof pwd !== "string" || pwd.length === 0) {
+            if (!pwd || typeof pwd !== "string" || pwd.trim().length === 0) {
                 throw new Error("secondaryPassword is missing in response");
             }
-            return pwd;
+
+            return pwd.trim();
+
+        } else if (res.status === 404) {
+            return undefined;
+        } else {
+            const t = await (res.text ? res.text() : "");
+            throw new Error(`Unexpected response from backend: ${res.status} ${t}`);
         }
-
-        if (res.status === 404) return undefined;
-
-        const t = await (res.text ? res.text() : Promise.resolve(String(res.status)));
-        throw new Error(`Unexpected response from backend: ${res.status} ${t}`);
     }
 
     // Decrypts an encrypted password string and returns cleartext
     async decryptPwd(encryptedPwd: string): Promise<string> {
-        if (typeof encryptedPwd !== "string" || encryptedPwd.length === 0) {
+        if (!encryptedPwd || typeof encryptedPwd !== "string" || encryptedPwd.trim().length === 0) {
             throw new Error("encryptedPwd must be a non-empty string");
         }
 
         // Expect base64 string
         let encrypted: Buffer;
         try {
-            encrypted = Buffer.from(encryptedPwd, "base64");
+            encrypted = Buffer.from(encryptedPwd.trim(), "base64");
         } catch (e) {
             throw new Error("Encrypted password is not valid base64");
         }
@@ -86,17 +97,17 @@ export class CtPasswordService {
         return plain.toString("utf8");
     }
 
-    // Internal helpers (signatures only)
-    private _privateKeyObj: KeyObject | null = null;
+
 
     private async _getPrivateKey(): Promise<KeyObject> {
-        if (this._privateKeyObj) return this._privateKeyObj;
+        if (this.privateKeyBuffer) return this.privateKeyBuffer;
 
         // Check that file is really encrypted
         if (!isEncryptedPrivateKey(this.pathToPrivateKey)) {
             throw new Error("Private key is not encrypted");
         }
 
+        // Read the file
         let pemData: Buffer;
         try {
             pemData = await fs.promises.readFile(this.pathToPrivateKey);
@@ -104,13 +115,13 @@ export class CtPasswordService {
             throw new Error(`Could not read private key file '${this.pathToPrivateKey}': ${e?.message ?? e}`);
         }
 
+        // Load the private key with passphrase
         try {
             const opts: crypto.CryptoKeyOptions | any = { key: pemData };
-            if (this.privateKeyPwd) opts.passphrase = this.privateKeyPwd;
-
-            // createPrivateKey accepts PEM (encrypted or not)
-            this._privateKeyObj = crypto.createPrivateKey({ key: pemData, passphrase: this.privateKeyPwd });
-            return this._privateKeyObj;
+            opts.passphrase = this.privateKeyPwd;
+            // createPrivateKey accepts PEM with passphrase
+            this.privateKeyBuffer = crypto.createPrivateKey({ key: pemData, passphrase: this.privateKeyPwd });
+            return this.privateKeyBuffer;
         } catch (e: any) {
             throw new Error(`Failed to load private key: ${e?.message ?? e}`);
         }
