@@ -10,8 +10,8 @@ export class CtPasswordService {
     private apiToken: string;
     private serverUrl: string;
 
-    // Buffer for the private key once loaded
-    private privateKeyBuffer: KeyObject | null = null;
+    // Cache for the private key once loaded
+    private privateKeyCache: KeyObject | null = null;
 
     constructor(pathToPrivateKey: string, privateKeyPwd: string, apiToken: string, serverUrl: string) {
         // We want to prevent accidental use of unencrypted private keys
@@ -104,7 +104,7 @@ export class CtPasswordService {
 
 
     private async _getPrivateKey(): Promise<KeyObject> {
-        if (this.privateKeyBuffer) return this.privateKeyBuffer;
+        if (this.privateKeyCache) return this.privateKeyCache;
 
         // Check that file is really encrypted
         if (!isEncryptedPrivateKey(this.pathToPrivateKey)) {
@@ -122,8 +122,8 @@ export class CtPasswordService {
         // Load the private key with passphrase
         try {
             // createPrivateKey accepts PEM with passphrase
-            this.privateKeyBuffer = crypto.createPrivateKey({ key: pemData, passphrase: this.privateKeyPwd });
-            return this.privateKeyBuffer;
+            this.privateKeyCache = crypto.createPrivateKey({ key: pemData, passphrase: this.privateKeyPwd });
+            return this.privateKeyCache;
         } catch (e: any) {
             throw new Error(`Failed to load private key: ${e?.message ?? e}`);
         }
