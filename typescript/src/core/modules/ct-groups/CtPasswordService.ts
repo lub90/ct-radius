@@ -21,12 +21,14 @@ export class CtPasswordService {
 
         // Parameter validation described in Module Description
         if (!pathToPrivateKey || pathToPrivateKey.trim() === ""
-            || !privateKeyPwd || privateKeyPwd.trim() === ""
             || !apiToken || apiToken.trim() === ""
-            || !serverUrl || serverUrl.trim() === "" || !serverUrl.startsWith("https://")
+            || !serverUrl || serverUrl.trim() === ""
         ) {
             throw new Error("Missing constructor argument");
         }
+
+        // Server URL must start with https://
+        if (!serverUrl.startsWith("https://")) throw new Error("serverUrl must start with https://");
 
         this.pathToPrivateKey = pathToPrivateKey.trim();
         this.privateKeyPwd = privateKeyPwd.trim();
@@ -37,7 +39,7 @@ export class CtPasswordService {
     // Returns the cleartext password or undefined if not present
     async getCleartextPwd(userId: number): Promise<string | undefined> {
         const enc = await this.getEncryptedPwd(userId);
-        if (!enc) return undefined;
+        if (enc === undefined) return undefined;
         return await this.decryptPwd(enc);
     }
 
@@ -48,7 +50,7 @@ export class CtPasswordService {
         }
 
         const url = `${this.serverUrl.replace(/\/$/, "")}/entries/${userId}`;
-        const res = await (globalThis as any).fetch(url, {
+        const res = await globalThis.fetch(url, {
             method: "GET",
             headers: {
                 Authorization: `Login ${this.apiToken}`,
@@ -86,12 +88,14 @@ export class CtPasswordService {
         }
 
         // Expect base64 string
-        let encrypted: Buffer;
-        try {
-            encrypted = Buffer.from(encryptedPwd.trim(), "base64");
-        } catch (e) {
+        const trimmed = encryptedPwd.trim();
+        const encrypted = Buffer.from(trimmed, "base64");
+
+        // Check if decoding was valid base64
+        if (encrypted.length === 0 && trimmed.length > 0) {
             throw new Error("Encrypted password is not valid base64");
         }
+
 
         const plain = await this._decrypt(encrypted);
         return plain.toString("utf8");
@@ -117,8 +121,6 @@ export class CtPasswordService {
 
         // Load the private key with passphrase
         try {
-            const opts: crypto.CryptoKeyOptions | any = { key: pemData };
-            opts.passphrase = this.privateKeyPwd;
             // createPrivateKey accepts PEM with passphrase
             this.privateKeyBuffer = crypto.createPrivateKey({ key: pemData, passphrase: this.privateKeyPwd });
             return this.privateKeyBuffer;
