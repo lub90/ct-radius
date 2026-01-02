@@ -51,6 +51,33 @@ describe("CtPasswordService", () => {
     await expect(instance.getEncryptedPwd(3)).rejects.toThrow();
   });
 
+  it("getEncryptedPwd throws when JSON parsing fails", async () => {
+    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+
+    const fakeBadJson = {
+      status: 200,
+      json: async () => { throw new Error("invalid json") }
+    } as any;
+
+    vi.stubGlobal("fetch", vi.fn(async () => fakeBadJson));
+
+    await expect(instance.getEncryptedPwd(1)).rejects.toThrow();
+  });
+
+  it("getEncryptedPwd throws when secondaryPassword is missing", async () => {
+    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+
+    const fakeMissingField = {
+      status: 200,
+      json: async () => ({})
+    } as any;
+
+    vi.stubGlobal("fetch", vi.fn(async () => fakeMissingField));
+
+    await expect(instance.getEncryptedPwd(1)).rejects.toThrow();
+  });
+
+
   // Helper to encrypt with provided public key and return base64 string
   function encryptWithPublic(cleartext: string): string {
     const pub = fs.readFileSync(publicKey, "utf8");
@@ -116,6 +143,19 @@ describe("CtPasswordService", () => {
     const enc = encryptWithPublic("willfail");
     await expect(instanceWrong.decryptPwd(enc)).rejects.toThrow();
   });
+
+  it("decryptPwd throws for invalid encryptedPwd inputs", async () => {
+    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+
+    await expect(instance.decryptPwd("")).rejects.toThrow();
+    await expect(instance.decryptPwd("not-base64")).rejects.toThrow();
+    await expect(instance.decryptPwd(undefined as any)).rejects.toThrow();
+    await expect(instance.decryptPwd(null as any)).rejects.toThrow();
+  });
+
+
+
+
 
   it("getCleartextPwd integrates getEncryptedPwd and decryptPwd with various returned encrypted strings", async () => {
     const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);

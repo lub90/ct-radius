@@ -49,7 +49,11 @@ export class CtPasswordService {
             } catch (e) {
                 throw new Error("Failed to parse JSON response from backend");
             }
-            return body?.secondaryPassword;
+            const pwd = body.secondaryPassword;
+            if (typeof pwd !== "string" || pwd.length === 0) {
+                throw new Error("secondaryPassword is missing in response");
+            }
+            return pwd;
         }
 
         if (res.status === 404) return undefined;
