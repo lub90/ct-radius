@@ -9,6 +9,7 @@ describe("CtPasswordService", () => {
   const privateKeyPlain = path.join(fixturesDir, "privateKey1.pem");
   const privateKeyEncrypted = path.join(fixturesDir, "privateKey1Encrypted.pem");
   const passphraseFile = path.join(fixturesDir, "privateKey1Passphrase");
+  const privateKeyPwd = fs.readFileSync(passphraseFile, "utf8").trim();
   const publicKey = path.join(fixturesDir, "publicKey1.pem");
 
   const apiToken = "api-token";
@@ -19,14 +20,17 @@ describe("CtPasswordService", () => {
   });
 
   it("constructor throws when any argument is undefined", () => {
-    expect(() => new CtPasswordService(undefined as any, "", apiToken, serverUrl)).toThrow();
-    expect(() => new CtPasswordService(privateKeyPlain, undefined as any, apiToken, serverUrl)).toThrow();
-    expect(() => new CtPasswordService(privateKeyPlain, "", undefined as any, serverUrl)).toThrow();
-    expect(() => new CtPasswordService(privateKeyPlain, "", apiToken, undefined as any)).toThrow();
+    expect(() => new CtPasswordService(undefined as any, passphraseFile, apiToken, serverUrl)).toThrow();
+    expect(() => new CtPasswordService(privateKeyEncrypted, undefined as any, apiToken, serverUrl)).toThrow();
+    expect(() => new CtPasswordService(privateKeyEncrypted, passphraseFile, undefined as any, serverUrl)).toThrow();
+    expect(() => new CtPasswordService(privateKeyEncrypted, passphraseFile, apiToken, undefined as any)).toThrow();
+    // Check that no unencrypted private keys are allowed
+    expect(() => new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl)).toThrow();
+    expect(() => new CtPasswordService(privateKeyPlain, " ", apiToken, serverUrl)).toThrow();
   });
 
   it("getEncryptedPwd rejects for invalid userId values", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
     await expect(instance.getEncryptedPwd(0 as any)).rejects.toThrow();
     await expect(instance.getEncryptedPwd(-5 as any)).rejects.toThrow();
     await expect(instance.getEncryptedPwd(NaN as any)).rejects.toThrow();
@@ -34,7 +38,7 @@ describe("CtPasswordService", () => {
   });
 
   it("getEncryptedPwd handles 200/404/other responses", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
     const fake200 = { status: 200, json: async () => ({ secondaryPassword: "PAY" }) } as any;
     vi.stubGlobal("fetch", vi.fn(async () => fake200));
@@ -50,7 +54,7 @@ describe("CtPasswordService", () => {
   });
 
   it("getEncryptedPwd throws when JSON parsing fails", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
     const fakeBadJson = {
       status: 200,
@@ -63,7 +67,7 @@ describe("CtPasswordService", () => {
   });
 
   it("getEncryptedPwd throws when secondaryPassword is missing", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
     const fakeMissingField = {
       status: 200,
@@ -84,7 +88,7 @@ describe("CtPasswordService", () => {
   }
 
   it("getEncryptedPwd sends correct request", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
     const fake200 = { status: 200, json: async () => ({ secondaryPassword: "X" }) };
     const fetchMock = vi.fn(async () => fake200);
@@ -105,14 +109,36 @@ describe("CtPasswordService", () => {
   });
 
 
-  it("decryptPwd decrypts various payloads using plain private key", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+  it("decryptPwd does not decrypt the payloads using a plain private key if a passphrase is provided", async () => {
+    const instance = new CtPasswordService(privateKeyPlain, "abc", apiToken, serverUrl);
 
     const payloads = [
       "lowercaseletters",
       "1234567890",
       "special!@#$%^&*()",
       "mix3dChars!@#123abc",
+      "abc",
+      "p@ssw0rd!",
+      "42-meaning"
+    ];
+
+    for (const p of payloads) {
+      const enc = encryptWithPublic(p);
+      await expect(instance.decryptPwd(enc)).rejects.toThrow();
+    }
+  });
+
+  it("decryptPwd decrypts payloads using encrypted private key and passphrase", async () => {
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
+
+    const payloads = [
+      "lowercaseletters",
+      "1234567890",
+      "special!@#$%^&*()",
+      "mix3dChars!@#123abc",
+      "abc",
+      "p@ssw0rd!",
+      "42-meaning"
     ];
 
     for (const p of payloads) {
@@ -121,19 +147,8 @@ describe("CtPasswordService", () => {
     }
   });
 
-  it("decryptPwd decrypts payloads using encrypted private key and passphrase", async () => {
-    const pass = fs.readFileSync(passphraseFile, "utf8").trim();
-    const instance = new CtPasswordService(privateKeyEncrypted, pass, apiToken, serverUrl);
-
-    const payloads = ["abc", "p@ssw0rd!", "42-meaning"];
-    for (const p of payloads) {
-      const enc = encryptWithPublic(p);
-      await expect(instance.decryptPwd(enc)).resolves.toBe(p);
-    }
-  });
-
   it("decryptPwd throws when private key file is missing or passphrase wrong", async () => {
-    const instanceMissing = new CtPasswordService(path.join(fixturesDir, "no-such.pem"), "", apiToken, serverUrl);
+    const instanceMissing = new CtPasswordService(path.join(fixturesDir, "no-such.pem"), privateKeyPwd, apiToken, serverUrl);
     await expect(instanceMissing.decryptPwd("xxx")).rejects.toThrow();
 
     // wrong passphrase for encrypted key
@@ -143,7 +158,7 @@ describe("CtPasswordService", () => {
   });
 
   it("decryptPwd throws for invalid encryptedPwd inputs", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
     await expect(instance.decryptPwd("")).rejects.toThrow();
     await expect(instance.decryptPwd("not-base64")).rejects.toThrow();
@@ -156,7 +171,7 @@ describe("CtPasswordService", () => {
 
 
   it("getCleartextPwd integrates getEncryptedPwd and decryptPwd with various returned encrypted strings", async () => {
-    const instance = new CtPasswordService(privateKeyPlain, "", apiToken, serverUrl);
+    const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
     const good = encryptWithPublic("ok-val");
     vi.spyOn(instance as any, "getEncryptedPwd").mockResolvedValue(good);

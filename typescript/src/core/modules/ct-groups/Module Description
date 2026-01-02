@@ -1,0 +1,63 @@
+- Read both files
+- Provide feedback
+- Password checks with features
+- Test with multiple parameters -> Fixtures...
+
+
+
+CtPasswordRetriever (is this a good name for a class, that pulls data from the ChurchTools backend, and decrypts the key with a local private key? Please be critical and make suggestions)
+- Constructor receives a string pathToPrivateKey, string privateKeyPwd, string apiToken, string serverUrl - Checks that none of them is undefined (if so, throws an error)
+- The class offers functions called getCleartextPwd(userId: number), getEncryptedPwd(userId: number), decryptPwd(encryptedPwd: string)
+- getEncryptedPwd:
+    - Verifies that userId is a number greater than 0
+    - Calls the backend server at the endpoint GET /entries/{userId}, the headers must contain Authorize: Login {apiToken}
+    - Checks if the response http status is 200, if yes, tries to convert the body to json and read the value "secondaryPassword" from it and returns it
+    - If anything of the above fails, it should throw a proper exception
+    - Exception to the above is, if the response http is 404 (Not found) -> Then the function should return undefined
+- decryptPwd(encryptedPwd: string)
+    - Tries to decrypt the given password via the following equivalent to the function in python:
+
+def _get_private_key(self):
+        # If it has not been loaded yet, create it
+        if self._private_key is None:
+            # Read the PEM file
+            with open(self._pem_path, "rb") as pem_file:
+                pem_data = pem_file.read()
+            
+            # Load the private key using the provided password
+            self._private_key = serialization.load_pem_private_key(
+                pem_data,
+                password=self._pem_password.encode("utf-8"),
+                backend=default_backend()
+            )
+            
+        # Return it
+        return self._private_key
+
+def _decrypt(self, encrypted: bytes) -> bytes:
+        """
+        Decrypts RSA‑encrypted data using the loaded private key.
+
+        Args:
+            encrypted (bytes): The ciphertext to decrypt.
+
+        Returns:
+            bytes: The decrypted plaintext.
+        """
+        return self._get_private_key().decrypt(
+            encrypted,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+    - If anything fails: privateKey file not found, pwd to private key is wrong, cannot decrypt etc. it should throw an error that gives hints to what is wrong
+    - Should only return a string object if, we were able to decrypt it properly
+- getCleartextPwd:
+    - Firstly calls getEncryptedPwd, if this one returns undefined or null it should return undefined
+    - Then it calls decryptPwd, if this one returns a string, the string is returned
+    - If any of the above functions throws an error, it should be forwarded directly
+
+- For testing purposes, use the privateKey1Encrypted.pem and the publicKey1.pem files in the ct-groups fixtures folder in the tests folder. The password phrase for the private key is stored alongside the privateKey

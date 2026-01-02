@@ -1,5 +1,6 @@
 import fs from "fs";
 import crypto from "crypto";
+import { isEncryptedPrivateKey } from "./isEncryptedPrivateKey.js";
 
 type KeyObject = crypto.KeyObject;
 
@@ -10,6 +11,11 @@ export class CtPasswordService {
     private serverUrl: string;
 
     constructor(pathToPrivateKey: string, privateKeyPwd: string, apiToken: string, serverUrl: string) {
+        // We want to prevent accidental use of unencrypted private keys
+        if (!privateKeyPwd || privateKeyPwd.trim() === "") {
+            throw new Error("Encrypted private key required. Passphrase must not be empty.");
+        }
+
         // Parameter validation described in Module Description
         if (pathToPrivateKey === undefined || privateKeyPwd === undefined || apiToken === undefined || serverUrl === undefined) {
             throw new Error("Missing constructor argument");
@@ -85,6 +91,11 @@ export class CtPasswordService {
 
     private async _getPrivateKey(): Promise<KeyObject> {
         if (this._privateKeyObj) return this._privateKeyObj;
+
+        // Check that file is really encrypted
+        if (!isEncryptedPrivateKey(this.pathToPrivateKey)) {
+            throw new Error("Private key is not encrypted");
+        }
 
         let pemData: Buffer;
         try {
