@@ -201,4 +201,45 @@ describe("CtAuthProvider constructor", () => {
         expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
             .toThrow("Unknown authorization module 'Unknown' in config!");
     });
+
+    it("forwards errors thrown by a module constructor", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["A"],
+            A: { foo: 1 }
+        });
+
+        moduleRegistry["A"] = vi.fn().mockImplementation(() => {
+            throw new Error("Module A failed");
+        });
+
+        expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
+            .toThrow("Module A failed");
+    });
+
+
+    it("passes the correct config object to each module constructor", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["A", "B"],
+            A: { a: 1 },
+            B: { b: 2 }
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(moduleRegistry["A"]).toHaveBeenCalledWith({ a: 1 }, fakeLogger);
+        expect(moduleRegistry["B"]).toHaveBeenCalledWith({ b: 2 }, fakeLogger);
+    });
+
+
+    it("passes an empty object when module config is missing", () => {
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["A"]
+            // no A: {} provided
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        expect(moduleRegistry["A"]).toHaveBeenCalledWith({}, fakeLogger);
+    });
+
 });
