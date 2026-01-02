@@ -3,7 +3,7 @@ import crypto from "crypto";
 
 type KeyObject = crypto.KeyObject;
 
-export class CtPasswordRetriever {
+export class CtPasswordService {
     private pathToPrivateKey: string;
     private privateKeyPwd: string;
     private apiToken: string;
@@ -120,4 +120,4 @@ export class CtPasswordRetriever {
     }
 }
 
-export default CtPasswordRetriever;
+export default CtPasswordService;
