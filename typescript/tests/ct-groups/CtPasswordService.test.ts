@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import crypto from "crypto";
 import path from "path";
 import fs from "fs";
-let CtPasswordService: any;
+import CtPasswordService from "../../src/core/modules/ct-groups/CtPasswordService";
 
 describe("CtPasswordService", () => {
   const fixturesDir = path.resolve(__dirname, "fixtures", "keys");
@@ -16,8 +16,6 @@ describe("CtPasswordService", () => {
 
   beforeEach(async () => {
     vi.restoreAllMocks();
-    const mod = await import("../../../src/core/modules/ct-groups/CtPasswordService");
-    CtPasswordService = mod.default ?? mod.CtPasswordService ?? mod;
   });
 
   it("constructor throws when any argument is undefined", () => {
