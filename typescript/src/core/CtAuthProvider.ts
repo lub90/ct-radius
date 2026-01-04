@@ -6,6 +6,7 @@ import { AuthenticationError } from "../errors/AuthenticationError.js";
 import type { UserRequest } from "../types/UserRequest.js";
 import { moduleRegistry } from "./ModuleRegistry.js";
 import pino from "pino";
+import { ChurchToolsClient } from "@churchtools/churchtools-client";
 
 export class CtAuthProvider {
 
@@ -32,8 +33,11 @@ export class CtAuthProvider {
                 throw new Error(`Unknown authorization module '${name}' in config!`);
             }
 
+            // Generate a churchtools client for this module
+            const churchtoolsClient = new ChurchToolsClient(this.config.backendConfig.serverUrl, this.config.backendConfig.apiToken);
+
             // Create the module and return it
-            return factory(moduleConfig, this.logger);
+            return factory(churchtoolsClient, moduleConfig, this.logger);
         });
     }
 

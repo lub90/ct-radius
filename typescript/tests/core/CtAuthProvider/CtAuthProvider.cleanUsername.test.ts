@@ -16,6 +16,12 @@ vi.mock("../../../src/core/ModuleRegistry.js", () => ({
     moduleRegistry: {}
 }));
 
+vi.mock("@churchtools/churchtools-client", () => ({
+    ChurchToolsClient: vi.fn(function (_url, _token, _csrf) {
+        return {};
+    })
+}));
+
 // Fake logger
 const fakeLogger = pino({ level: "silent" });
 
@@ -26,9 +32,18 @@ const fakeModule = {
 
 // Helper: create provider with injected config + fake module
 function createProviderWithConfig(config) {
+    // Ensure backendConfig is present in the config
+    const fullConfig = {
+        ...config,
+        backendConfig: config.backendConfig || {
+            serverUrl: "https://example.com",
+            apiToken: "test-token"
+        }
+    };
+
     // Mock Config.get()
     (Config as any).mockImplementation(function () {
-        return { get: vi.fn().mockReturnValue(config) };
+        return { get: vi.fn().mockReturnValue(fullConfig) };
     });
 
     // Inject one fake module so authorize() runs cleanUsername()

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import pino from "pino";
+import { ChurchToolsClient } from "@churchtools/churchtools-client";
 
 // --- Mocks ------------------------------------------------------------------
 
@@ -11,6 +12,13 @@ vi.mock("../../../src/core/Config.js", () => ({
 
 vi.mock("../../../src/core/ModuleRegistry.js", () => ({
     moduleRegistry: {}
+}));
+
+const mockChurchtoolsClientInstance = { __isMockChurchToolsClient: true };
+vi.mock("@churchtools/churchtools-client", () => ({
+    ChurchToolsClient: vi.fn(function (_url, _token, _csrf) {
+        return mockChurchtoolsClientInstance;
+    })
 }));
 
 import { CtAuthProvider } from "../../../src/core/CtAuthProvider.js";
@@ -68,7 +76,13 @@ describe("CtAuthProvider constructor", () => {
     // -------------------------------------------------------------------------
 
     it("stores the config returned by Config.get()", () => {
-        const cfg = { modules: [] };
+        const cfg = {
+            modules: [],
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
+        };
         mockConfigInstance.get.mockReturnValue(cfg);
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
@@ -79,7 +93,13 @@ describe("CtAuthProvider constructor", () => {
 
 
     it("passes the correct parameters to Config", () => {
-        mockConfigInstance.get.mockReturnValue({ modules: [] });
+        mockConfigInstance.get.mockReturnValue({
+            modules: [],
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
+        });
 
         const provider = new CtAuthProvider("config.json", "envfile", fakeLogger);
 
@@ -90,7 +110,13 @@ describe("CtAuthProvider constructor", () => {
 
 
     it("passes undefined envPath correctly to Config", () => {
-        mockConfigInstance.get.mockReturnValue({ modules: [] });
+        mockConfigInstance.get.mockReturnValue({
+            modules: [],
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
+        });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
 
@@ -122,7 +148,13 @@ describe("CtAuthProvider constructor", () => {
     // -------------------------------------------------------------------------
 
     it("stores the logger instance", () => {
-        mockConfigInstance.get.mockReturnValue({ modules: [] });
+        mockConfigInstance.get.mockReturnValue({
+            modules: [],
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
+        });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
 
@@ -136,21 +168,34 @@ describe("CtAuthProvider constructor", () => {
     it("loads one module correctly", () => {
         mockConfigInstance.get.mockReturnValue({
             modules: ["A"],
-            A: { foo: 1 }
+            A: { foo: 1 },
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
 
         expect(provider["modules"]).toHaveLength(1);
         expect(provider["modules"][0].name).toBe("A");
-        expect(moduleRegistry["A"]).toHaveBeenCalledWith({ foo: 1 }, fakeLogger);
+        // Factory is called with (churchtoolsClient, moduleConfig, logger)
+        expect(moduleRegistry["A"]).toHaveBeenCalledTimes(1);
+        const callArgs = (moduleRegistry["A"] as any).mock.calls[0];
+        expect(callArgs[0].__isMockChurchToolsClient).toBe(true); // churchtoolsClient
+        expect(callArgs[1]).toEqual({ foo: 1 }); // moduleConfig
+        expect(callArgs[2]).toBe(fakeLogger); // logger
     });
 
     it("loads two modules correctly", () => {
         mockConfigInstance.get.mockReturnValue({
             modules: ["A", "B"],
             A: { a: 1 },
-            B: { b: 2 }
+            B: { b: 2 },
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
@@ -164,7 +209,11 @@ describe("CtAuthProvider constructor", () => {
 
         mockConfigInstance.get.mockReturnValue({
             modules: names,
-            A: {}, B: {}, C: {}, D: {}, E: {}
+            A: {}, B: {}, C: {}, D: {}, E: {},
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
@@ -175,7 +224,11 @@ describe("CtAuthProvider constructor", () => {
 
     it("creates an empty modules array when no modules are configured", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: []
+            modules: [],
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
@@ -185,7 +238,11 @@ describe("CtAuthProvider constructor", () => {
 
     it("throws when an unknown module is configured", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: ["Unknown"]
+            modules: ["Unknown"],
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
@@ -195,7 +252,11 @@ describe("CtAuthProvider constructor", () => {
     it("throws when unknown module is mixed with known modules", () => {
         mockConfigInstance.get.mockReturnValue({
             modules: ["A", "Unknown"],
-            A: {}
+            A: {},
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
@@ -205,7 +266,11 @@ describe("CtAuthProvider constructor", () => {
     it("forwards errors thrown by a module constructor", () => {
         mockConfigInstance.get.mockReturnValue({
             modules: ["A"],
-            A: { foo: 1 }
+            A: { foo: 1 },
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         moduleRegistry["A"] = vi.fn().mockImplementation(() => {
@@ -221,25 +286,78 @@ describe("CtAuthProvider constructor", () => {
         mockConfigInstance.get.mockReturnValue({
             modules: ["A", "B"],
             A: { a: 1 },
-            B: { b: 2 }
+            B: { b: 2 },
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
 
-        expect(moduleRegistry["A"]).toHaveBeenCalledWith({ a: 1 }, fakeLogger);
-        expect(moduleRegistry["B"]).toHaveBeenCalledWith({ b: 2 }, fakeLogger);
+        // Factory is called with (churchtoolsClient, moduleConfig, logger)
+        const callArgsA = (moduleRegistry["A"] as any).mock.calls[0];
+        expect(callArgsA[0].__isMockChurchToolsClient).toBe(true);
+        expect(callArgsA[1]).toEqual({ a: 1 });
+        expect(callArgsA[2]).toBe(fakeLogger);
+        const callArgsB = (moduleRegistry["B"] as any).mock.calls[0];
+        expect(callArgsB[0].__isMockChurchToolsClient).toBe(true);
+        expect(callArgsB[1]).toEqual({ b: 2 });
+        expect(callArgsB[2]).toBe(fakeLogger);
+
+        expect(ChurchToolsClient).toHaveBeenCalledTimes(2);
     });
 
 
     it("passes an empty object when module config is missing", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: ["A"]
+            modules: ["A"],
             // no A: {} provided
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
         });
 
         const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
 
-        expect(moduleRegistry["A"]).toHaveBeenCalledWith({}, fakeLogger);
+        // Factory is called with (churchtoolsClient, moduleConfig, logger)
+        const callArgs = (moduleRegistry["A"] as any).mock.calls[0];
+        expect(ChurchToolsClient).toHaveBeenCalledTimes(1);
+        expect(callArgs[0].__isMockChurchToolsClient).toBe(true);
+        expect(callArgs[1]).toEqual({});
+        expect(callArgs[2]).toBe(fakeLogger);
+    });
+
+    it("passes the churchtools client to each module", () => {
+        const serverUrl = "https://example.com";
+        const apiToken = "test-token-123";
+
+        mockConfigInstance.get.mockReturnValue({
+            modules: ["A", "B"],
+            A: {},
+            B: {},
+            backendConfig: {
+                serverUrl,
+                apiToken
+            }
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+
+        // Verify ChurchToolsClient was instantiated with correct parameters
+        // The actual client is passed as first argument to each module factory
+        const callArgsA = (moduleRegistry["A"] as any).mock.calls[0];
+        expect(callArgsA[0].__isMockChurchToolsClient).toBe(true);
+        const churchtoolsClientA = callArgsA[0];
+        expect(churchtoolsClientA).toBeDefined();
+
+        const callArgsB = (moduleRegistry["B"] as any).mock.calls[0];
+        expect(callArgsB[0].__isMockChurchToolsClient).toBe(true);
+        const churchtoolsClientB = callArgsB[0];
+        expect(churchtoolsClientB).toBeDefined();
+
+        expect(ChurchToolsClient).toHaveBeenCalledTimes(2);
     });
 
 });
