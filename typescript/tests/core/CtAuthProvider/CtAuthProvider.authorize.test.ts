@@ -16,6 +16,13 @@ vi.mock("../../../src/core/ModuleRegistry.js", () => ({
     moduleRegistry: {}
 }));
 
+vi.mock("@churchtools/churchtools-client", () => ({
+    ChurchToolsClient: vi.fn(function (_url, _token, _csrf) {
+        return {};
+    })
+}));
+
+
 const fakeLogger = pino({ level: "silent" });
 
 // Helper: create provider with injected config + modules
@@ -24,7 +31,12 @@ function createProviderWithModules(moduleFactories) {
         return {
             get: vi.fn().mockReturnValue({
                 allowRequestedVlan: false,
-                modules: Object.keys(moduleFactories)
+                vlanSeparator: "#",
+                modules: Object.keys(moduleFactories),
+                backendConfig: {
+                    serverUrl: "https://example.com",
+                    apiToken: "test-token"
+                }
             })
         };
     });
@@ -65,8 +77,8 @@ describe("CtAuthProvider.authorize", () => {
         const modB = { authorize: vi.fn().mockResolvedValue(null) };
 
         const provider = createProviderWithModules({
-            A: () => modA,
-            B: () => modB
+            A: (client, cfg, logger) => modA,
+            B: (client, cfg, logger) => modB
         });
 
         const result = await provider.authorize("alice");
@@ -83,8 +95,8 @@ describe("CtAuthProvider.authorize", () => {
         const modB = { authorize: vi.fn().mockResolvedValue(reject) };
 
         const provider = createProviderWithModules({
-            A: () => modA,
-            B: () => modB
+            A: (client, cfg, logger) => modA,
+            B: (client, cfg, logger) => modB
         });
 
         const result = await provider.authorize("alice");
@@ -99,8 +111,8 @@ describe("CtAuthProvider.authorize", () => {
         const modB = { authorize: vi.fn().mockResolvedValue(null) };
 
         const provider = createProviderWithModules({
-            A: () => modA,
-            B: () => modB
+            A: (client, cfg, logger) => modA,
+            B: (client, cfg, logger) => modB
         });
 
         const result = await provider.authorize("alice");
@@ -125,11 +137,11 @@ describe("CtAuthProvider.authorize", () => {
         ];
 
         const provider = createProviderWithModules({
-            A: () => mods[0],
-            B: () => mods[1],
-            C: () => mods[2],
-            D: () => mods[3],
-            E: () => mods[4]
+            A: (client, cfg, logger) => mods[0],
+            B: (client, cfg, logger) => mods[1],
+            C: (client, cfg, logger) => mods[2],
+            D: (client, cfg, logger) => mods[3],
+            E: (client, cfg, logger) => mods[4]
         });
 
         const result = await provider.authorize("alice");
@@ -149,11 +161,11 @@ describe("CtAuthProvider.authorize", () => {
         }));
 
         const provider = createProviderWithModules({
-            A: () => mods[0],
-            B: () => mods[1],
-            C: () => mods[2],
-            D: () => mods[3],
-            E: () => mods[4]
+            A: (client, cfg, logger) => mods[0],
+            B: (client, cfg, logger) => mods[1],
+            C: (client, cfg, logger) => mods[2],
+            D: (client, cfg, logger) => mods[3],
+            E: (client, cfg, logger) => mods[4]
         });
 
         const result = await provider.authorize("alice");
@@ -171,7 +183,7 @@ describe("CtAuthProvider.authorize", () => {
         const modA = { authorize: vi.fn().mockResolvedValue({ foo: "bar" }) };
 
         const provider = createProviderWithModules({
-            A: () => modA
+            A: (client, cfg, logger) => modA
         });
 
         await expect(provider.authorize("alice"))
@@ -190,9 +202,9 @@ describe("CtAuthProvider.authorize", () => {
         ];
 
         const provider = createProviderWithModules({
-            A: () => mods[0],
-            B: () => mods[1],
-            C: () => mods[2]
+            A: (client, cfg, logger) => mods[0],
+            B: (client, cfg, logger) => mods[1],
+            C: (client, cfg, logger) => mods[2]
         });
 
         await provider.authorize("alice");
@@ -234,8 +246,8 @@ describe("CtAuthProvider.authorize", () => {
         const modB = { authorize: vi.fn().mockResolvedValue(null) };
 
         const provider = createProviderWithModules({
-            A: () => modA,
-            B: () => modB
+            A: (client, cfg, logger) => modA,
+            B: (client, cfg, logger) => modB
         });
 
         await expect(provider.authorize("alice"))
@@ -275,9 +287,9 @@ describe("CtAuthProvider.authorize", () => {
         };
 
         const provider = createProviderWithModules({
-            A: () => modA,
-            B: () => modB,
-            C: () => modC
+            A: (client, cfg, logger) => modA,
+            B: (client, cfg, logger) => modB,
+            C: (client, cfg, logger) => modC
         });
 
         await provider.authorize("alice");

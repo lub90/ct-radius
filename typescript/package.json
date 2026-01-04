@@ -22,6 +22,7 @@
     "vitest": "^4.0.16"
   },
   "dependencies": {
+    "@churchtools/churchtools-client": "^1.5.2",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
     "pino": "^10.1.0",
