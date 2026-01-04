@@ -25,6 +25,8 @@
     "@churchtools/churchtools-client": "^1.5.2",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
+    "keyv": "^5.5.5",
+    "keyv-file": "^5.3.3",
     "pino": "^10.1.0",
     "zod": "^4.2.1"
   }
