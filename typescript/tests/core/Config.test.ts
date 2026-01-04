@@ -370,7 +370,7 @@ describe("Config validation using fixtures", () => {
 
 
 
-  describe("missing envPath file", () => {
+  describe("envPath variable not set", () => {
     const fixtures = new FixtureLoader();
     const consoleChecker = new ConsoleChecker();
 
@@ -422,7 +422,168 @@ describe("Config validation using fixtures", () => {
         delete process.env.CT_API_TOKEN;
       }
     });
+
+
+    it("should not load any env variables when envPath is null", () => {
+      const mocker = new FileMocker();
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+
+      // Backup env
+      const envContent = fs.readFileSync(fixtures.getValidEnvs()[0], "utf-8");
+      const parsedEnv = dotenv.parse(envContent);
+      const originalEnv: Record<string, string | undefined> = {};
+      Object.keys(parsedEnv).forEach(key => {
+        originalEnv[key] = process.env[key];
+      });
+
+      // Set up the backend config vars first so Config doesn't fail
+      process.env.CT_SERVER_URL = "https://example.com";
+      process.env.CT_API_TOKEN = "test-token";
+
+      try {
+        new Config(configPath, null).get();
+
+        // Ensure env vars are only those we explicitly set
+        expect(process.env.CT_SERVER_URL).toBe("https://example.com");
+        expect(process.env.CT_API_TOKEN).toBe("test-token");
+
+        consoleChecker.checkNoOutput();
+      } finally {
+        // Restore env
+        Object.keys(parsedEnv).forEach(key => {
+          if (originalEnv[key] !== undefined) {
+            process.env[key] = originalEnv[key];
+          } else {
+            delete process.env[key];
+          }
+        });
+        delete process.env.CT_SERVER_URL;
+        delete process.env.CT_API_TOKEN;
+      }
+    });
+
+
+    it("should parse correctly with undefined envPath if env variables are set externally", () => {
+      const mocker = new FileMocker();
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+
+      // Backup env
+      const envContent = fs.readFileSync(fixtures.getValidEnvs()[0], "utf-8");
+      const parsedEnv = dotenv.parse(envContent);
+      const originalEnv: Record<string, string | undefined> = {};
+      Object.keys(parsedEnv).forEach(key => {
+        originalEnv[key] = process.env[key];
+      });
+
+      // Set required env vars manually
+      process.env.CT_SERVER_URL = "https://example.com";
+      process.env.CT_API_TOKEN = "token123";
+
+      try {
+        const config = new Config(configPath, undefined).get();
+
+        expect(config).toBeDefined();
+        expect(typeof config).toBe("object");
+
+        consoleChecker.checkNoOutput();
+      } finally {
+        // Restore env
+        Object.keys(parsedEnv).forEach(key => {
+          if (originalEnv[key] !== undefined) {
+            process.env[key] = originalEnv[key];
+          } else {
+            delete process.env[key];
+          }
+        });
+        delete process.env.CT_SERVER_URL;
+        delete process.env.CT_API_TOKEN;
+      }
+    });
+
+    it("should parse correctly with null envPath if env variables are set externally", () => {
+      const mocker = new FileMocker();
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+
+      // Backup env
+      const envContent = fs.readFileSync(fixtures.getValidEnvs()[0], "utf-8");
+      const parsedEnv = dotenv.parse(envContent);
+      const originalEnv: Record<string, string | undefined> = {};
+      Object.keys(parsedEnv).forEach(key => {
+        originalEnv[key] = process.env[key];
+      });
+
+      // Set required env vars manually
+      process.env.CT_SERVER_URL = "https://example.com";
+      process.env.CT_API_TOKEN = "token123";
+
+      try {
+        const config = new Config(configPath, null).get();
+
+        expect(config).toBeDefined();
+        expect(typeof config).toBe("object");
+
+        consoleChecker.checkNoOutput();
+      } finally {
+        // Restore env
+        Object.keys(parsedEnv).forEach(key => {
+          if (originalEnv[key] !== undefined) {
+            process.env[key] = originalEnv[key];
+          } else {
+            delete process.env[key];
+          }
+        });
+        delete process.env.CT_SERVER_URL;
+        delete process.env.CT_API_TOKEN;
+      }
+    });
+
+    it("should throw if envPath is undefined and required env vars are missing", () => {
+      const mocker = new FileMocker();
+      const configPath = mocker.createFileFromPath(
+        "config.json",
+        fixtures.getValidConfigs()[0]
+      );
+
+      // Backup env
+      const envContent = fs.readFileSync(fixtures.getValidEnvs()[0], "utf-8");
+      const parsedEnv = dotenv.parse(envContent);
+      const originalEnv: Record<string, string | undefined> = {};
+      Object.keys(parsedEnv).forEach(key => {
+        originalEnv[key] = process.env[key];
+      });
+
+      // Ensure required env vars are NOT set
+      delete process.env.CT_SERVER_URL;
+      delete process.env.CT_API_TOKEN;
+
+      try {
+        expect(() => {
+          new Config(configPath, undefined).get();
+        }).toThrow();
+
+        consoleChecker.checkNoOutput();
+      } finally {
+        // Restore env
+        Object.keys(parsedEnv).forEach(key => {
+          if (originalEnv[key] !== undefined) {
+            process.env[key] = originalEnv[key];
+          } else {
+            delete process.env[key];
+          }
+        });
+      }
+    });
   });
+
 
 
   // -----------------------------
@@ -447,5 +608,34 @@ describe("Config validation using fixtures", () => {
       consoleChecker.checkNoOutput();
     });
   });
+
+  describe("invalid configPath values", () => {
+    const consoleChecker = new ConsoleChecker();
+
+    beforeEach(() => {
+      consoleChecker.setup();
+    });
+
+    afterEach(() => {
+      consoleChecker.teardown();
+    });
+
+    it("should throw when configPath is null", () => {
+      expect(() => {
+        new Config(null as any).get();
+      }).toThrow();
+
+      consoleChecker.checkNoOutput();
+    });
+
+    it("should throw when configPath is undefined", () => {
+      expect(() => {
+        new Config(undefined as any).get();
+      }).toThrow();
+
+      consoleChecker.checkNoOutput();
+    });
+  });
+
 
 });
