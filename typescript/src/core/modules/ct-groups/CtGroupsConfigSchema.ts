@@ -9,15 +9,6 @@ const BackendConfigSchema = z.object({
   usernameFieldName: z.string().min(1),
 
   // Delivered as environment variables
-  serverUrl: z.string().url().min(1),
-
-  // Delivered as environment variables
-  apiUser: z.string().min(1),
-
-  // Delivered as environment variables
-  apiUserPassword: z.string().min(1),
-
-  // Delivered as environment variables
   privateDecryptionKeyPassword: z.string().min(1)
 });
 
