@@ -62,9 +62,18 @@ export class Config {
             );
         }
 
-        // No env variable to merge
+        // Merge the environment variables into the config
         const merged = {
-            ...json
+            ...json,
+
+            // Backend confit must be delivered via the environment variables
+            backendConfig: {
+                serverUrl:
+                    process.env.CT_SERVER_URL,
+
+                apiToken:
+                    process.env.CT_API_TOKEN
+            }
         };
 
         // Validate global config
