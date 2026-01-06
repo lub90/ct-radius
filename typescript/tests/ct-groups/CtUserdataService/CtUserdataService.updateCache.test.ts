@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { CtUserdataService } from "../../src/core/CtUserdataService";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { CtUserdataService } from "../../../src/core/modules/ct-groups/CtUserdataService";
 
 function createFakeClient() {
   return {
@@ -9,8 +12,14 @@ function createFakeClient() {
 }
 
 describe("CtUserdataService.updateCache", () => {
-  const cachePath = "test-cache.json";
   const username = "alice";
+  let cachePath: string;
+
+  beforeEach(() => {
+    const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
+    cachePath = join(tmp, "test-cache.json");
+  });
+
 
   it("calls updateUsernameCache and then updateGroupCache", async () => {
     const client = createFakeClient();

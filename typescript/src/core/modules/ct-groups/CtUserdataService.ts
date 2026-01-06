@@ -77,6 +77,7 @@ export class CtUserdataService {
             await this.updateGroupCache(username);
         }
 
+        // User data is now guaranteed to be available
         const entry = await this.cache.get(username);
         if (!entry || !entry.groups) {
             throw new Error("Cache inconsistency: missing user data after update");
@@ -121,9 +122,7 @@ export class CtUserdataService {
 
         let persons;
         try {
-            persons = await this.client.getAllPages("/persons", {
-                headers: { Authorization: `Login ${""}` } // token is already inside client
-            });
+            persons = await this.client.getAllPages("/persons");    // token is already inside client
         } catch (err) {
             throw err;
         }
@@ -131,10 +130,10 @@ export class CtUserdataService {
         const now = Date.now();
 
         // Clear entire cache
-        await this.cache.clear();
+        await this.clearCache();
 
         // Write all persons
-        for (const p of persons.data ?? []) {
+        for (const p of persons) {
             const uname = p[this.fieldName];
             if (!this.isValidString(uname)) continue;
 
@@ -158,14 +157,12 @@ export class CtUserdataService {
 
         let groupsResponse;
         try {
-            groupsResponse = await this.client.get(`/persons/${entry.id}/groups`, {
-                headers: { Authorization: `Login ${""}` }
-            });
+            groupsResponse = await this.client.get(`/persons/${entry.id}/groups`);  // token is already inside client
         } catch (err) {
             throw err;
         }
 
-        const groups = (groupsResponse.data ?? [])
+        const groups = (groupsResponse as any)
             .map((g: any) => g.group?.id)
             .filter((id: any) => typeof id === "number");
 

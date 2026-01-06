@@ -1,15 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { CtUserdataService } from "../../src/core/CtUserdataService";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { CtUserdataService } from "../../../src/core/modules/ct-groups/CtUserdataService";
 
 function createFakeClient() {
   return {
-    getAllPages: () => Promise.resolve({ data: [] }),
-    get: () => Promise.resolve({ data: [] })
+    getAllPages: () => Promise.resolve([]),
+    get: () => Promise.resolve([])
   };
 }
 
 describe("CtUserdataService constructor", () => {
-  const cachePath = "test-cache.json";
+  let cachePath: string;
+
+  beforeEach(() => {
+    const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
+    cachePath = join(tmp, "test-cache.json");
+  });
 
   it("creates an instance with valid arguments", () => {
     const client = createFakeClient();
