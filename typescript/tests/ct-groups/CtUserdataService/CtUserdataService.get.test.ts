@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CtUserdataService, CacheStatus } from "../../src/core/CtUserdataService.js";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { CtUserdataService, CacheStatus } from "../../../src/core/modules/ct-groups/CtUserdataService";
 
 function createFakeClient() {
     return {
@@ -9,11 +12,12 @@ function createFakeClient() {
 }
 
 describe("CtUserdataService.get", () => {
-    const cachePath = "test-cache.json";
     const username = "alice";
+    let cachePath: string;
 
     beforeEach(() => {
-        vi.useFakeTimers();
+        const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
+        cachePath = join(tmp, "test-cache.json");
     });
 
     it("validates username input", async () => {
@@ -76,16 +80,6 @@ describe("CtUserdataService.get", () => {
                 await service["cache"].set(u, {
                     username: u,
                     id: 12,
-                    timestamp: Date.now()
-                });
-            });
-        const spyUpdateGroups = vi.spyOn(service, "updateGroupCache")
-            .mockImplementation(async (u: string) => {
-                // Simulate that updateGroupCache populated the cache
-                // @ts-expect-error
-                await service["cache"].set(u, {
-                    username: u,
-                    id: 12,
                     groups: [101],
                     timestamp: Date.now()
                 });
@@ -95,7 +89,6 @@ describe("CtUserdataService.get", () => {
 
         expect(spyCheckCache).toHaveBeenCalledWith(username);
         expect(spyUpdateCache).toHaveBeenCalledWith(username);
-        expect(spyUpdateGroups).toHaveBeenCalledWith(username);
 
         expect(result).toEqual({
             username,
@@ -119,16 +112,6 @@ describe("CtUserdataService.get", () => {
                 await service["cache"].set(u, {
                     username: u,
                     id: 12,
-                    timestamp: Date.now()
-                });
-            });
-        const spyUpdateGroups = vi.spyOn(service, "updateGroupCache")
-            .mockImplementation(async (u: string) => {
-                // Simulate that updateGroupCache populated the cache
-                // @ts-expect-error
-                await service["cache"].set(u, {
-                    username: u,
-                    id: 12,
                     groups: [101],
                     timestamp: Date.now()
                 });
@@ -139,7 +122,6 @@ describe("CtUserdataService.get", () => {
 
         expect(spyCheckCache).toHaveBeenCalledWith(username);
         expect(spyUpdateCache).toHaveBeenCalledWith(username);
-        expect(spyUpdateGroups).toHaveBeenCalledWith(username);
 
         expect(result).toEqual({
             username,

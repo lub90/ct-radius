@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CtUserdataService } from "../../src/core/CtUserdataService";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { CtUserdataService } from "../../../src/core/modules/ct-groups/CtUserdataService";
 
 function createFakeClient() {
   return {
@@ -9,12 +12,14 @@ function createFakeClient() {
 }
 
 describe("CtUserdataService.updateGroupCache", () => {
-  const cachePath = "test-cache.json";
   const username = "alice";
+  let cachePath: string;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
+    cachePath = join(tmp, "test-cache.json");
   });
+
 
   it("updates groups for existing user while preserving timestamp", async () => {
     const client = createFakeClient();
@@ -30,12 +35,10 @@ describe("CtUserdataService.updateGroupCache", () => {
       // no groups yet
     });
 
-    client.get.mockResolvedValue({
-      data: [
-        { group: { id: 101 } },
-        { group: { id: 102 } }
-      ]
-    });
+    client.get.mockResolvedValue([
+      { group: { id: 101 } },
+      { group: { id: 102 } }
+    ]);
 
     await service.updateGroupCache(username);
 
@@ -50,7 +53,7 @@ describe("CtUserdataService.updateGroupCache", () => {
     });
 
     expect(client.get).toHaveBeenCalledTimes(1);
-    expect(client.get).toHaveBeenCalledWith("/persons/12/groups", expect.any(Object));
+    expect(client.get).toHaveBeenCalledWith("/persons/12/groups");
   });
 
   it("throws if user is not present in cache", async () => {

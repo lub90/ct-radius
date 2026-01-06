@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CtUserdataService } from "../../src/core/CtUserdataService";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { CtUserdataService } from "../../../src/core/modules/ct-groups/CtUserdataService";
 
 function createFakeClient() {
   return {
@@ -9,23 +12,22 @@ function createFakeClient() {
 }
 
 describe("CtUserdataService.updateUsernameCache", () => {
-  const cachePath = "test-cache.json";
+  let cachePath: string;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
+    cachePath = join(tmp, "test-cache.json");
   });
 
   it("loads all persons from backend, clears cache and writes them with current timestamp", async () => {
     const client = createFakeClient();
-    const now = new Date("2024-01-01T00:00:00Z");
+    const now = new Date("2026-01-01T00:00:00Z");
     vi.setSystemTime(now);
 
-    client.getAllPages.mockResolvedValue({
-      data: [
+    client.getAllPages.mockResolvedValue([
         { id: 12, cmsUserId: "alice" },
         { id: 13, cmsUserId: "bob" }
-      ]
-    });
+      ]);
 
     const service = new CtUserdataService(client, "cmsUserId", cachePath, 60);
 
@@ -62,7 +64,7 @@ describe("CtUserdataService.updateUsernameCache", () => {
     });
 
     expect(client.getAllPages).toHaveBeenCalledTimes(1);
-    expect(client.getAllPages).toHaveBeenCalledWith("/persons", expect.any(Object));
+    expect(client.getAllPages).toHaveBeenCalledWith("/persons");
   });
 
   it("throws and does not modify cache if backend getAllPages throws", async () => {

@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CtUserdataService, CacheStatus } from "../../src/core/CtUserdataService";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { CtUserdataService, CacheStatus } from "../../../src/core/modules/ct-groups/CtUserdataService";
 
 function createFakeClient() {
   return {
@@ -10,10 +13,11 @@ function createFakeClient() {
 
 describe("CtUserdataService.checkCache", () => {
   const username = "alice";
-  const cachePath = "test-cache.json";
+  let cachePath: string;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
+    cachePath = join(tmp, "test-cache.json");
   });
 
   it("returns NOT_AVAILABLE_IN_CACHE when no entry exists", async () => {
