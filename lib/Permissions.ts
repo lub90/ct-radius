@@ -1,4 +1,4 @@
-import type { GlobalPermissions } from '../types/ct-types';
+import type { GlobalPermissions } from '../types/ct-types.ts';
 
 export class Permissions {
 
