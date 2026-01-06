@@ -370,3 +370,19 @@ export type GlobalPermissions = {
           }
         | undefined;
 };
+
+
+/**
+ * A permission object for a specific custom module.
+ */
+export type CustomModulePermission = {
+    'create custom category': boolean;
+    'create custom data': Array<number>;
+    'delete custom category': Array<number>;
+    'delete custom data': Array<number>;
+    'edit custom category': Array<number>;
+    'edit custom data': Array<number>;
+    view: boolean;
+    'view custom category': Array<number>;
+    'view custom data': Array<number>;
+};
