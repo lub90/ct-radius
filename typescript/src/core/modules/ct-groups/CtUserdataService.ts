@@ -22,6 +22,12 @@ export interface UserData {
     groups: number[];
 }
 
+// Minimal person interface for the ChurchTools API
+interface Person {
+    id: number;
+    [key: string]: any;
+}
+
 export class CtUserdataService {
     private readonly client: ChurchToolsClient;
     private readonly fieldName: string;
@@ -120,7 +126,7 @@ export class CtUserdataService {
     async updateUsernameCache(username: string): Promise<void> {
         this.ensureValidUsername(username);
 
-        let persons;
+        let persons: Person[];
         try {
             persons = await this.client.getAllPages("/persons");    // token is already inside client
         } catch (err) {
