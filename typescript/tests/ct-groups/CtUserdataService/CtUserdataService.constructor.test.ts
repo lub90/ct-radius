@@ -16,7 +16,7 @@ describe("CtUserdataService constructor", () => {
 
   beforeEach(() => {
     const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
-    cachePath = join(tmp, "test-cache.json");
+    cachePath = join(tmp, "test-cache.sqlite");
   });
 
   it("creates an instance with valid arguments", () => {
@@ -51,7 +51,7 @@ describe("CtUserdataService constructor", () => {
     expect(() => new CtUserdataService(client, "   ", cachePath, 60)).toThrow();
   });
 
-  it("throws if cachePath is missing, empty or whitespace", () => {
+  it("throws if cachePath is missing, empty, whitespace or does not end with .sqlite", () => {
     const client = createFakeClient();
 
     // @ts-expect-error
@@ -60,6 +60,7 @@ describe("CtUserdataService constructor", () => {
     expect(() => new CtUserdataService(client, "cmsUserId", null, 60)).toThrow();
     expect(() => new CtUserdataService(client, "cmsUserId", "", 60)).toThrow();
     expect(() => new CtUserdataService(client, "cmsUserId", "   ", 60)).toThrow();
+    expect(() => new CtUserdataService(client, "cmsUserId", "cache.json", 60)).toThrow();
   });
 
   it("accepts timeoutSeconds equal to 0", () => {

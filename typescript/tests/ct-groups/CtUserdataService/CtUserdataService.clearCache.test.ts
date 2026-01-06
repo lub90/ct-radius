@@ -16,7 +16,7 @@ describe("CtUserdataService.clearCache", () => {
 
     beforeEach(() => {
         const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
-        cachePath = join(tmp, "test-cache.json");
+        cachePath = join(tmp, "test-cache.sqlite");
     });
 
     it("clearCache() clears all entries", async () => {
@@ -75,9 +75,6 @@ describe("CtUserdataService.clearCache", () => {
     });
 
     it("treats clearCache(undefined) the same as clearCache()", async () => {
-        const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
-        const cachePath = join(tmp, "test-cache.json");
-
         const client = createFakeClient();
         const service = new CtUserdataService(client, "cmsUserId", cachePath, 60);
 

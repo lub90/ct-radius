@@ -17,7 +17,7 @@ describe("CtUserdataService persistence behavior", () => {
 
   beforeEach(() => {
     const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
-    cachePath = join(tmp, "test-cache.json");
+    cachePath = join(tmp, "test-cache.sqlite");
   });
 
   it("writes cache to disk and allows reopening by a new instance", async () => {

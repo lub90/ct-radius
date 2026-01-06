@@ -16,7 +16,7 @@ describe("CtUserdataService.updateUsernameCache", () => {
 
   beforeEach(() => {
     const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
-    cachePath = join(tmp, "test-cache.json");
+    cachePath = join(tmp, "test-cache.sqlite");
   });
 
   it("loads all persons from backend, clears cache and writes them with current timestamp", async () => {

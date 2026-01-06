@@ -1,5 +1,5 @@
 import Keyv from "keyv";
-import KeyvFile from "keyv-file";
+import KeyvSqlite from "@keyv/sqlite"
 import type { ChurchToolsClient } from "@churchtools/churchtools-client";
 
 export enum CacheStatus {
@@ -45,7 +45,7 @@ export class CtUserdataService {
             throw new Error("Invalid fieldName");
         }
 
-        if (!this.isValidString(cachePath)) {
+        if (!this.isValidString(cachePath) || !cachePath.endsWith(".sqlite")) {
             throw new Error("Invalid cachePath");
         }
 
@@ -58,7 +58,7 @@ export class CtUserdataService {
         this.timeoutSeconds = timeoutSeconds;
 
         this.cache = new Keyv<CachedUserEntry>({
-            store: new KeyvFile({ filename: cachePath })
+            store: new KeyvSqlite({ uri: "sqlite://" + cachePath })
         });
     }
 

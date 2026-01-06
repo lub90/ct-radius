@@ -18,7 +18,7 @@ describe("CtUserdataService backend error propagation", () => {
 
     beforeEach(() => {
         const tmp = mkdtempSync(join(tmpdir(), "ct-cache-"));
-        cachePath = join(tmp, "test-cache.json");
+        cachePath = join(tmp, "test-cache.sqlite");
     });
 
     it("propagates errors from getAllPages via updateUsernameCache", async () => {
