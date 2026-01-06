@@ -2,6 +2,7 @@ import type { AuthModule } from "../../AuthModule.js";
 import type { UserRequest } from "../../../types/UserRequest.js";
 import type { RadiusResponse } from "../../../types/RadiusResponse.js";
 import type { CtGroupsConfig } from "./CtGroupsConfigSchema.js";
+import { ChurchToolsClient } from "@churchtools/churchtools-client";
 import { CtGroupsConfigSchema } from "./CtGroupsConfigSchema.js";
 import type pino from "pino";
 
@@ -10,9 +11,11 @@ export class CtGroupsModule implements AuthModule {
 
   private readonly config: CtGroupsConfig;
   private readonly logger: pino.Logger
+  private readonly churchtoolsClient: ChurchToolsClient;
 
 
-  constructor(config: any, logger: pino.Logger) {
+  constructor(churchtoolsClient: ChurchToolsClient, config: any, logger: pino.Logger) {
+    this.churchtoolsClient = churchtoolsClient;
     this.logger = logger;
     this.config = this.loadConfig(config);
   }
