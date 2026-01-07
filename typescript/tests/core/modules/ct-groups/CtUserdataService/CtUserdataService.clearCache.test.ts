@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { CtUserdataService } from "../../../src/core/modules/ct-groups/CtUserdataService";
+import { CtUserdataService } from "../../../../../src/core/modules/ct-groups/CtUserdataService";
 
 function createFakeClient() {
     return {

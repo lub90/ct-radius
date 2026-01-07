@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { ChallengeResponse, RejectResponse } from "../../src/types/RadiusResponse";
-import { CtGroupsModule } from "../../src/core/modules/ct-groups/CtGroupsModule";
+import { ChallengeResponse, RejectResponse } from "../../../../../src/types/RadiusResponse";
+import { CtGroupsModule } from "../../../../../src/core/modules/ct-groups/CtGroupsModule";
 import { tmpdir } from "os";
 import { join } from "path";
 import { randomUUID } from "crypto";
 
 function makeTempCachePath() {
-  return join(tmpdir(), `ct-cache-${randomUUID()}.sqlite`);
+    return join(tmpdir(), `ct-cache-${randomUUID()}.sqlite`);
 }
 
 function fakeClient() { return {} as any; }
@@ -21,7 +21,7 @@ describe("CtGroupsModule.authorize - unit tests with mocked services", () => {
     });
 
     describe("fullyDefined config", () => {
-        const cfg = require("../ct-groups/authorize-fixtures/fullyDefined/config.json");
+        const cfg = require("../authorize-fixtures/fullyDefined/config.json");
         cfg.pathToCacheFile = makeTempCachePath();
 
         it("returns null for unknown user (userdataService.get returns undefined)", async () => {
@@ -146,7 +146,7 @@ describe("CtGroupsModule.authorize - unit tests with mocked services", () => {
     });
 
     describe("noVlanMapping config", () => {
-        const cfg = require("../ct-groups/authorize-fixtures/noVlanMapping/config.json");
+        const cfg = require("../authorize-fixtures/noVlanMapping/config.json");
         cfg.pathToCacheFile = makeTempCachePath();
 
         it("returns ChallengeResponse without VLAN when no VLAN assigned and none requested", async () => {
@@ -186,7 +186,7 @@ describe("CtGroupsModule.authorize - unit tests with mocked services", () => {
     });
 
     describe("defaultOnly config", () => {
-        const cfg = require("../ct-groups/authorize-fixtures/defaultOnly/config.json");
+        const cfg = require("../authorize-fixtures/defaultOnly/config.json");
         cfg.pathToCacheFile = makeTempCachePath();
 
         it("assigns default VLAN when configured and none requested", async () => {
@@ -247,7 +247,7 @@ describe("CtGroupsModule.authorize - unit tests with mocked services", () => {
     });
 
     describe("onlyAssignment config", () => {
-        const cfg = require("../ct-groups/authorize-fixtures/onlyAssignment/config.json");
+        const cfg = require("../authorize-fixtures/onlyAssignment/config.json");
         cfg.pathToCacheFile = makeTempCachePath();
 
         it("assigns VLAN from assignment when applicable", async () => {
@@ -331,7 +331,7 @@ describe("CtGroupsModule.authorize - unit tests with mocked services", () => {
 
 
     describe("assignmentIfRequested config", () => {
-        const cfg = require("../ct-groups/authorize-fixtures/assignmentIfRequested/config.json");
+        const cfg = require("../authorize-fixtures/assignmentIfRequested/config.json");
         cfg.pathToCacheFile = makeTempCachePath();
 
         it("assigns default VLAN if user has wifi access but no assignment match and no request", async () => {
@@ -446,7 +446,7 @@ describe("CtGroupsModule.authorize - unit tests with mocked services", () => {
     });
 
     describe("assignmentAndDefault config", () => {
-        const cfg = require("../ct-groups/authorize-fixtures/assignmentAndDefault/config.json");
+        const cfg = require("../authorize-fixtures/assignmentAndDefault/config.json");
         cfg.pathToCacheFile = makeTempCachePath();
 
         it("assigns first matching assignment VLAN when user has assignment match", async () => {
@@ -521,7 +521,7 @@ describe("CtGroupsModule.authorize - unit tests with mocked services", () => {
     });
 
     describe("assignmentIfRequestedOnly config", () => {
-        const cfg = require("../ct-groups/authorize-fixtures/assignmentIfRequestedOnly/config.json");
+        const cfg = require("../authorize-fixtures/assignmentIfRequestedOnly/config.json");
         cfg.pathToCacheFile = makeTempCachePath();
 
         it("assigns no VLAN and returns ChallengeResponse when no VLAN requested or matched", async () => {

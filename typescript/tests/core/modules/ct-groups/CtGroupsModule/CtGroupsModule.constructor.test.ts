@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { FixtureLoader } from "../helpers/FixtureLoader";
-import { CtGroupsModule } from "../../src/core/modules/ct-groups/CtGroupsModule.ts";
+import { FixtureLoader } from "../../../../helpers/FixtureLoader.ts";
+import { CtGroupsModule } from "../../../../../src/core/modules/ct-groups/CtGroupsModule.ts";
 import dotenv from "dotenv";
 import fs from "fs";
 
@@ -13,7 +13,7 @@ function fakeLogger() {
 }
 
 describe("CtGroupsModule constructor & config loading", () => {
-    const fixtures = new FixtureLoader("./tests/ct-groups/fixtures");
+    const fixtures = new FixtureLoader("./tests/core/modules/ct-groups/fixtures");
     const validConfigs = fixtures.getValidConfigs();
     const invalidConfigs = fixtures.getInvalidConfigs();
     const validEnvs = fixtures.getValidEnvs();

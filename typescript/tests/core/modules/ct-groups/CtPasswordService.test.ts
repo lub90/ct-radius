@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import crypto from "crypto";
 import path from "path";
 import fs from "fs";
-import CtPasswordService from "../../src/core/modules/ct-groups/CtPasswordService";
+import CtPasswordService from "../../../../src/core/modules/ct-groups/CtPasswordService";
 
 describe("CtPasswordService", () => {
 
