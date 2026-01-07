@@ -1,0 +1,20 @@
+{
+  "wifiAccessGroups": [1],
+  "includeAssignmentGroupsInAccessGroups": true,
+  "pathToCacheFile": "test-cache.sqlite",
+  "cacheTimeout": 60,
+  "credentials": {
+    "usernameFieldName": "cmsUserId",
+    "pathToPrivateDecryptionKey": "private.pem"
+  },
+  "vlanMapping": {
+    "defaultVlan": 10,
+    "assignments": [
+      { "group": 2, "vlan": 20 },
+      { "group": 3, "vlan": 30 }
+    ],
+    "assignmentsIfRequested": [
+      { "group": 4, "vlan": 40 }
+    ]
+  }
+}

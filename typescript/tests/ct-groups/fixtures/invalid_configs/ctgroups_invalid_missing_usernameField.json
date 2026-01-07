@@ -1,0 +1,7 @@
+{
+  "wifiAccessGroups": [1],
+  "pathToCacheFile": "test-cache.sqlite",
+  "credentials": {
+    "pathToPrivateDecryptionKey": "private.pem"
+  }
+}

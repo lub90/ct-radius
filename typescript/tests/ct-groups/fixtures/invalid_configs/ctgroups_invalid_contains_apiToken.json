@@ -1,0 +1,9 @@
+{
+  "wifiAccessGroups": [1],
+  "pathToCacheFile": "test-cache.sqlite",
+  "credentials": {
+    "usernameFieldName": "cmsUserId",
+    "pathToPrivateDecryptionKey": "private.pem",
+    "apiToken": "should-not-be-here"
+  }
+}
