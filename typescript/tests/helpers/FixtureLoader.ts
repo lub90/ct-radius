@@ -5,8 +5,8 @@ import { FileMocker } from "./FileMocker";
 export class FixtureLoader {
   private baseDir: string;
 
-  constructor() {
-    this.baseDir = path.resolve("./tests/fixtures");
+  constructor(baseDir: string) {
+    this.baseDir = path.resolve(baseDir);
   }
 
   // -----------------------------

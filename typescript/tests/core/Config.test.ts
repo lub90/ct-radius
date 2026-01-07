@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import fs from "node:fs";
 
 describe("Config validation using fixtures", () => {
-  const fixtures = new FixtureLoader();
+  const fixtures = new FixtureLoader("./tests/fixtures");
 
   // -----------------------------
   // VALID CONFIGS
@@ -228,7 +228,7 @@ describe("Config validation using fixtures", () => {
   // CONFIG + ENV COMBINED
   // -----------------------------
   describe("config + env combined", () => {
-    const fixtures = new FixtureLoader();
+    const fixtures = new FixtureLoader("./tests/fixtures");
     const consoleChecker = new ConsoleChecker();
 
     beforeEach(() => {
@@ -287,7 +287,7 @@ describe("Config validation using fixtures", () => {
   // PROCESS.ENV IMMUTABILITY
   // -----------------------------
   describe("process.env immutability", () => {
-    const fixtures = new FixtureLoader();
+    const fixtures = new FixtureLoader("./tests/fixtures");
     const consoleChecker = new ConsoleChecker();
 
     beforeEach(() => {
@@ -342,7 +342,7 @@ describe("Config validation using fixtures", () => {
   // MISSING ENV FILE
   // -----------------------------
   describe("missing env file", () => {
-    const fixtures = new FixtureLoader();
+    const fixtures = new FixtureLoader("./tests/fixtures");
     const consoleChecker = new ConsoleChecker();
 
     beforeEach(() => {
@@ -371,7 +371,7 @@ describe("Config validation using fixtures", () => {
 
 
   describe("envPath variable not set", () => {
-    const fixtures = new FixtureLoader();
+    const fixtures = new FixtureLoader("./tests/fixtures");
     const consoleChecker = new ConsoleChecker();
 
     beforeEach(() => {
