@@ -22,6 +22,15 @@ export class CtGroupsModule implements AuthModule {
 
 
   constructor(churchtoolsClient: ChurchToolsClient, config: any, logger: pino.Logger) {
+
+    if (!churchtoolsClient || typeof churchtoolsClient !== "object") {
+      throw new Error("Invalid ChurchTools client");
+    }
+
+    if (!logger || typeof logger !== "object") {
+      throw new Error("Invalid logger");
+    }
+
     this.churchtoolsClient = churchtoolsClient;
     this.logger = logger;
     this.config = this.loadConfig(config);
@@ -66,7 +75,7 @@ export class CtGroupsModule implements AuthModule {
 
 
   async authorize(req: UserRequest): Promise<RadiusResponse | null> {
-    
+
     // Resolve user and check if he has wifi access
     const userdataService = await this.getUserdataService();
     const userData = await userdataService.get(req.username);

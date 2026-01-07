@@ -1,6 +1,0 @@
-{
-  "allowRequestedVlan": true,
-  "vlanSeparator": "#",
-  "modules": ["ct-groups"],
-  "pathToCacheFile": "/ct-radius/cache/personCache.json"
-}

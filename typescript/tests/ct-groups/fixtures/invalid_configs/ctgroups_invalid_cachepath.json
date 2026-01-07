@@ -1,0 +1,8 @@
+{
+  "wifiAccessGroups": [1],
+  "pathToCacheFile": "cache.txt",
+  "credentials": {
+    "usernameFieldName": "cmsUserId",
+    "pathToPrivateDecryptionKey": "private.pem"
+  }
+}
