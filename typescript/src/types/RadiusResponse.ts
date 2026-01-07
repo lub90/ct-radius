@@ -1,3 +1,5 @@
+import { containsUnsafeChars } from "./unsafeChars.js";
+
 export enum AuthType {
   Reject = "Reject",
   Accept = "Accept",
@@ -74,10 +76,17 @@ export class ChallengeResponse extends RadiusResponse {
     public vlan?: VlanAttributes
   ) {
     super();
+
+    if (containsUnsafeChars(this.cleartextPassword)) {
+      throw new Error(
+        "Cleartext password contains unsafe characters for RADIUS configuration"
+      );
+    }
   }
 
   toString(): string {
-    const lines = [`Cleartext-Password := ${this.cleartextPassword}`];
+    // We escape the sequence to prevent any critical chars in the password to be rejected...
+    const lines = [`Cleartext-Password := "${this.cleartextPassword}"`];
 
     const vlanStr = this.formatVlan(this.vlan);
     if (vlanStr) lines.push(vlanStr);

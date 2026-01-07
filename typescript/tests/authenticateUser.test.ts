@@ -80,7 +80,7 @@ describe('authenticateUser', () => {
       expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(0);
-      expect(console.log).toHaveBeenCalledWith('Cleartext-Password := password');
+      expect(console.log).toHaveBeenCalledWith('Cleartext-Password := "password"');
       expect(console.log).toHaveBeenCalledTimes(1);
       expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Retrieved data for user user.' }]);
     });
