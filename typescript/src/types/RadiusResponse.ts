@@ -4,9 +4,9 @@ export enum AuthType {
 }
 
 export interface VlanAttributes {
-  tunnelType?: string;
-  tunnelMediumType?: string;
-  tunnelPrivateGroupId?: string;
+  tunnelType: number;
+  tunnelMediumType: number;
+  tunnelPrivateGroupId: number;
 }
 
 /**

@@ -62,11 +62,15 @@ export class Config {
             );
         }
 
+        if ("backendConfig" in json) {
+            throw new Error("backendConfig must not be defined in the JSON config file. Use environment variables instead.");
+        }
+
         // Merge the environment variables into the config
         const merged = {
             ...json,
 
-            // Backend confit must be delivered via the environment variables
+            // Backend config must be delivered via the environment variables
             backendConfig: {
                 serverUrl:
                     process.env.CT_SERVER_URL,
