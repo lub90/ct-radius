@@ -1,5 +1,6 @@
 import Keyv from "keyv";
 import KeyvSqlite from "@keyv/sqlite"
+import type { UserData } from "./UserData.js";
 import type { ChurchToolsClient } from "@churchtools/churchtools-client";
 
 export enum CacheStatus {
@@ -14,12 +15,6 @@ export interface CachedUserEntry {
     id: number;
     groups?: number[];
     timestamp: number;
-}
-
-export interface UserData {
-    username: string;
-    id: number;
-    groups: number[];
 }
 
 // Minimal person interface for the ChurchTools API
@@ -72,7 +67,7 @@ export class CtUserdataService {
     // PUBLIC API
     // ---------------------------------------------------------------------------
 
-    async get(username: string): Promise<UserData> {
+    async get(username: string): Promise<UserData | undefined> {
         this.ensureValidUsername(username);
 
         const status = await this.checkCache(username);
@@ -83,9 +78,17 @@ export class CtUserdataService {
             await this.updateGroupCache(username);
         }
 
-        // User data is now guaranteed to be available
+        // After any updates, the entry may still be missing if the
+        // username does not exist in ChurchTools. In that case return
+        // `undefined` to indicate the user is unknown. If an entry
+        // exists but groups are still missing, treat that as an
+        // inconsistency and throw.
         const entry = await this.cache.get(username);
-        if (!entry || !entry.groups) {
+        if (!entry) {
+            return undefined;
+        }
+
+        if (!entry.groups) {
             throw new Error("Cache inconsistency: missing user data after update");
         }
 
@@ -120,6 +123,14 @@ export class CtUserdataService {
         this.ensureValidUsername(username);
 
         await this.updateUsernameCache(username);
+
+        // If the username was not found during username cache update,
+        // don't attempt to update groups (avoids throwing for unknown users)
+        const entry = await this.cache.get(username);
+        if (!entry) {
+            return;
+        }
+
         await this.updateGroupCache(username);
     }
 
@@ -135,10 +146,23 @@ export class CtUserdataService {
 
         const now = Date.now();
 
-        // Clear entire cache
+        // If the requested username is not present in the persons list,
+        // do not update/clear the cache at all. This prevents removing
+        // previously cached users when the requested username simply
+        // doesn't exist in ChurchTools.
+        const normalizedRequested = username.trim();
+        const found = persons.some((p) => {
+            const uname = p[this.fieldName];
+            return this.isValidString(uname) && uname.trim() === normalizedRequested;
+        });
+
+        if (!found) {
+            return;
+        }
+
+        // Clear entire cache and write all persons
         await this.clearCache();
 
-        // Write all persons
         for (const p of persons) {
             const uname = p[this.fieldName];
             if (!this.isValidString(uname)) continue;

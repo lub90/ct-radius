@@ -27,7 +27,15 @@ describe("CtUserdataService.updateCache", () => {
 
     const spyUpdateUser = vi
       .spyOn(service as any, "updateUsernameCache")
-      .mockResolvedValue(undefined);
+      .mockImplementation(async (u: string) => {
+        // simulate that the username update populated the cache
+        // @ts-expect-error access internal cache
+        await service["cache"].set(u, {
+          username: u,
+          id: 12,
+          timestamp: Date.now()
+        });
+      });
     const spyUpdateGroups = vi
       .spyOn(service as any, "updateGroupCache")
       .mockResolvedValue(undefined);
@@ -63,7 +71,15 @@ describe("CtUserdataService.updateCache", () => {
     const service = new CtUserdataService(client, "cmsUserId", cachePath, 60);
 
     const error = new Error("group update failed");
-    vi.spyOn(service as any, "updateUsernameCache").mockResolvedValue(undefined);
+    vi.spyOn(service as any, "updateUsernameCache").mockImplementation(async (u: string) => {
+      // simulate populated cache so updateGroupCache gets called
+      // @ts-expect-error access internal cache
+      await service["cache"].set(u, {
+        username: u,
+        id: 12,
+        timestamp: Date.now()
+      });
+    });
     vi.spyOn(service as any, "updateGroupCache").mockRejectedValue(error);
 
     await expect(service.updateCache(username)).rejects.toBe(error);

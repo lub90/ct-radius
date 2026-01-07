@@ -130,6 +130,27 @@ describe("CtUserdataService.get", () => {
         });
     });
 
+    it("returns undefined when updateCache does not populate user", async () => {
+        const client = createFakeClient();
+        const service = new CtUserdataService(client, "cmsUserId", cachePath, 60);
+
+        const spyCheckCache = vi
+            .spyOn(service, "checkCache")
+            .mockResolvedValue(CacheStatus.NOT_AVAILABLE_IN_CACHE);
+
+        // Simulate updateCache running but not populating the cache for the username
+        const spyUpdateCache = vi
+            .spyOn(service, "updateCache")
+            .mockImplementation(async (_u: string) => { /* no-op, leave cache empty */ });
+
+        const result = await service.get(username);
+
+        expect(spyCheckCache).toHaveBeenCalledWith(username);
+        expect(spyUpdateCache).toHaveBeenCalledWith(username);
+
+        expect(result).toBeUndefined();
+    });
+
     it("calls updateGroupCache when cache status is MISSING_USER_GROUPS", async () => {
         const client = createFakeClient();
         const service = new CtUserdataService(client, "cmsUserId", cachePath, 60);
