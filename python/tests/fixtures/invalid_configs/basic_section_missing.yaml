@@ -1,4 +1,0 @@
-vlans:
-  default_vlan: 10
-  assignments: {}
-  assignments_if_requested: {}
