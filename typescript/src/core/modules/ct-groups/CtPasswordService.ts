@@ -66,9 +66,9 @@ export class CtPasswordService {
                 throw new Error("Failed to parse JSON response from backend");
             }
 
-            const pwd = body.secondaryPassword;
+            const pwd = body.secondaryPwd;
             if (!pwd || typeof pwd !== "string" || pwd.trim().length === 0) {
-                throw new Error("secondaryPassword is missing in response");
+                throw new Error("secondaryPwd is missing in response");
             }
 
             return pwd.trim();

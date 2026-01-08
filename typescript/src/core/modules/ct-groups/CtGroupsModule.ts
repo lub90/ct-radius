@@ -234,13 +234,24 @@ export class CtGroupsModule implements AuthModule {
 
 
   private async getPasswordServerUrl(churchtoolsClient: ChurchToolsClient): Promise<string> {
-    const extensonData = new ExtensionData(churchtoolsClient, CT_GROUPS.CT_PASS_STORE_EXTENSION_KEY);
-    const settings = await extensonData.getCategoryData(CT_GROUPS.CT_PASS_STORE_SETTINGS_CATEGORY_NAME, true);
+
+    const extensionData = new ExtensionData(churchtoolsClient, CT_GROUPS.CT_PASS_STORE_EXTENSION_KEY);
+    const settingsRaw = await extensionData.getCategoryData(CT_GROUPS.CT_PASS_STORE_SETTINGS_CATEGORY_NAME, true);
+
+    let settings: any;
+    try {
+      settings = JSON.parse(settingsRaw["value"]);
+    } catch (err: any) {
+      throw new Error(`Invalid JSON in settingsRaw.value: ${err.message}`);
+    }
+
+
     const serverUrl = settings[CT_GROUPS.CT_PASS_STORE_SERVER_URL_FIELD_NAME];
+    const revisedUrl = serverUrl.trim().replace(/\/$/, "").trim();
 
-    if (!serverUrl || serverUrl.trim() === "") throw new Error("serverUrl must be a non-empty string");
-    if (!serverUrl.startsWith("https://")) throw new Error("serverUrl must start with https://");
+    if (!revisedUrl || revisedUrl.trim() === "") throw new Error("serverUrl must be a non-empty string");
+    if (!revisedUrl.startsWith("https://")) throw new Error("serverUrl must start with https://");
 
-    return serverUrl.trim().replace(/\/$/, "").trim();
+    return revisedUrl;
   }
 }

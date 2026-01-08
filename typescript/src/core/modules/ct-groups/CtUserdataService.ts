@@ -193,8 +193,7 @@ export class CtUserdataService {
         }
 
         const groups = (groupsResponse as any)
-            .map((g: any) => g.group?.id)
-            .filter((id: any) => typeof id === "number");
+            .map((g: any) => Number(g.group?.domainIdentifier));
 
         const updated: CachedUserEntry = {
             ...entry,

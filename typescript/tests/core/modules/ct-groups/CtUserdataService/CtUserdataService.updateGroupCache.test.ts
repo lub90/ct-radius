@@ -36,8 +36,8 @@ describe("CtUserdataService.updateGroupCache", () => {
     });
 
     client.get.mockResolvedValue([
-      { group: { id: 101 } },
-      { group: { id: 102 } }
+      { id: 1, group: { domainIdentifier: 101 } },
+      { id: 13,  group: { domainIdentifier: 102 } }
     ]);
 
     await service.updateGroupCache(username);

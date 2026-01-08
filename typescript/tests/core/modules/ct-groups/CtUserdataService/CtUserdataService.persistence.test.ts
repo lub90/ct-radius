@@ -30,7 +30,7 @@ describe("CtUserdataService persistence behavior", () => {
       { id: 12, cmsUserId: "alice" }
     ]);
     client1.get.mockResolvedValue([
-      { group: { id: 101 } }
+      { id: 104, group: { domainIdentifier: 101 } }
     ]);
 
     // Populate cache using real logic
@@ -80,10 +80,10 @@ describe("CtUserdataService persistence behavior", () => {
 
     client1.get.mockImplementation(async (path) => {
       if (path === "/persons/1/groups") {
-        return [{ group: { id: 101 } }];
+        return [{ id: 20, group: { domainIdentifier: 101 } }];
       }
       if (path === "/persons/2/groups") {
-        return [{ group: { id: 202 } }];
+        return [{ id: 19, group: { domainIdentifier: 202 } }];
       }
       return [];
     });
