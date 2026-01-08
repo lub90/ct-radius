@@ -48,7 +48,7 @@ describe('authenticateUser', () => {
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Accept');
       expect(console.log).toHaveBeenCalledTimes(1);
-      expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Retrieved data for user user.' }]);
+      expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Forwarded response to user user.' }]);
     });
 
     it('should handle RejectResponse', async () => {
@@ -65,7 +65,7 @@ describe('authenticateUser', () => {
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
-      expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Retrieved data for user user.' }]);
+      expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Forwarded response to user user.' }]);
     });
 
     it('should handle ChallengeResponse', async () => {
@@ -82,7 +82,7 @@ describe('authenticateUser', () => {
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Cleartext-Password := "password"');
       expect(console.log).toHaveBeenCalledTimes(1);
-      expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Retrieved data for user user.' }]);
+      expect(mockLogger.logs).toEqual([{ level: 'info', msg: 'Forwarded response to user user.' }]);
     });
   });
 

@@ -16,11 +16,22 @@ vi.mock("../../../src/core/ModuleRegistry.js", () => ({
     moduleRegistry: {}
 }));
 
-vi.mock("@churchtools/churchtools-client", () => ({
-    ChurchToolsClient: vi.fn(function (_url, _token, _csrf) {
-        return {};
-    })
-}));
+vi.mock("../../../src/core/churchtoolsSetup.js", () => {
+  const mockChurchtoolsClientInstance = {
+    __isMockChurchToolsClient: true,
+    setCookieJar: vi.fn(),
+  };
+
+  return {
+    ChurchToolsClient: vi.fn().mockImplementation(function () {
+      return mockChurchtoolsClientInstance;
+    }),
+    axiosCookieJarSupport: { wrapper: vi.fn() },
+    tough: { CookieJar: vi.fn() }
+  };
+});
+
+import { ChurchToolsClient } from "../../../src/core/churchtoolsSetup.js";
 
 
 const fakeLogger = pino({ level: "silent" });

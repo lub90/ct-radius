@@ -1,7 +1,7 @@
 import Keyv from "keyv";
 import KeyvSqlite from "@keyv/sqlite"
 import type { UserData } from "./UserData.js";
-import type { ChurchToolsClient } from "@churchtools/churchtools-client";
+import { ChurchToolsClient } from "../../churchtoolsSetup.js";
 
 export enum CacheStatus {
     NOT_AVAILABLE_IN_CACHE = "NOT_AVAILABLE_IN_CACHE",

@@ -6,7 +6,10 @@ import { AuthenticationError } from "../errors/AuthenticationError.js";
 import type { UserRequest } from "../types/UserRequest.js";
 import { moduleRegistry } from "./ModuleRegistry.js";
 import pino from "pino";
-import { ChurchToolsClient } from "@churchtools/churchtools-client";
+import { ChurchToolsClient, axiosCookieJarSupport, tough } from "./churchtoolsSetup.js";
+
+
+
 
 export class CtAuthProvider {
 
@@ -22,7 +25,6 @@ export class CtAuthProvider {
 
     private loadModules(config: AppConfig): AuthModule[] {
 
-
         return config.modules.map((name) => {
             // Get the module-specific config
             const moduleConfig = config[name] ?? {};
@@ -34,7 +36,12 @@ export class CtAuthProvider {
             }
 
             // Generate a churchtools client for this module
-            const churchtoolsClient = new ChurchToolsClient(this.config.backendConfig.serverUrl, this.config.backendConfig.apiToken);
+            const churchtoolsClient = new ChurchToolsClient(
+                    this.config.backendConfig.serverUrl,
+                    this.config.backendConfig.apiToken
+                );
+            // Set the cookie jar for the client
+            churchtoolsClient.setCookieJar(axiosCookieJarSupport.wrapper, new tough.CookieJar());
 
             // Create the module and return it
             return factory(churchtoolsClient, moduleConfig, this.logger);
@@ -43,7 +50,6 @@ export class CtAuthProvider {
 
 
     async authorize(username: string): Promise<RadiusResponse> {
-
         // Get the cleaned up username, if an error occurs it will be caught in the index.ts
         const cleaned: UserRequest = this.cleanUsername(username, this.config);
 
@@ -59,6 +65,7 @@ export class CtAuthProvider {
             return result;
         }
 
+        this.logger.info(`User ${username} not known by any module - reject request.`);
         return new RejectResponse();
     }
 
