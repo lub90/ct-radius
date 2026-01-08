@@ -111,7 +111,7 @@ describe("CtPasswordService", () => {
   it("getEncryptedPwd handles 200/404/other responses", async () => {
     const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
-    const fake200 = { status: 200, json: async () => ({ secondaryPassword: "PAY" }) } as any;
+    const fake200 = { status: 200, json: async () => ({ secondaryPwd: "PAY" }) } as any;
     vi.stubGlobal("fetch", vi.fn(async () => fake200));
     await expect(instance.getEncryptedPwd(1)).resolves.toBe("PAY");
 
@@ -137,7 +137,7 @@ describe("CtPasswordService", () => {
     await expect(instance.getEncryptedPwd(1)).rejects.toThrow();
   });
 
-  it("getEncryptedPwd throws when secondaryPassword is missing", async () => {
+  it("getEncryptedPwd throws when secondaryPwd is missing", async () => {
     const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
     const fakeMissingField = {
@@ -153,7 +153,7 @@ describe("CtPasswordService", () => {
   it("getEncryptedPwd sends correct request", async () => {
     const instance = new CtPasswordService(privateKeyEncrypted, privateKeyPwd, apiToken, serverUrl);
 
-    const fake200 = { status: 200, json: async () => ({ secondaryPassword: "X" }) };
+    const fake200 = { status: 200, json: async () => ({ secondaryPwd: "X" }) };
     const fetchMock = vi.fn(async () => fake200);
     vi.stubGlobal("fetch", fetchMock);
 
