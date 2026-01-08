@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import pino from "pino";
-import { ChurchToolsClient } from "@churchtools/churchtools-client";
 
 // --- Mocks ------------------------------------------------------------------
 
@@ -14,13 +13,27 @@ vi.mock("../../../src/core/ModuleRegistry.js", () => ({
     moduleRegistry: {}
 }));
 
-const mockChurchtoolsClientInstance = { __isMockChurchToolsClient: true };
-vi.mock("@churchtools/churchtools-client", () => ({
-    ChurchToolsClient: vi.fn(function (_url, _token, _csrf) {
-        return mockChurchtoolsClientInstance;
-    })
-}));
 
+vi.mock("../../../src/core/churchtoolsSetup.js", () => {
+  const mockChurchtoolsClientInstance = {
+    __isMockChurchToolsClient: true,
+    setCookieJar: vi.fn(),
+  };
+
+  return {
+    ChurchToolsClient: vi.fn().mockImplementation(function () {
+      return mockChurchtoolsClientInstance;
+    }),
+    axiosCookieJarSupport: { wrapper: vi.fn() },
+    tough: { CookieJar: vi.fn() }
+  };
+});
+
+
+
+
+// Import after mocks!
+import { ChurchToolsClient } from "../../../src/core/churchtoolsSetup.js";
 import { CtAuthProvider } from "../../../src/core/CtAuthProvider.js";
 import { moduleRegistry } from "../../../src/core/ModuleRegistry.js";
 import { Config } from "../../../src/core/Config.js";

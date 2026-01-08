@@ -2,7 +2,6 @@ import type { AuthModule } from "../../AuthModule.js";
 import type { UserRequest } from "../../../types/UserRequest.js";
 import { ChallengeResponse, RadiusResponse, RejectResponse } from "../../../types/RadiusResponse.js";
 import type { CtGroupsConfig } from "./CtGroupsConfigSchema.js";
-import { ChurchToolsClient } from "@churchtools/churchtools-client";
 import { CtGroupsConfigSchema } from "./CtGroupsConfigSchema.js";
 import type pino from "pino";
 import { CT_GROUPS } from "./constants.js";
@@ -10,6 +9,7 @@ import { ExtensionData } from "../../../ct-utils/lib/ExtensionData.js";
 import { CtPasswordService } from "./CtPasswordService.js";
 import { CtUserdataService } from "./CtUserdataService.js";
 import type { UserData } from "./UserData.js";
+import { ChurchToolsClient } from "../../churchtoolsSetup.js";
 
 export class CtGroupsModule implements AuthModule {
   name = "ct-groups";

@@ -22,7 +22,7 @@ export async function authenticateUser(config: string, env: string, username: st
 
         // Print RADIUS-compatible output
         console.log(response.toString());
-        logger.info(`Retrieved data for user ${username}.`);
+        logger.info(`Forwarded response to user ${username}.`);
 
         // Everything is fine - exit with 0
         return 0;
