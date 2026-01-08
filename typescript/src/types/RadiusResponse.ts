@@ -1,4 +1,4 @@
-import { containsUnsafeChars } from "./unsafeChars.js";
+import { containsUnsafeChars } from "./isAllowedString.js";
 
 export enum AuthType {
   Reject = "Reject",
