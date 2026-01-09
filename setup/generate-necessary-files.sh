@@ -57,7 +57,8 @@ done
 # Copy reference config and env files
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-copy_if_missing "$SCRIPT_DIR/config.yaml" "$TARGET_DIR/config.yaml"
+copy_if_missing "$SCRIPT_DIR/config.json" "$TARGET_DIR/config.json"
+copy_if_missing "$SCRIPT_DIR/config-reference.jsonc" "$TARGET_DIR/config-reference.jsonc"
 copy_if_missing "$SCRIPT_DIR/var.env" "$TARGET_DIR/var.env"
 copy_if_missing "$SCRIPT_DIR/clients.conf" "$TARGET_DIR/clients.conf"
 copy_if_missing "$SCRIPT_DIR/docker-compose.yml" "$TARGET_DIR/docker-compose.yml"
@@ -66,7 +67,7 @@ copy_if_missing "$SCRIPT_DIR/docker-compose.yml" "$TARGET_DIR/docker-compose.yml
 
 echo ""
 echo "🚀 Done - Next steps are:"
-echo "- Edit the config.yaml, var.env and clients.conf to suit your setup."
+echo "- Edit the config.json, var.env and clients.conf to suit your setup."
 echo "- Add the server.key, server.pem, ca.pem for the server's certificate to $TARGET_DIR."
 echo "- Add the decryption.pem for the encryption of the secondary password to $TARGET_DIR."
 echo "- Run set-permissions.sh afterwards to finish the file setup."

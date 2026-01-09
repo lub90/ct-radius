@@ -4,14 +4,14 @@ server default {
     listen {
         type = auth
         ipaddr = *
-        port = 0
+        port = 1812
     }
 
     # Listen for accounting requests
     listen {
         type = acct
         ipaddr = *
-        port = 0
+        port = 1813
     }
 
     # Authorization phase: determine how to handle incoming requests

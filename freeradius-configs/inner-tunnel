@@ -16,7 +16,7 @@ server inner-tunnel {
 
         # CtRADIUS: Call external script to fetch password and VLAN info
         update {
-	    control: += `/ct-radius/venv/bin/python3 /ct-radius/authorize.py --log /ct-radius/authorize.log --config /ct-radius/config.yaml --env /ct-radius/var.env --username '%{User-Name}'`
+	    control: += `/usr/bin/node /ct-radius/dist/index.js --log /ct-radius/authorize.log --config /ct-radius/config.json --env /ct-radius/var.env --username '%{User-Name}'`
 	}
 
         # CtRADIUS: Copy VLAN attributes from control to reply
