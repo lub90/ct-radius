@@ -1,0 +1,34 @@
+Inspect the current typescript project within this workspace.
+You will find out that it works in modules. Currently, there is only one module implemented: ct-groups.
+
+Now write me a second module called ct-guests. Put this in its own folder called ct-guests in the moduels folder in core.
+
+In general this modules enables to pull information on guest users from the ChurchTools backend using the churchtoolsClient handed to each module.
+
+This module adheres to all standards of a module and has a similar architecture (config, module class and data retrieval class) like the ct-groups module.
+Also it behaves similar regarding the return types of authorize:
+It returns null, if user is unkown, it returns a Challenge Response with a password if the user is known, and possibly vlan assignemnts if they are given to the user.
+
+Under the hood, the module should work as follows: it retrieves data from the churchtools backend via the ExtensionData class in a CtGuestdataService class. Take CtPasswordService class as an example, how it retrieves the backendUrl via the Churchtools client.
+Extension key is ct-radius, category is guest-users, and it will receive multiple guest users as an arry (so single parameter for getCategoryData is false and CategoryData retrieves an array of json objects similiar to the json object for the backendUrl). 
+Each object will have in its value field a json string in the following format:
+{
+    username: "kmustermann",
+    password: "secureThing",
+    valid: {
+        from: "2025-01-09T17:38:00Z"
+        to: "2025-01-10T23:59:59Z" 
+    },
+    assignedVlan: 20
+}
+whereas assignedVlan is optional.
+
+It then looks for whether there is a user with the given username. If so, CtGuestdataService returns the user data to the authorize function, if not it returns undefined. To reduce load on backend, CtGuestdataService should use a cache similar to the one in CtUserdataService.
+
+authorize then checks if today is in between the valid from and valid to date. if yes, it returns a Challenge with the cleartext password (aka password field) maybe with the assigned vlan. If the return value from CtGuestdataService.get is undefined it returns null.
+
+The config parameters for the module should be cachePath, timeout for cache and whether vlans must be assigned. If vlans must be assigned but there is one user without a vlan an error should be thrown by CtGuestdataService.get. Generate me a CtGuestsConfigSchema like in the ct-groups for these parameters. Validate the schema in the module class.
+
+Add the module class to the module registry.
+
+Generate all necessary classes for the module. The clases should be programmed in a defense manner and check their input, like I did it in the other classe. Alsos include extensive test cases for all possible cases, i.e. invalid input, error throwing behavior, proper behaviro for proper input etc.
