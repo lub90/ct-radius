@@ -1,7 +1,7 @@
 import Keyv from "keyv";
 import KeyvSqlite from "@keyv/sqlite"
 import type { UserData } from "./UserData.js";
-import { ChurchToolsClient } from "../../churchtoolsSetup.js";
+import type { ChurchToolsClientType } from "../../churchtoolsSetup.js";
 
 export enum CacheStatus {
     NOT_AVAILABLE_IN_CACHE = "NOT_AVAILABLE_IN_CACHE",
@@ -24,13 +24,13 @@ interface Person {
 }
 
 export class CtUserdataService {
-    private readonly client: ChurchToolsClient;
+    private readonly client: ChurchToolsClientType;
     private readonly fieldName: string;
     private readonly timeoutSeconds: number;
     private readonly cache: Keyv<CachedUserEntry>;
 
     constructor(
-        churchtoolsClient: ChurchToolsClient,
+        churchtoolsClient: ChurchToolsClientType,
         fieldName: string,
         cachePath: string,
         timeoutSeconds: number

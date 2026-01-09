@@ -9,19 +9,19 @@ import { ExtensionData } from "../../../ct-utils/lib/ExtensionData.js";
 import { CtPasswordService } from "./CtPasswordService.js";
 import { CtUserdataService } from "./CtUserdataService.js";
 import type { UserData } from "./UserData.js";
-import { ChurchToolsClient } from "../../churchtoolsSetup.js";
+import type { ChurchToolsClientType } from "../../churchtoolsSetup.js";
 
 export class CtGroupsModule implements AuthModule {
   name = "ct-groups";
 
   private readonly config: CtGroupsConfig;
   private readonly logger: pino.Logger
-  private readonly churchtoolsClient: ChurchToolsClient;
+  private readonly churchtoolsClient: ChurchToolsClientType;
   private passwordService: CtPasswordService | null;
   private userdataService: CtUserdataService | null;
 
 
-  constructor(churchtoolsClient: ChurchToolsClient, config: any, logger: pino.Logger) {
+  constructor(churchtoolsClient: ChurchToolsClientType, config: any, logger: pino.Logger) {
 
     if (!churchtoolsClient || typeof churchtoolsClient !== "object") {
       throw new Error("Invalid ChurchTools client");
@@ -220,7 +220,7 @@ export class CtGroupsModule implements AuthModule {
     return this.userdataService;
   }
 
-  private async getPasswordService(churchtoolsClient: ChurchToolsClient): Promise<CtPasswordService> {
+  private async getPasswordService(churchtoolsClient: ChurchToolsClientType): Promise<CtPasswordService> {
     if (this.passwordService !== null) {
       return this.passwordService;
     }
@@ -233,7 +233,7 @@ export class CtGroupsModule implements AuthModule {
   }
 
 
-  private async getPasswordServerUrl(churchtoolsClient: ChurchToolsClient): Promise<string> {
+  private async getPasswordServerUrl(churchtoolsClient: ChurchToolsClientType): Promise<string> {
 
     const extensionData = new ExtensionData(churchtoolsClient, CT_GROUPS.CT_PASS_STORE_EXTENSION_KEY);
     const settingsRaw = await extensionData.getCategoryData(CT_GROUPS.CT_PASS_STORE_SETTINGS_CATEGORY_NAME, true);
