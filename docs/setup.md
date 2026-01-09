@@ -9,7 +9,7 @@
   ct-radius relies on the [ct-pass-store extension](https://github.com/lub90/ct-pass-store) for managing secondary passwords. If you are not already using it, install this extension in your ChurchTools instance. Further information and installation instructions can be found in the [ct-pass-store README](https://github.com/lub90/ct-pass-store/blob/main/README.md).
 
 - 🐳 **Server to run the Docker container**  
-  You need a machine to host the ct-radius Docker container. We strongly recommend running it on a local server within your network for in-house deployment. Resource requirements are minimal—small home servers (e.g., Raspberry Pi) have proven sufficient in our experience. The project is security-wise not designed to run on a pulblicly available domain.
+  You need a machine to host the ct-radius Docker container. We strongly recommend running it on a local server within your network for in-house deployment. Resource requirements are minimal — small home servers (e.g., Raspberry Pi) have proven sufficient in our experience. The project is security-wise not designed to run on a publicly available domain.
 
 - ⚠️ **Knowledge of network and server administration**  
   A solid understanding of network administration is strongly advised, as misconfiguration can lead to serious IT security issues. Familiarity with server management and Docker administration is also recommended.
@@ -24,7 +24,7 @@ Create a new ChurchTools user (the name is only for identification and will not 
 - See all persons and their usernames  
 - See all groups and their members  
 
-Note the user ID of the newly created account and add it as a `Read Access User` in the [ct-pass-store extension](https://github.com/lub90/ct-pass-store)'s settings panel.
+Add this user as a `Read Access User` in the [ct-pass-store extension](https://github.com/lub90/ct-pass-store)'s settings panel.
 
 
 
@@ -83,27 +83,53 @@ Copy the private key file that you obtained during your [ct-pass-store extension
 
 ## Configure ct-radius
 
-ct-radius is mainly configured through the `config.yaml` file that you will find inside your container’s folder. This file defines how authentication and VLAN assignment are handled.
+ct-radius is mainly configured through the `config.json` file that you will find inside your container’s folder. This file defines how authentication and VLAN assignment are handled.
 
-A default `config.yaml` looks like this:
+A default `config.json` looks like this:
 
-```yaml
-basic:
-  wifi_access_groups: [194]
-  include_assignment_groups_in_access_groups: True
-  vlan_separator: "#"
-  timeout: 5
-  path_to_private_decryption_key: /ct-radius/decryption.pem
-  username_field_name: cmsUserId
-
-vlans:
-  default_vlan: 30
-  assignments:
-    71: 20
-    132: 20
-  assignments_if_requested:
-    231: 110
-    77: 120
+```json
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+  "modules": [
+    "ct-groups"
+  ],
+  "ct-groups": {
+    "wifiAccessGroups": [
+      194
+    ],
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/ct-radius/cache.sqlite",
+    "cacheTimeout": 60,
+    "credentials": {
+      "usernameFieldName": "cmsUserId",
+      "pathToPrivateDecryptionKey": "/ct-radius/decryption.pem"
+    },
+    "vlanMapping": {
+      "defaultVlan": 30,
+      "assignments": [
+        {
+          "group": 71,
+          "vlan": 20
+        },
+        {
+          "group": 132,
+          "vlan": 20
+        }
+      ],
+      "assignmentsIfRequested": [
+        {
+          "group": 231,
+          "vlan": 110
+        },
+        {
+          "group": 77,
+          "vlan": 120
+        }
+      ]
+    }
+  }
+}
 ```
 
 ---
@@ -127,7 +153,7 @@ Setup the config.yaml according to your needs.
 
 ## Configure your RADIUS clients
 
-Add your WiFi access points and/or controller devices to the `clients.conf` file inside your Docker container's folder. Each access point or network controller must be defined with its IP address and an individual shared secret:
+Add your WiFi access points and/or controller devices to the `clients.conf` file inside the folder you created. Each access point or network controller must be defined with its IP address and an individual shared secret:
 
 ```bash
 client nameOfClient {
@@ -147,18 +173,19 @@ Credentials are stored in environment variables of your Docker container. These 
 Open the `var.env` file and insert the following:
 
 ```bash
-CT_RADIUS_PRIVATE_SERVER_KEY_PWD="ABCDEFG"
+CT_RADIUS_PRIVATE_SERVER_KEY_PWD="KEY_TO_YOUR_SERVER.PEM_FILE"
+
 CT_SERVER_URL="https://your.church.tools"
-CT_API_USER="mmustermann"
-CT_API_USER_PWD="test1234"
-CT_PRIVATE_DECRYPTION_KEY_PWD="1234567"
+CT_API_TOKEN="secure-api-token-for-your-churchtools-ct-radius-user"
+
+CT_GROUPS_PRIVATE_DECRYPTION_KEY_PWD="password-for-your-private-decryption-key-from-ct-pass-store-extension"
 ```
 
 Explanation of each variable:
 - **CT_RADIUS_PRIVATE_SERVER_KEY_PWD** → Password protecting your server’s certificate file (`server.pem`).  
 - **CT_SERVER_URL** → URL of your ChurchTools instance.  
-- **CT_API_USER / CT_API_USER_PWD** → Credentials of the ChurchTools API user you created for read access.  
-- **CT_PRIVATE_DECRYPTION_KEY_PWD** → Password for the `decryption.pem` file from ct-pass-store, used to decrypt secondary passwords.
+- **CT_API_TOKEN** → [Login token](https://forum.church.tools/topic/9496/wie-kann-ich-einen-login-token-erstellen) of your previously created ct-radius user in ChurchTools.  
+- **CT_GROUPS_PRIVATE_DECRYPTION_KEY_PWD** → Password for the `decryption.pem` file from ct-pass-store, used to decrypt secondary passwords.
 
 
 
