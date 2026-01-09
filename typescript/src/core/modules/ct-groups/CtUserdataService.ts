@@ -61,6 +61,10 @@ export class CtUserdataService {
         this.cache = new Keyv<CachedUserEntry>({
             store: new KeyvSqlite({ uri: "sqlite://" + cachePath })
         });
+
+        this.cache.on("error", err => {
+            throw err;
+        });
     }
 
     // ---------------------------------------------------------------------------
