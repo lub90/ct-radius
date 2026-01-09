@@ -5,10 +5,10 @@ const require = createRequire(import.meta.url);
 // Import ChurchTools (CommonJS)
 const { ChurchToolsClient, deactivateLogging } = require("@churchtools/churchtools-client");
 
-// Disable ChurchTools logging (stdout is all that matters for FreeRADIUS)
+// Disable ChurchTools logging - yet this function is very buggy and will still print warnings to stderr, but stdout is all that matters for FreeRADIUS
 deactivateLogging();
 
-// Optional: silence warnings if you ever want to
+// Optional: silence everything from churchtools if you ever want to
 /*
 const originalWarn = console.warn;
 console.warn = (...args) => {
@@ -28,3 +28,5 @@ export {
   axiosCookieJarSupport,
   tough,
 };
+
+export type ChurchToolsClientType = InstanceType<typeof ChurchToolsClient>;
