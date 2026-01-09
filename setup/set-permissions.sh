@@ -13,7 +13,7 @@ WRITABLE_FILES=(
 READONLY_FILES=(
   "ca.pem"
   "clients.conf"
-  "config.yaml"
+  "config.json"
   "server.key"
   "server.pem"
   "var.env"

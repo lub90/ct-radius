@@ -1,0 +1,42 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+  "modules": [
+    "ct-groups"
+  ],
+  "ct-groups": {
+    "wifiAccessGroups": [
+      194
+    ],
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/ct-radius/cache.sqlite",
+    "cacheTimeout": 60,
+    "credentials": {
+      "usernameFieldName": "cmsUserId",
+      "pathToPrivateDecryptionKey": "/ct-radius/decryption.pem"
+    },
+    "vlanMapping": {
+      "defaultVlan": 30,
+      "assignments": [
+        {
+          "group": 71,
+          "vlan": 20
+        },
+        {
+          "group": 132,
+          "vlan": 20
+        }
+      ],
+      "assignmentsIfRequested": [
+        {
+          "group": 231,
+          "vlan": 110
+        },
+        {
+          "group": 77,
+          "vlan": 120
+        }
+      ]
+    }
+  }
+}

@@ -16,7 +16,7 @@ services:
       - './radius.log:/var/log/freeradius/radius.log'
       - './authorize.log:/ct-radius/authorize.log'
       # Mount the config file and the enxryption key for the ChurchTools database
-      - './config.yaml:/ct-radius/config.yaml'
+      - './config.json:/ct-radius/config.json'
       - './decryption.pem:/ct-radius/decryption.pem'
       - './var.env:/ct-radius/var.env'
       

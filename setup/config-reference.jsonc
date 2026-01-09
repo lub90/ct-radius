@@ -1,0 +1,95 @@
+/**
+ * This is just a reference file, explaining the configuration file's content to you. You can also delete it, if you don't need it.
+ */
+{
+  // Backend configuration for connecting to the ChurchTools API
+  // REQUIRED (AppConfigSchema.backendConfig)
+  "backendConfig": {
+    // URL of the ChurchTools server (must start with https://)
+    // REQUIRED (AppConfigSchema.backendConfig.serverUrl)
+    // NOTE: This value MUST come from environment variables (see var.env)
+    // "serverUrl": "ENV ONLY",
+    // API token for ChurchTools
+    // REQUIRED (AppConfigSchema.backendConfig.apiToken)
+    // NOTE: This value MUST come from environment variables (see var.env)
+    // "apiToken": "ENV ONLY"
+  },
+  // Whether users can request to be logged into a certain VLAN via appending a separator to their username (e.g. username#20)
+  // Login is only allowed, if they have access to this VLAN
+  // REQUIRED (AppConfigSchema.allowRequestedVlan)
+  "allowRequestedVlan": true,
+  // Character used to separate the username from the requested VLAN if allowRequestedVlan is set to true
+  // REQUIRED (AppConfigSchema.vlanSeparator)
+  "vlanSeparator": "#",
+  // Enabled modules to retrieve the user's cleartext password and check the VLAN access
+  // Module names must match keys in the module registry
+  // REQUIRED (AppConfigSchema.modules)
+  "modules": [
+    "ct-groups"
+  ],
+  // Configuration for the ct-groups module
+  // REQUIRED if ct-groups is enabled
+  "ct-groups": {
+    // Domain identifier (id) of the ChurchTools groups that grant WiFi access
+    // OPTIONAL (default: [])
+    "wifiAccessGroups": [
+      194
+    ],
+    // Whether assignment groups (see below) should automatically be included in the wifiAccessGroups
+    // OPTIONAL (default: false)
+    "includeAssignmentGroupsInAccessGroups": true,
+    // Path to an SQLite file, used for caching users and groups to lower backend load and speed up login process
+    // No need to be changed for docker containers
+    // REQUIRED (CtGroupsConfigSchema.pathToCacheFile)
+    "pathToCacheFile": "/ct-radius/cache.sqlite",
+    // Cache timeout in seconds
+    // OPTIONAL (default: 60)
+    "cacheTimeout": 60,
+    // Backend credentials and key paths for decryption
+    // REQUIRED (CtGroupsConfigSchema.credentials)
+    "credentials": {
+      // Field name in ChurchTools person database for the username (default for most Churchtools instances is "cmsUserId")
+      // REQUIRED (CredentialsConfigSchema.usernameFieldName)
+      "usernameFieldName": "cmsUserId",
+      // Path to the private decryption key from the ct-pass-store plugin
+      // REQUIRED (CredentialsConfigSchema.pathToPrivateDecryptionKey)
+      "pathToPrivateDecryptionKey": "/ct-radius/decryption.pem"
+      // NOTE: privateDecryptionKeyPassword is REQUIRED
+      // but intentionally omitted here because it must come from environment variables (see var.env)
+      // REQUIRED (but not stored in JSON)
+      // "privateDecryptionKeyPassword": "ENV ONLY"
+    },
+    // VLAN mapping block - it defines which VLANs users are assigned to
+    // OPTIONAL (CtGroupsConfigSchema.vlanMapping)
+    "vlanMapping": {
+      // Default VLAN
+      // OPTIONAL (VlanMappingSchema.defaultVlan)
+      "defaultVlan": 30,
+      // Priority-based VLAN assignment - users are assigned to the first matching ChurchTools group id (if they do not request another VLAN)
+      // If none can be found the default VLAN is used (if present)
+      // OPTIONAL (VlanMappingSchema.assignments)
+      "assignments": [
+        {
+          "group": 71,
+          "vlan": 20
+        },
+        {
+          "group": 132,
+          "vlan": 20
+        }
+      ],
+      // Users are assigned to these VLANs only if specifically requested (see "allowRequestedVlan")
+      // OPTIONAL (VlanMappingSchema.assignmentsIfRequested)
+      "assignmentsIfRequested": [
+        {
+          "group": 231,
+          "vlan": 110
+        },
+        {
+          "group": 77,
+          "vlan": 120
+        }
+      ]
+    }
+  }
+}
