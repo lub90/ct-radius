@@ -30,7 +30,7 @@ export class CtGuestDataService {
       throw new Error("Invalid cachePath");
     }
 
-    if (typeof timeoutSeconds !== "number" || timeoutSeconds < 0) {
+    if (typeof timeoutSeconds !== "number" || timeoutSeconds < 0 || Number.isNaN(timeoutSeconds)) {
       throw new Error("Invalid timeoutSeconds");
     }
 
@@ -53,18 +53,24 @@ export class CtGuestDataService {
   async get(username: string): Promise<GuestUser | undefined> {
     this.validateUsername(username);
 
-    const entry = await this.cache.get(username);
+    let entry = await this.cache.get(username);
 
     if (!entry || this.isExpired(entry.timestamp)) {
       await this.refreshCacheFromBackend();
-      const updated = await this.cache.get(username);
-
-      if (!updated) return undefined;
-
-      return updated.data;
+      entry = await this.cache.get(username);
     }
 
-    return entry.data;
+    if (!entry) {
+      return undefined;
+    } else {
+      // Convert and validate entry
+      const result = GuestUserSchema.safeParse(entry.data);
+      if (!result.success) {
+        throw new Error(`Guest user validation failed: ${result.error.toString()}`);
+      }
+      return result.data;
+
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -76,36 +82,38 @@ export class CtGuestDataService {
   }
 
   private async refreshCacheFromBackend(): Promise<void> {
+    let rawData;
     try {
       const extensionData = new ExtensionData(this.client, CT_GUESTS.EXTENSION_KEY);
 
       // NOTE: We intentionally do not call extensionData.hasCategory()
       // because getCategoryData() will fail with the same error if the
       // category does not exist. Avoiding an extra backend request.
-      const rawData = await extensionData.getCategoryData(
+      rawData = await extensionData.getCategoryData(
         CT_GUESTS.CATEGORY_NAME,
         false
       );
-
-      const parsed = this.parseGuestUserData(rawData);
-
-      await this.clearCache();
-
-      // Set the new data to the cache
-      const now = Date.now();
-      for (const user of parsed) {
-        const entry: CachedGuestEntry = {
-          username: user.username.trim(),
-          data: user,
-          timestamp: now,
-        };
-        await this.cache.set(entry.username, entry);
-      }
     } catch (error) {
       throw new Error(
         `Failed to load guest data from ChurchTools: ${error instanceof Error ? error.message : String(error)
         }`
       );
+    }
+
+    // We retrieved the data - process it
+    const parsed = this.parseGuestUserData(rawData);
+
+    await this.clearCache();
+
+    // Set the new data to the cache
+    const now = Date.now();
+    for (const user of parsed) {
+      const entry: CachedGuestEntry = {
+        username: user.username.trim(),
+        data: user,
+        timestamp: now,
+      };
+      await this.cache.set(entry.username, entry);
     }
   }
 
@@ -142,7 +150,6 @@ export class CtGuestDataService {
       throw new Error(`Guest user validation failed: ${result.error.toString()}`);
     }
     return result.data;
-
 
   }
 

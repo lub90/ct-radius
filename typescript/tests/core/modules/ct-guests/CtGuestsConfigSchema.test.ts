@@ -8,6 +8,8 @@ describe("CtGuestsConfigSchema", () => {
     vlansRequired: false,
   };
 
+
+  // TODO: This test should receive an error, as cacheTimout and vlansRequired are not optional
   describe("Valid configurations", () => {
     it("accepts a valid minimal config", () => {
       const config = {
@@ -23,11 +25,16 @@ describe("CtGuestsConfigSchema", () => {
       }
     });
 
+    // TODO: Also check that it is deined if only cacheTimeout or vlansRequired is missing
+
     it("accepts a complete valid config", () => {
       const result = CtGuestsConfigSchema.safeParse(validConfig);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data).toEqual(validConfig);
+        expect(result.data.cachePath).toBe(validConfig.cachePath);
+        expect(result.data.cacheTimeout).toBe(validConfig.cacheTimeout);
+        expect(result.data.vlansRequired).toBe(validConfig.vlansRequired);
+        expect(result.data.allowedVlans).toEqual([]); // default value
       }
     });
 
@@ -53,30 +60,8 @@ describe("CtGuestsConfigSchema", () => {
       }
     });
 
-    it("uses default cacheTimeout of 300 when not provided", () => {
-      const config = {
-        cachePath: "/path/to/cache.sqlite",
-        vlansRequired: false,
-      };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.cacheTimeout).toBe(300);
-      }
     });
 
-    it("uses default vlansRequired of false when not provided", () => {
-      const config = {
-        cachePath: "/path/to/cache.sqlite",
-        cacheTimeout: 60,
-      };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.vlansRequired).toBe(false);
-      }
-    });
-  });
 
   describe("Invalid cachePath", () => {
     it("rejects missing cachePath", () => {
@@ -104,6 +89,7 @@ describe("CtGuestsConfigSchema", () => {
       }
     });
 
+    // TODO: Also test reject empty string or alike cachePaths with only whitespace characters
     it("rejects empty string cachePath", () => {
       const config = { ...validConfig, cachePath: "" };
       const result = CtGuestsConfigSchema.safeParse(config);
@@ -209,4 +195,7 @@ describe("CtGuestsConfigSchema", () => {
       expect(result.success).toBe(true);
     });
   });
+
+  // TODO: Add tests for allowedVlans here with valid, invalid configurations, not numbers, NaN, negative numbers etc.
+
 });
