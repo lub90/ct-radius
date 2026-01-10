@@ -14,7 +14,7 @@ Below is a complete example configuration for the `ct-groups` module:
       194
     ],
     "includeAssignmentGroupsInAccessGroups": true,
-    "pathToCacheFile": "/ct-radius/cache.sqlite",
+    "pathToCacheFile": "/ct-radius/groups-cache.sqlite",
     "cacheTimeout": 60,
     "credentials": {
       "usernameFieldName": "cmsUserId",

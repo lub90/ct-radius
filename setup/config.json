@@ -2,14 +2,15 @@
   "allowRequestedVlan": true,
   "vlanSeparator": "#",
   "modules": [
-    "ct-groups"
+    "ct-groups",
+    "ct-guests"
   ],
   "ct-groups": {
     "wifiAccessGroups": [
       194
     ],
     "includeAssignmentGroupsInAccessGroups": true,
-    "pathToCacheFile": "/ct-radius/cache.sqlite",
+    "pathToCacheFile": "/ct-radius/groups-cache.sqlite",
     "cacheTimeout": 60,
     "credentials": {
       "usernameFieldName": "cmsUserId",
@@ -38,5 +39,15 @@
         }
       ]
     }
+  },
+  "ct-guests": {
+    "cachePath": "/ct-radius/guest-cache.sqlite",
+    "cacheTimeout": 60,
+    "vlansRequired": false,
+    "allowedVlans": [
+      30,
+      40,
+      50
+    ]
   }
 }

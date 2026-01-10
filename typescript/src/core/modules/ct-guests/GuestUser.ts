@@ -1,9 +1,17 @@
-export interface GuestUser {
-  username: string;
-  password: string;
-  valid: {
-    from: number; // epoch time - ISO‑8601 datetime
-    to: number;   // epoch time - ISO‑8601 datetime
-  };
-  assignedVlan?: number; // non‑negative integer
-}
+import { z } from "zod";
+
+/**
+ * GUEST USER DATA SCHEMA
+ * This defines the structure of each guest user in the extension data
+ */
+export const GuestUserSchema = z.object({
+  username: z.string().min(1, "Username must not be empty"),
+  password: z.string().min(1, "Password must not be empty"),
+  valid: z.object({
+    from: z.coerce.date(),
+    to: z.coerce.date(),
+  }),
+  assignedVlan: z.number().int().nonnegative("VLAN must be non-negative").optional(),
+});
+
+export type GuestUser = z.infer<typeof GuestUserSchema>;

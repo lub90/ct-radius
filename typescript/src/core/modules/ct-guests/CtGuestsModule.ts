@@ -53,8 +53,7 @@ export class CtGuestsModule implements AuthModule {
       this.guestDataService = new CtGuestDataService(
         this.churchtoolsClient,
         this.config.cachePath,
-        this.config.cacheTimeout,
-        this.config.vlansRequired
+        this.config.cacheTimeout
       );
     }
     return this.guestDataService;
@@ -64,6 +63,7 @@ export class CtGuestsModule implements AuthModule {
    * Authorize a guest user
    */
   async authorize(req: UserRequest): Promise<RadiusResponse | null> {
+
     try {
       const guestDataService = await this.getGuestDataService();
       const guestUser = await guestDataService.get(req.username);
@@ -76,8 +76,26 @@ export class CtGuestsModule implements AuthModule {
         return null;
       }
 
+
+      // Check if VLAN is required and assigned
+      if (this.config.vlansRequired && guestUser.assignedVlan === undefined) {
+        throw new Error(
+          `Guest user '${guestUser.username}' has no VLAN assigned, but VLANs are required`
+        );
+      }
+
+      // Check that assignedVlan is allowed
+      if (
+        guestUser.assignedVlan !== undefined &&
+        !this.config.allowedVlans.includes(guestUser.assignedVlan)
+      ) {
+        throw new Error(
+          `Guest user '${guestUser.username}' is assigned to VLAN ${guestUser.assignedVlan}, which is not allowed`
+        );
+      }
+
       // Check if user's validity period covers today
-      if (!this.isValidToday(guestUser.valid.from, guestUser.valid.to)) {
+      if (!this.isWithinValidityPeriod(guestUser.valid.from, guestUser.valid.to)) {
         this.logger.info(
           `Guest user '${req.username}' is outside valid date range - denying access`
         );
@@ -94,35 +112,28 @@ export class CtGuestsModule implements AuthModule {
       } else {
         return new ChallengeResponse(guestUser.password);
       }
+
     } catch (error) {
+
       this.logger.error(
-        `Error in ct-guests authorization: ${
-          error instanceof Error ? error.message : String(error)
+        `Error in ct-guests authorization: ${error instanceof Error ? error.message : String(error)
         }`
       );
       throw error;
+
     }
   }
 
   /**
    * Check if a date range covers today
    */
-  private isValidToday(fromStr: string, toStr: string): boolean {
+  private isWithinValidityPeriod(from: Date, to: Date): boolean {
     try {
-      const from = new Date(fromStr);
-      const to = new Date(toStr);
-      const today = new Date();
-
-      // Reset time to midnight for date-only comparison
-      today.setHours(0, 0, 0, 0);
-      from.setHours(0, 0, 0, 0);
-      to.setHours(23, 59, 59, 999);
-
-      return today >= from && today <= to;
+      const now = Date.now();
+      return now >= from.getTime() && now <= to.getTime();
     } catch (error) {
       throw new Error(
-        `Invalid date format in guest user data: ${
-          error instanceof Error ? error.message : String(error)
+        `Invalid date format in guest user data: ${error instanceof Error ? error.message : String(error)
         }`
       );
     }
