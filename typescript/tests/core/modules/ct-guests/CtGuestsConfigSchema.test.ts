@@ -8,25 +8,10 @@ describe("CtGuestsConfigSchema", () => {
     vlansRequired: false,
   };
 
-
-  // TODO: This test should receive an error, as cacheTimout and vlansRequired are not optional
+  // ---------------------------------------------------------------------------
+  // VALID CONFIGURATIONS
+  // ---------------------------------------------------------------------------
   describe("Valid configurations", () => {
-    it("accepts a valid minimal config", () => {
-      const config = {
-        cachePath: "/path/to/cache.sqlite",
-      };
-
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.cachePath).toBe("/path/to/cache.sqlite");
-        expect(result.data.cacheTimeout).toBe(300); // default
-        expect(result.data.vlansRequired).toBe(false); // default
-      }
-    });
-
-    // TODO: Also check that it is deined if only cacheTimeout or vlansRequired is missing
-
     it("accepts a complete valid config", () => {
       const result = CtGuestsConfigSchema.safeParse(validConfig);
       expect(result.success).toBe(true);
@@ -34,11 +19,11 @@ describe("CtGuestsConfigSchema", () => {
         expect(result.data.cachePath).toBe(validConfig.cachePath);
         expect(result.data.cacheTimeout).toBe(validConfig.cacheTimeout);
         expect(result.data.vlansRequired).toBe(validConfig.vlansRequired);
-        expect(result.data.allowedVlans).toEqual([]); // default value
+        expect(result.data.allowedVlans).toEqual([]); // default
       }
     });
 
-    it("accepts vlansRequired as true", () => {
+    it("accepts vlansRequired=true", () => {
       const config = { ...validConfig, vlansRequired: true };
       const result = CtGuestsConfigSchema.safeParse(config);
       expect(result.success).toBe(true);
@@ -47,155 +32,185 @@ describe("CtGuestsConfigSchema", () => {
       }
     });
 
-    it("accepts different cache timeout values", () => {
-      const testCases = [0, 60, 300, 3600, 999999];
-      
-      for (const timeout of testCases) {
+    it("accepts various cacheTimeout values", () => {
+      const timeouts = [0, 1, 60, 300, 999999];
+
+      for (const timeout of timeouts) {
         const config = { ...validConfig, cacheTimeout: timeout };
         const result = CtGuestsConfigSchema.safeParse(config);
         expect(result.success).toBe(true);
-        if (result.success) {
-          expect(result.data.cacheTimeout).toBe(timeout);
-        }
       }
     });
+  });
 
-    });
-
-
+  // ---------------------------------------------------------------------------
+  // INVALID cachePath
+  // ---------------------------------------------------------------------------
   describe("Invalid cachePath", () => {
     it("rejects missing cachePath", () => {
       const config = {
         cacheTimeout: 300,
         vlansRequired: false,
       };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(false);
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
     });
 
-    it("rejects cachePath that doesn't end with .sqlite", () => {
-      const testCases = [
+    it("rejects empty or whitespace cachePath", () => {
+      const badPaths = ["", " ", "   "];
+
+      for (const cachePath of badPaths) {
+        const config = { ...validConfig, cachePath };
+        expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+      }
+    });
+
+    it("rejects cachePath without .sqlite suffix", () => {
+      const badPaths = [
         "/path/to/cache.db",
         "/path/to/cache",
-        "/path/to/cache.json",
         "/path/to/cache.sqlite3",
         "/path/to/cache.sqlite.",
       ];
 
-      for (const cachePath of testCases) {
+      for (const cachePath of badPaths) {
         const config = { ...validConfig, cachePath };
-        const result = CtGuestsConfigSchema.safeParse(config);
-        expect(result.success).toBe(false);
+        expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
       }
     });
 
-    // TODO: Also test reject empty string or alike cachePaths with only whitespace characters
-    it("rejects empty string cachePath", () => {
-      const config = { ...validConfig, cachePath: "" };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(false);
-    });
-
-    it("accepts paths with .sqlite at the end", () => {
-      const testCases = [
+    it("accepts valid .sqlite paths", () => {
+      const goodPaths = [
         "/path/to/cache.sqlite",
         "/path.sqlite",
         "cache.sqlite",
-        "/tmp/my_cache_file.sqlite",
+        "/tmp/my_cache.sqlite",
       ];
 
-      for (const cachePath of testCases) {
+      for (const cachePath of goodPaths) {
         const config = { ...validConfig, cachePath };
-        const result = CtGuestsConfigSchema.safeParse(config);
-        expect(result.success).toBe(true);
+        expect(CtGuestsConfigSchema.safeParse(config).success).toBe(true);
       }
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // INVALID cacheTimeout
+  // ---------------------------------------------------------------------------
   describe("Invalid cacheTimeout", () => {
-    it("rejects negative cacheTimeout", () => {
-      const config = { ...validConfig, cacheTimeout: -1 };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(false);
-    });
-
-    it("rejects non-integer cacheTimeout", () => {
-      const testCases = [3.14, 1.5, -0.5];
-      
-      for (const timeout of testCases) {
-        const config = { ...validConfig, cacheTimeout: timeout };
-        const result = CtGuestsConfigSchema.safeParse(config);
-        expect(result.success).toBe(false);
-      }
-    });
-
-    it("rejects string cacheTimeout", () => {
-      const config = { ...validConfig, cacheTimeout: "300" as any };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(false);
-    });
-
-    it("rejects NaN cacheTimeout", () => {
-      const config = { ...validConfig, cacheTimeout: NaN };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe("Invalid vlansRequired", () => {
-    it("rejects non-boolean vlansRequired", () => {
-      const testCases = [
-        "true",
-        "false",
-        1,
-        0,
-      ];
-
-      for (const vlansRequired of testCases) {
-        const config = { ...validConfig, vlansRequired } as any;
-        const result = CtGuestsConfigSchema.safeParse(config);
-        expect(result.success).toBe(false);
-      }
-    });
-
-    it("allows null and undefined for vlansRequired (uses default)", () => {
-      const configNoVlansRequired = {
-        cachePath: "/path/to/cache.sqlite",
-        // vlansRequired not provided
-      };
-      const result = CtGuestsConfigSchema.safeParse(configNoVlansRequired);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.vlansRequired).toBe(false);
-      }
-    });
-  });
-
-  describe("Extra fields", () => {
-    it("ignores extra fields in config", () => {
+    it("rejects missing cacheTimeout", () => {
       const config = {
-        ...validConfig,
-        extraField: "should be ignored",
-        another: 123,
-      };
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe("Type inference", () => {
-    it("correctly infers CtGuestsConfig type", () => {
-      const config: CtGuestsConfig = {
         cachePath: "/path/to/cache.sqlite",
-        cacheTimeout: 300,
         vlansRequired: false,
       };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
 
-      const result = CtGuestsConfigSchema.safeParse(config);
-      expect(result.success).toBe(true);
+    it("rejects negative values", () => {
+      const config = { ...validConfig, cacheTimeout: -1 };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
+
+    it("rejects non-integer values", () => {
+      const badValues = [3.14, 1.5, -0.5];
+
+      for (const cacheTimeout of badValues) {
+        const config = { ...validConfig, cacheTimeout };
+        expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+      }
+    });
+
+    it("rejects NaN", () => {
+      const config = { ...validConfig, cacheTimeout: NaN };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
+
+    it("rejects non-number types", () => {
+      const config = { ...validConfig, cacheTimeout: "300" as any };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
     });
   });
 
-  // TODO: Add tests for allowedVlans here with valid, invalid configurations, not numbers, NaN, negative numbers etc.
+  // ---------------------------------------------------------------------------
+  // INVALID vlansRequired
+  // ---------------------------------------------------------------------------
+  describe("Invalid vlansRequired", () => {
+    it("rejects missing vlansRequired", () => {
+      const config = {
+        cachePath: "/path/to/cache.sqlite",
+        cacheTimeout: 300,
+      };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
 
+    it("rejects non-boolean values", () => {
+      const badValues = ["true", "false", 1, 0, null];
+
+      for (const vlansRequired of badValues) {
+        const config = { ...validConfig, vlansRequired } as any;
+        expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // allowedVlans
+  // ---------------------------------------------------------------------------
+  describe("allowedVlans validation", () => {
+    it("defaults to empty array", () => {
+      const result = CtGuestsConfigSchema.safeParse(validConfig);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.allowedVlans).toEqual([]);
+      }
+    });
+
+    it("accepts valid VLAN arrays", () => {
+      const config = { ...validConfig, allowedVlans: [0, 10, 4094] };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(true);
+    });
+
+    it("rejects negative VLAN IDs", () => {
+      const config = { ...validConfig, allowedVlans: [-1] };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
+
+    it("rejects non-integer VLAN IDs", () => {
+      const config = { ...validConfig, allowedVlans: [3.14] };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
+
+    it("rejects non-number VLAN IDs", () => {
+      const config = { ...validConfig, allowedVlans: ["20" as any] };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
+
+    it("rejects NaN in allowedVlans", () => {
+      const config = { ...validConfig, allowedVlans: [NaN] };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Extra fields
+  // ---------------------------------------------------------------------------
+  describe("Extra fields", () => {
+    it("ignores extra fields", () => {
+      const config = {
+        ...validConfig,
+        extraField: "ignored",
+        another: 123,
+      };
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Type inference
+  // ---------------------------------------------------------------------------
+  describe("Type inference", () => {
+    it("accepts a valid CtGuestsConfig type", () => {
+      const config: CtGuestsConfig = validConfig;
+      expect(CtGuestsConfigSchema.safeParse(config).success).toBe(true);
+    });
+  });
 });
