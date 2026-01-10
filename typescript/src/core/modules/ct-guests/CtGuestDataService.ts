@@ -3,6 +3,7 @@ import KeyvSqlite from "@keyv/sqlite";
 import type { ChurchToolsClientType } from "../../churchtoolsSetup.js";
 import { ExtensionData } from "../../../ct-utils/lib/ExtensionData.js";
 import type { GuestUser } from "./GuestUser.js";
+import { GuestUserSchema } from "./GuestUser.js";
 import { CT_GUESTS } from "./constants.js";
 
 export interface CachedGuestEntry {
@@ -14,14 +15,12 @@ export interface CachedGuestEntry {
 export class CtGuestDataService {
   private readonly client: ChurchToolsClientType;
   private readonly timeoutSeconds: number;
-  private readonly vlansRequired: boolean;
   private readonly cache: Keyv<CachedGuestEntry>;
 
   constructor(
     churchtoolsClient: ChurchToolsClientType,
     cachePath: string,
-    timeoutSeconds: number,
-    vlansRequired: boolean
+    timeoutSeconds: number
   ) {
     if (!churchtoolsClient || typeof churchtoolsClient !== "object") {
       throw new Error("Invalid ChurchTools client");
@@ -35,13 +34,8 @@ export class CtGuestDataService {
       throw new Error("Invalid timeoutSeconds");
     }
 
-    if (typeof vlansRequired !== "boolean") {
-      throw new Error("Invalid vlansRequired");
-    }
-
     this.client = churchtoolsClient;
     this.timeoutSeconds = timeoutSeconds;
-    this.vlansRequired = vlansRequired;
 
     this.cache = new Keyv<CachedGuestEntry>({
       store: new KeyvSqlite({ uri: "sqlite://" + cachePath }),
@@ -66,21 +60,8 @@ export class CtGuestDataService {
       const updated = await this.cache.get(username);
 
       if (!updated) return undefined;
-    
-      // TODO: Duplicated to remaining method
-      if (this.vlansRequired && updated.data.assignedVlan === undefined) {
-        throw new Error(
-          `Guest user '${username}' has no VLAN assigned, but VLANs are required`
-        );
-      }
 
       return updated.data;
-    }
-
-    if (this.vlansRequired && entry.data.assignedVlan === undefined) {
-      throw new Error(
-        `Guest user '${username}' has no VLAN assigned, but VLANs are required`
-      );
     }
 
     return entry.data;
@@ -98,12 +79,9 @@ export class CtGuestDataService {
     try {
       const extensionData = new ExtensionData(this.client, CT_GUESTS.EXTENSION_KEY);
 
-      const hasCategory = await extensionData.hasCategory(CT_GUESTS.CATEGORY_NAME);
-      if (!hasCategory) {
-        await this.cache.clear();
-        return;
-      }
-
+      // NOTE: We intentionally do not call extensionData.hasCategory()
+      // because getCategoryData() will fail with the same error if the
+      // category does not exist. Avoiding an extra backend request.
       const rawData = await extensionData.getCategoryData(
         CT_GUESTS.CATEGORY_NAME,
         false
@@ -111,8 +89,9 @@ export class CtGuestDataService {
 
       const parsed = this.parseGuestUserData(rawData);
 
-      await this.cache.clear();
+      await this.clearCache();
 
+      // Set the new data to the cache
       const now = Date.now();
       for (const user of parsed) {
         const entry: CachedGuestEntry = {
@@ -124,8 +103,7 @@ export class CtGuestDataService {
       }
     } catch (error) {
       throw new Error(
-        `Failed to load guest data from ChurchTools: ${
-          error instanceof Error ? error.message : String(error)
+        `Failed to load guest data from ChurchTools: ${error instanceof Error ? error.message : String(error)
         }`
       );
     }
@@ -137,22 +115,35 @@ export class CtGuestDataService {
     }
 
     const guests: GuestUser[] = [];
-
     for (const entry of rawData) {
-      if (!entry || typeof entry !== "object" || !entry.value) continue;
+      guests.push(this.parseGuestUserDataEntry(entry));
+    }
+    return guests;
+  }
 
-      try {
-        guests.push(JSON.parse(entry.value));
-      } catch (error) {
-        throw new Error(
-          `Failed to parse guest user data: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
+  private parseGuestUserDataEntry(entry: any): GuestUser {
+    if (!entry || typeof entry !== "object" || !entry.value) {
+      throw new Error("Invalid guest user data retrieved - it is not an object!");
     }
 
-    return guests;
+    let jsonObject;
+    try {
+      jsonObject = JSON.parse(entry.value);
+    } catch (error) {
+      throw new Error(
+        `Failed to parse guest user data: ${error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+
+    // Validate user object and return
+    const result = GuestUserSchema.safeParse(jsonObject);
+    if (!result.success) {
+      throw new Error(`Guest user validation failed: ${result.error.toString()}`);
+    }
+    return result.data;
+
+
   }
 
   private validateUsername(username: string): void {
@@ -162,14 +153,7 @@ export class CtGuestDataService {
   }
 
   async clearCache(): Promise<void> {
-    try {
-      await this.cache.clear();
-    } catch (error) {
-      throw new Error(
-        `Failed to clear cache: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
+    await this.cache.clear();
   }
+
 }

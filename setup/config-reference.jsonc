@@ -25,8 +25,10 @@
   // Module names must match keys in the module registry
   // REQUIRED (AppConfigSchema.modules)
   "modules": [
-    "ct-groups"
+    "ct-groups", "ct-guests"
   ],
+
+
   // Configuration for the ct-groups module
   // REQUIRED if ct-groups is enabled
   "ct-groups": {
@@ -41,7 +43,7 @@
     // Path to an SQLite file, used for caching users and groups to lower backend load and speed up login process
     // No need to be changed for docker containers
     // REQUIRED (CtGroupsConfigSchema.pathToCacheFile)
-    "pathToCacheFile": "/ct-radius/cache.sqlite",
+    "pathToCacheFile": "/ct-radius/groups-cache.sqlite",
     // Cache timeout in seconds
     // OPTIONAL (default: 60)
     "cacheTimeout": 60,
@@ -91,5 +93,31 @@
         }
       ]
     }
+  },
+
+  // Configuration for the ct-guests module
+  // REQUIRED if ct-groups is enabled
+  "ct-guests": {
+    // Path to the SQLite cache file used to store guest user data.
+    // Must end with ".sqlite".
+    // REQUIRED
+    "cachePath": "/ct-radius/guest-cache.sqlite",
+    // Cache timeout in seconds.
+    // Determines how long guest data stays valid before being refreshed
+    // from the ChurchTools extension backend.
+    // REQUIRED
+    "cacheTimeout": 60,
+    // Whether VLAN assignment is mandatory for guest users.
+    // If true, every guest must have an assigned VLAN or authentication fails.
+    // REQUIRED
+    "vlansRequired": false,
+    // List of VLAN IDs that guest users are allowed to use.
+    // Values must be non-negative or integers.
+    // Can be empty.
+    // OPTIONAL (default: [])
+    "allowedVlans": [
+      30,
+      40
+    ]
   }
 }

@@ -1,20 +1,6 @@
 import { z } from "zod";
 
 /**
- * GUEST USER DATA SCHEMA
- * This defines the structure of each guest user in the extension data
- */
-const GuestUserSchema = z.object({
-  username: z.string().min(1, "Username must not be empty"),
-  password: z.string().min(1, "Password must not be empty"),
-  valid: z.object({
-    from: z.string().datetime("Invalid date format for 'valid.from'"),
-    to: z.string().datetime("Invalid date format for 'valid.to'"),
-  }),
-  assignedVlan: z.number().int().nonnegative("VLAN must be non-negative").optional(),
-});
-
-/**
  * MODULE CONFIG SCHEMA
  */
 export const CtGuestsConfigSchema = z.object({
@@ -28,11 +14,16 @@ export const CtGuestsConfigSchema = z.object({
     ),
 
   // Cache timeout in seconds
-  cacheTimeout: z.number().int().nonnegative().default(300), // default 5 minutes
+  cacheTimeout: z.number().int().nonnegative(), // default 1 minute
 
-  // Whether VLAN assignment is mandatory - must be explicitly boolean
-  vlansRequired: z.boolean().default(false),
+  // Whether VLAN assignment is manadatory - must be explicitly boolean
+  vlansRequired: z.boolean(),
+
+  // Allowed VLAN ids for the guests
+  allowedVlans: z.array(
+    z.number().int().nonnegative()
+  ).default([]),
+
 });
 
 export type CtGuestsConfig = z.infer<typeof CtGuestsConfigSchema>;
-export type GuestUser = z.infer<typeof GuestUserSchema>;
