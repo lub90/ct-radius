@@ -76,7 +76,6 @@ export class CtGuestsModule implements AuthModule {
         return null;
       }
 
-
       // Check if VLAN is required and assigned
       if (this.config.vlansRequired && guestUser.assignedVlan === undefined) {
         throw new Error(
@@ -92,6 +91,14 @@ export class CtGuestsModule implements AuthModule {
         throw new Error(
           `Guest user '${guestUser.username}' is assigned to VLAN ${guestUser.assignedVlan}, which is not allowed`
         );
+      }
+
+      // Check if vlan is requested and the same as returned vlan
+      if (req.requestedVlanId !== undefined && (guestUser.assignedVlan !== req.requestedVlanId)) {
+        this.logger.info(
+          `Guest user '${req.username}' requested a vlan id he is not allowed to use - denying access`
+        );
+        return new RejectResponse();
       }
 
       // Check if user's validity period covers today
