@@ -81,9 +81,10 @@ Your [ct-pass-store extension](https://github.com/lub90/ct-pass-store) provides 
 
 Copy the private key file that you obtained during your [ct-pass-store extension](https://github.com/lub90/ct-pass-store) installation into the folder you created for your Docker container and rename it to `decryption.pem`.
 
+
 ## Configure ct-radius
 
-ct-radius is mainly configured through the `config.json` file that you will find inside your container’s folder. This file defines how authentication and VLAN assignment are handled.
+ct-radius is primarily configured through the `config.json` file located inside your container’s directory. This file defines how authentication, authorization, and VLAN assignment are handled. Adjust the configuration according to your environment and requirements.
 
 A default `config.json` looks like this:
 
@@ -94,62 +95,73 @@ A default `config.json` looks like this:
   "modules": [
     "ct-groups"
   ],
+  // Module configuration starts here
   "ct-groups": {
-    "wifiAccessGroups": [
-      194
-    ],
-    "includeAssignmentGroupsInAccessGroups": true,
-    "pathToCacheFile": "/ct-radius/cache.sqlite",
-    "cacheTimeout": 60,
-    "credentials": {
-      "usernameFieldName": "cmsUserId",
-      "pathToPrivateDecryptionKey": "/ct-radius/decryption.pem"
-    },
-    "vlanMapping": {
-      "defaultVlan": 30,
-      "assignments": [
-        {
-          "group": 71,
-          "vlan": 20
-        },
-        {
-          "group": 132,
-          "vlan": 20
-        }
-      ],
-      "assignmentsIfRequested": [
-        {
-          "group": 231,
-          "vlan": 110
-        },
-        {
-          "group": 77,
-          "vlan": 120
-        }
-      ]
-    }
+    ...
   }
 }
 ```
 
----
+### Basic ct-radius section
 
-### Explanation of each variable
+As shown above, the core ct-radius configuration only requires a few essential settings:
 
-#### `basic` section
-- **wifi_access_groups**: A list of ChurchTools group IDs whose members are allowed to access the WiFi/LAN. Only users in these groups can authenticate successfully.
-- **include_assignment_groups_in_access_groups**: If set to `True`, groups that are used for VLAN assignment are automatically included in the access groups, even if not explicitly listed in `wifi_access_groups`. This ensures that anyone assigned to a VLAN group also has WiFi access. Set to `False` if you do not want to have this behavior.
-- **vlan_separator**: The character used in usernames to request a specific VLAN. For example, `username#110` would request VLAN 110.
-- **timeout**: The maximum time (in seconds) ct-radius will wait for a response from the ChurchTools server and the [ct-pass-store extension](https://github.com/lub90/ct-pass-store) before failing the authentication attempt.
-- **path_to_private_decryption_key**: Path inside the container to the private key file (`decryption.pem`) used to decrypt secondary passwords from the ct-pass-store extension. No need to change normally.
-- **username_field_name**: The field in the ChurchTools person database that stores the username. Typically `cmsUserId`, but can be changed if your ChurchTools instance uses a different field.
+- **allowRequestedVlan**: Enables users to request a specific VLAN by appending it to their username.
+- **vlanSeparator**: Defines the character used to separate the username from the requested VLAN. For example, `username#110` requests VLAN `110` for user `username`. This setting is only relevant when `allowRequestedVlan` is `true`.
+- **modules**: A list of active modules. Each module is responsible for validating a username, optionally assigning a VLAN ID, and providing the cleartext password required for the MSCHAPv2 challenge–response mechanism.  
+  If a module does not recognize a username, the request is passed to the next module in the list. If no module can handle the username, the authentication request is rejected. Modules are evaluated in the order they appear in this array.
 
-#### `vlans` section
-- **default_vlan**: The VLAN ID assigned to users who do not match any specific group assignment. This acts as the fallback VLAN.
-- **assignments**: A dictionary mapping ChurchTools group IDs to VLANs. If a user belongs to one of these groups, they are automatically placed into the corresponding VLAN. Priority is determined by order: the first matching group takes precedence, and subsequent assignments are ignored.
-- **assignments_if_requested**: A dictionary mapping ChurchTools group IDs to VLANs that users can join only if they explicitly request it (by appending `#VLAN_ID` to their username). Priority is again determined by order. This allows flexible, on-demand VLAN switching for users with special roles.
+### Modules section
 
-Setup the config.yaml according to your needs.
+Most of the detailed configuration happens within the module definitions. Modules determine how users are authenticated, how VLANs are assigned, and how passwords are retrieved. Each module has its own configuration block inside `config.json`, placed after the basic ct-radius settings. It starts with the name of the module. Only modules listed in the `modules` array must be configured.
+
+Currently, the following modules are available:
+
+- **`ct-groups`**: Grants WiFi access and optionally assigns VLAN IDs based on ChurchTools group membership. Its configuration is documented in detail in [here](./ct-groups.md).
+
+
+
+
+
+
+## Configure ct-radius
+
+ct-radius is mainly configured through the `config.json` file that you will find inside your container’s folder. This file defines how authentication and VLAN assignment are handled. Setup the config.json according to your needs.
+
+A default `config.json` looks like this:
+
+```json
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+  "modules": [
+    "ct-groups"
+  ],
+  // Module configuration starts here
+  "ct-groups": {
+    ...
+  }
+}
+```
+
+
+### Basic `ct-radius` section
+
+As you can see above, `ct-radius` itself only requires few variables to be defined.
+
+- **allowRequestedVlan**: Whether users are allowed to request a specific VLAN via the username.
+- **vlanSeparator**: The character used in usernames to request a specific VLAN. For example, `username#110` would request VLAN `110` for user `username`. The seperator only becomes relevant if `allowRequestedVlan` is `true`.
+- **modules**: An array specifing the activated modules. Modules are responsible for checking a username, assigning this username a VLAN id (if configured to do so) and provide the cleartext password to the username for the Challenge-Response-Mechanism. If a username is unknown to a module, the request will be handed on to the next module. If no module knows a username, the request will be rejected. The modules are triggered in order in which they are defined in this configuration file.
+
+### Modules section
+
+Most of the detailed configuration happens through adding and configuring the modules of `ct-radius`. Modules are responsible for checking a username, assigning this username a VLAN id (if configured to do so) and provide the cleartext password to the username for the Challenge-Response-Mechanism. As such, they have their own configuration part in the `config.json` which follows the configuration of the basic variables. Only the configruation of used modules (i.e., they are within the `modules` array) must be defined.
+
+Currently, tthe following modules are available for `ct-radius`:
+- `ct-groups` assigns wifi access and optionally VLAN ids based on ChurchTools group membership. It configuration can be found [here](./ct-groups.md).
+
+
+
 
 ## Configure your RADIUS clients
 
