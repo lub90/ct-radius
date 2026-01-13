@@ -14,5 +14,13 @@
         "@types/node": "^24.3.0",
         "typescript": "^5.9.2",
         "vite": "^7.1.2"
+    },
+    "dependencies": {
+        "@fontsource/roboto": "^5.2.9",
+        "@mdi/font": "^7.4.47",
+        "vite-plugin-vuetify": "^2.1.2",
+        "vue": "^3.5.26",
+        "vue-router": "^4.6.4",
+        "vuetify": "^3.11.6"
     }
 }
