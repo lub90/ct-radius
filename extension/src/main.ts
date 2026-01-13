@@ -1,4 +1,3 @@
-import type { Person } from './utils/ct-types';
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 
 // only import reset.css in development mode to keep the production bundle small and to simulate CT environment
@@ -23,12 +22,36 @@ if (import.meta.env.MODE === 'development' && username && password) {
 }
 
 const KEY = import.meta.env.VITE_KEY;
+
 export { KEY };
+// Setup vue
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
 
-const user = await churchtoolsClient.get<Person>(`/whoami`);
+// Setup vuetify
+import 'vuetify/dist/vuetify.min.css'
+import '@mdi/font/css/materialdesignicons.css' 
+import vuetify from './ct-extension-utils/styles/vuetify'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div style="display: flex; place-content: center; place-items: center; height: 100vh;">
-    <h1>Welcome ${[user.firstName, user.lastName].join(' ')}</h1>
-  </div>
-`;
+// Import own css stylesheet
+import './ct-extension-utils/styles/churchToolsTheme.css'
+
+// Import vuetify fonts
+import '@fontsource/roboto/100.css'
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
+import '@fontsource/roboto/900.css'
+import '@fontsource/roboto/100-italic.css'
+import '@fontsource/roboto/300-italic.css'
+import '@fontsource/roboto/400-italic.css'
+import '@fontsource/roboto/500-italic.css'
+import '@fontsource/roboto/700-italic.css'
+import '@fontsource/roboto/900-italic.css'
+
+
+const app = createApp(App);
+app.provide('churchtoolsClient', churchtoolsClient);    // Provide churchtools client globally
+app.use(router).use(vuetify).mount('#app');
