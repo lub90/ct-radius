@@ -58,7 +58,7 @@
 
     <!-- Hidden print content -->
     <div ref="printRef" style="display:none;">
-      <GuestPrintContent v-if="printGuestData" :guest="printGuestData" />
+      <GuestPrintContent v-if="printGuestData" :guest="printGuestData" :ssid="settings.guestSSID" />
     </div>
 
   </BaseLayout>
