@@ -1,6 +1,171 @@
 <template>
-  Add content for guests here...
+
+    <div class="d-flex justify-space-between align-center mb-4">
+      <!-- Filter Buttons -->
+      <v-btn-toggle v-model="filter" mandatory class="mb-4">
+        <v-btn value="all" variant="outlined" color="primary">All</v-btn>
+        <v-btn value="valid" variant="outlined" color="primary">Valid</v-btn>
+        <v-btn value="current" variant="outlined" color="primary">Currently Valid</v-btn>
+        <v-btn value="expired" variant="outlined" color="primary">Expired</v-btn>
+      </v-btn-toggle>
+
+      <!-- Add Guest Button -->
+      <v-btn
+        color="accent"
+        variant="outlined"
+        prepend-icon="mdi-plus"
+        @click="addGuest"
+      >
+        Add guest user
+      </v-btn>
+    </div>
+
+
+    <!-- Data Table -->
+    <v-data-table
+      :headers="headers"
+      :items="filteredRows"
+      fixed-header
+      height="70vh"
+      class="elevation-1"
+      density="comfortable"
+      item-key="id"
+      :items-per-page="-1"
+    >
+
+      <!-- Format columns -->
+      <template #item.validFrom="{ item }">
+        {{ item.validFrom.toLocaleString() }}
+      </template>
+
+      <template #item.validTo="{ item }">
+        {{ item.validTo.toLocaleString() }}
+      </template>
+
+      <template #item.vlan="{ item }">
+        {{ item.vlan ?? '-' }}
+      </template>
+
+      <!-- Tools column -->
+      <template #item.actions="{ item }">
+        <v-btn icon size="small" color="primary" rounded="sm" variant="outlined" @click="editGuest(item.id)">
+          <v-icon>mdi-pencil</v-icon>
+        </v-btn>
+        &nbsp;
+        <v-btn icon size="small" color="primary" rounded="sm" variant="outlined" @click="printGuest(item.id)">
+          <v-icon>mdi-printer</v-icon>
+        </v-btn>
+        &nbsp;
+        <v-btn icon size="small" color="error" rounded="sm" variant="outlined" @click="deleteGuest(item.id)">
+          <v-icon>mdi-delete</v-icon>
+        </v-btn>
+      </template>
+
+    </v-data-table>
+
 </template>
 
+
+
 <script setup lang="ts">
+import { ref, computed, onMounted, inject } from 'vue'
+import { useRouter } from 'vue-router'
+import { GuestUserSchema, type GuestUser } from '@/../../typescript/src/core/modules/ct-guests/GuestUser'
+import { ExtensionData } from '@/ct-utils/lib/ExtensionData'
+import { EXTENSION } from '@/constants'
+
+// Inject ChurchTools client
+const churchtoolsClient = inject<any>('churchtoolsClient')
+const router = useRouter()
+
+// Extension data handler
+const extensionData = new ExtensionData(churchtoolsClient, EXTENSION.KEY)
+
+// Parsed rows for the table
+type GuestRow = {
+  id: number
+  username: string
+  validFrom: Date
+  validTo: Date
+  vlan: number | null
+  raw: GuestUser
+}
+
+const rows = ref<GuestRow[]>([])
+
+// Filter state
+const filter = ref<'all' | 'valid' | 'current' | 'expired'>('valid')
+
+// Table headers
+const headers = [
+  { title: 'Username', key: 'username', sortable: true },
+  { title: 'Valid From', key: 'validFrom', sortable: true },
+  { title: 'Valid To', key: 'validTo', sortable: true },
+  { title: 'VLAN ID', key: 'vlan', sortable: true },
+  { title: '', key: 'actions', sortable: false }
+]
+
+// Load data
+async function loadGuests() {
+  const entries = await extensionData.getCategoryData('guests')
+
+  rows.value = entries.map((entry: any) => {
+    const parsed = GuestUserSchema.parse(JSON.parse(entry.value))
+
+    return {
+      id: entry.id,
+      username: parsed.username,
+      validFrom: new Date(parsed.valid.from),
+      validTo: new Date(parsed.valid.to),
+      vlan: parsed.assignedVlan ?? null,
+      raw: parsed
+    }
+  })
+}
+
+onMounted(loadGuests)
+
+// Filter helpers
+function isExpired(g: GuestRow) {
+  return g.validTo < new Date()
+}
+
+function isCurrent(g: GuestRow) {
+  const now = new Date()
+  return g.validFrom <= now && now <= g.validTo
+}
+
+// Apply filter
+const filteredRows = computed(() => {
+  switch (filter.value) {
+    case 'valid':
+      return rows.value.filter(r => !isExpired(r))
+    case 'current':
+      return rows.value.filter(r => isCurrent(r))
+    case 'expired':
+      return rows.value.filter(r => isExpired(r))
+    default:
+      return rows.value
+  }
+})
+
+// Actions
+function editGuest(id: number) {
+  router.push(`${EXTENSION.URL_PREFIX}/guests/${id}/edit`)
+}
+
+function printGuest(id: number) {
+  router.push(`${EXTENSION.URL_PREFIX}/guests/${id}/print`)
+}
+
+function deleteGuest(id: number) {
+  router.push(`${EXTENSION.URL_PREFIX}/guests/${id}/delete`)
+}
+
+function addGuest() {
+  router.push(`${EXTENSION.URL_PREFIX}/guests/new`)
+}
+
+
 </script>
+
