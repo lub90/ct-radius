@@ -1,77 +1,65 @@
 <template>
   <BaseLayout>
 
-      <template #title>
-        WiFi Guest users
+    <template #title>
+      WiFi Guest users
+    </template>
+
+    <div class="d-flex justify-space-between align-center mb-4">
+      <!-- Filter Buttons -->
+      <v-btn-toggle v-model="filter" mandatory class="mb-4">
+        <v-btn value="all" variant="outlined" color="primary">All</v-btn>
+        <v-btn value="valid" variant="outlined" color="primary">Valid</v-btn>
+        <v-btn value="current" variant="outlined" color="primary">Currently Valid</v-btn>
+        <v-btn value="expired" variant="outlined" color="primary">Expired</v-btn>
+      </v-btn-toggle>
+
+      <!-- Add Guest Button -->
+      <v-btn color="accent" variant="outlined" prepend-icon="mdi-plus" @click="addGuest">
+        Add guest user
+      </v-btn>
+    </div>
+
+
+    <!-- Data Table -->
+    <v-data-table :headers="headers" :items="filteredRows" fixed-header height="70vh" class="elevation-1"
+      density="comfortable" item-key="id" :items-per-page="-1">
+
+      <!-- Format columns -->
+      <template #item.validFrom="{ item }">
+        {{ item.validFrom.toLocaleString() }}
       </template>
 
-      <div class="d-flex justify-space-between align-center mb-4">
-        <!-- Filter Buttons -->
-        <v-btn-toggle v-model="filter" mandatory class="mb-4">
-          <v-btn value="all" variant="outlined" color="primary">All</v-btn>
-          <v-btn value="valid" variant="outlined" color="primary">Valid</v-btn>
-          <v-btn value="current" variant="outlined" color="primary">Currently Valid</v-btn>
-          <v-btn value="expired" variant="outlined" color="primary">Expired</v-btn>
-        </v-btn-toggle>
+      <template #item.validTo="{ item }">
+        {{ item.validTo.toLocaleString() }}
+      </template>
 
-        <!-- Add Guest Button -->
-        <v-btn
-          color="accent"
-          variant="outlined"
-          prepend-icon="mdi-plus"
-          @click="addGuest"
-        >
-          Add guest user
+      <template #item.vlan="{ item }">
+        {{ getVlanName(item.vlan) }}
+      </template>
+
+
+      <!-- Tools column -->
+      <template #item.actions="{ item }">
+        <v-btn icon size="small" color="primary" rounded="sm" variant="outlined" @click="editGuest(item.id)">
+          <v-icon>mdi-pencil</v-icon>
         </v-btn>
-      </div>
+        &nbsp;
+        <v-btn icon size="small" color="primary" rounded="sm" variant="outlined" @click="printGuest(item.id)">
+          <v-icon>mdi-printer</v-icon>
+        </v-btn>
+        &nbsp;
+        <v-btn icon size="small" color="error" rounded="sm" variant="outlined" @click="deleteGuest(item.id)">
+          <v-icon>mdi-delete</v-icon>
+        </v-btn>
+      </template>
 
+    </v-data-table>
 
-      <!-- Data Table -->
-      <v-data-table
-        :headers="headers"
-        :items="filteredRows"
-        fixed-header
-        height="70vh"
-        class="elevation-1"
-        density="comfortable"
-        item-key="id"
-        :items-per-page="-1"
-      >
-
-        <!-- Format columns -->
-        <template #item.validFrom="{ item }">
-          {{ item.validFrom.toLocaleString() }}
-        </template>
-
-        <template #item.validTo="{ item }">
-          {{ item.validTo.toLocaleString() }}
-        </template>
-
-        <template #item.vlan="{ item }">
-          {{ item.vlan ?? '-' }}
-        </template>
-
-        <!-- Tools column -->
-        <template #item.actions="{ item }">
-          <v-btn icon size="small" color="primary" rounded="sm" variant="outlined" @click="editGuest(item.id)">
-            <v-icon>mdi-pencil</v-icon>
-          </v-btn>
-          &nbsp;
-          <v-btn icon size="small" color="primary" rounded="sm" variant="outlined" @click="printGuest(item.id)">
-            <v-icon>mdi-printer</v-icon>
-          </v-btn>
-          &nbsp;
-          <v-btn icon size="small" color="error" rounded="sm" variant="outlined" @click="deleteGuest(item.id)">
-            <v-icon>mdi-delete</v-icon>
-          </v-btn>
-        </template>
-
-      </v-data-table>
-
-      <!-- Hidden print content -->
-      <div ref="printRef" style="display:none;">
-        <GuestPrintContent v-if="printGuestData" :guest="printGuestData" />
-      </div>
+    <!-- Hidden print content -->
+    <div ref="printRef" style="display:none;">
+      <GuestPrintContent v-if="printGuestData" :guest="printGuestData" />
+    </div>
 
   </BaseLayout>
 </template>
@@ -86,6 +74,8 @@ import { ExtensionData } from '@/ct-utils/lib/ExtensionData'
 import { EXTENSION } from '@/constants'
 import BaseLayout from '../layouts/BaseLayout.vue'
 import GuestPrintContent from '../components/GuestPrintContent.vue'
+import { SettingsSchema } from '@/types/SettingsSchema'
+import type { Settings } from '@/types/SettingsSchema'
 
 
 // Inject ChurchTools client
@@ -106,6 +96,8 @@ type GuestRow = {
 }
 
 const rows = ref<GuestRow[]>([])
+const settings = ref<Settings | null>(null)
+
 
 // Filter state
 const filter = ref<'all' | 'valid' | 'current' | 'expired'>('valid')
@@ -137,7 +129,16 @@ async function loadGuests() {
   })
 }
 
-onMounted(loadGuests)
+
+async function loadSettings() {
+  const rawSettings = await extensionData.getCategoryData('settings', true);
+  settings.value = SettingsSchema.parse(JSON.parse(rawSettings.value));
+}
+
+onMounted(async () => {
+  await loadSettings();
+  await loadGuests();
+})
 
 // Filter helpers
 function isExpired(g: GuestRow) {
@@ -162,6 +163,14 @@ const filteredRows = computed(() => {
       return rows.value
   }
 })
+
+function getVlanName(id: number | null): string {
+  if (!id || !settings.value) return '-'
+
+  const match = settings.value.allowedVlans?.find((v: any) => v.id === id)
+  return match ? `${id} (${match.name})` : `${id}`
+}
+
 
 // Actions
 function editGuest(id: number) {
@@ -239,4 +248,3 @@ async function printGuest(id: number) {
 
 
 </script>
-

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CtGuestsExtensionSettings",
+  "type": "object",
+
+  "properties": {
+    "allowedVlans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "number" },
+          "name": { "type": "string" }
+        },
+        "required": ["id", "name"]
+      }
+    },
+
+    "defaultVlan": {
+      "type": "number"
+    },
+
+    "vlanRequired": {
+      "type": "boolean"
+    },
+
+    "passwordLength": {
+      "type": "number",
+      "minimum": 1
+    },
+
+    "usernameLength": {
+      "type": "number",
+      "minimum": 1
+    },
+
+    "usernamePrefix": {
+      "type": "string"
+    },
+
+    "guestSSID": {
+      "type": "string"
+    }
+  },
+
+  "required": [
+    "allowedVlans",
+    "vlanRequired",
+    "passwordLength",
+    "usernameLength",
+    "usernamePrefix",
+    "guestSSID"
+  ]
+}
