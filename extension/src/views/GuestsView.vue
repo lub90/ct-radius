@@ -68,18 +68,25 @@
 
       </v-data-table>
 
+      <!-- Hidden print content -->
+      <div ref="printRef" style="display:none;">
+        <GuestPrintContent v-if="printGuestData" :guest="printGuestData" />
+      </div>
+
   </BaseLayout>
 </template>
 
 
 
 <script setup lang="ts">
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted, inject, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { GuestUserSchema, type GuestUser } from '@/../../typescript/src/core/modules/ct-guests/GuestUser'
 import { ExtensionData } from '@/ct-utils/lib/ExtensionData'
 import { EXTENSION } from '@/constants'
 import BaseLayout from '../layouts/BaseLayout.vue'
+import GuestPrintContent from '../components/GuestPrintContent.vue'
+
 
 // Inject ChurchTools client
 const churchtoolsClient = inject<any>('churchtoolsClient')
@@ -161,16 +168,73 @@ function editGuest(id: number) {
   router.push(`${EXTENSION.URL_PREFIX}/guests/${id}/edit`)
 }
 
-function printGuest(id: number) {
-  router.push(`${EXTENSION.URL_PREFIX}/guests/${id}/print`)
-}
-
 function deleteGuest(id: number) {
   router.push(`${EXTENSION.URL_PREFIX}/guests/${id}/delete`)
 }
 
 function addGuest() {
   router.push(`${EXTENSION.URL_PREFIX}/guests/new`)
+}
+
+
+// The printing part
+const printRef = ref<HTMLElement | null>(null)
+const printGuestData = ref<any | null>(null)
+let printWindow: Window | null = null
+
+async function printGuest(id: number) {
+  // 1. Open popup immediately (allowed by browser)
+  printWindow = window.open('', '_blank', 'width=600,height=800')
+
+  if (!printWindow) {
+    console.error('Popup blocked')
+    return
+  }
+
+  // 2. Load guest data
+  const entry = await extensionData.getCategoryEntry('guests', id)
+  if (!entry) return
+
+  const parsed = GuestUserSchema.parse(JSON.parse(entry.value))
+
+  printGuestData.value = {
+    id,
+    username: parsed.username,
+    password: parsed.password,
+    validFrom: new Date(parsed.valid.from),
+    validTo: new Date(parsed.valid.to),
+    vlan: parsed.assignedVlan ?? null,
+    raw: parsed
+  }
+
+  // 3. Wait for Vue to render <GuestPrintContent> into printRef
+  await nextTick()
+
+  // 4. Extract HTML
+  const html = printRef.value?.innerHTML ?? ''
+
+  // 5. Inject into popup
+  printWindow.document.open()
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Guest User</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; }
+        </style>
+      </head>
+      <body>
+        ${html}
+        <script>
+          window.onload = function() {
+            window.print();
+            window.close();
+          }
+        <\/script>
+      <\/body>
+    <\/html>
+  `)
+  printWindow.document.close()
 }
 
 
