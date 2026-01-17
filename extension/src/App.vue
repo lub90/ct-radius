@@ -1,9 +1,6 @@
 <template>
-  <Root>
-    <router-view />
-  </Root>
+  <router-view/>
 </template>
 
 <script setup lang="ts">
-import Root from './layouts/Root.vue';
 </script>
