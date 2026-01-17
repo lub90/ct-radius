@@ -69,8 +69,8 @@ export class ExtensionData {
 
         try {
             const response = await this.churchtoolsClient.post(
-            `/custommodules/${moduleId}/customdatacategories`,
-            body
+                `/custommodules/${moduleId}/customdatacategories`,
+                body
             );
             return response.data;
         } catch (error) {
@@ -81,11 +81,11 @@ export class ExtensionData {
 
 
     async categoryHasData(name: string): Promise<boolean> {
-        const category: any = await this.getCategoryByName(name);   
+        const category: any = await this.getCategoryByName(name);
 
         try {
             const response = await this.churchtoolsClient.get(
-            `/custommodules/${category.customModuleId}/customdatacategories/${category.id}/customdatavalues`
+                `/custommodules/${category.customModuleId}/customdatacategories/${category.id}/customdatavalues`
             );
 
             return (response !== undefined) && (response.length > 0);
@@ -95,7 +95,7 @@ export class ExtensionData {
         }
     }
 
-    async categoryExists(name: string) : Promise<boolean> {
+    async categoryExists(name: string): Promise<boolean> {
         try {
             // We try to get this category
             await this.getCategoryByName(name);
@@ -106,7 +106,7 @@ export class ExtensionData {
         return true;
     }
 
-    async getCategoryByName(name: string) : Promise<any> {
+    async getCategoryByName(name: string): Promise<any> {
         const categories = await this.fetchCategories();
         const category = categories.find(c => c.name === name);
         if (!category) {
@@ -116,7 +116,7 @@ export class ExtensionData {
     }
 
     async getCategoryData(name: string, single = false): Promise<any[] | any> {
-        const category: any = await this.getCategoryByName(name);        
+        const category: any = await this.getCategoryByName(name);
 
         try {
             const response = await this.churchtoolsClient.get(
@@ -138,7 +138,7 @@ export class ExtensionData {
     }
 
     async deleteCategoryEntry(name: string, valueId: number): Promise<void> {
-        const category: any = await this.getCategoryByName(name); 
+        const category: any = await this.getCategoryByName(name);
 
         const moduleId = await this.resolveModuleId();
 
@@ -154,7 +154,7 @@ export class ExtensionData {
 
     async createCategoryEntry(name: string, data: object): Promise<number> {
         const moduleId = await this.resolveModuleId();
-        const category: any = await this.getCategoryByName(name); 
+        const category: any = await this.getCategoryByName(name);
 
         const payload = {
             dataCategoryId: category.id,
@@ -177,7 +177,7 @@ export class ExtensionData {
 
     async updateCategoryEntry(name: string, valueId: number, data: object): Promise<number> {
         const moduleId = await this.resolveModuleId();
-        const category: any = await this.getCategoryByName(name); 
+        const category: any = await this.getCategoryByName(name);
 
         const payload = {
             dataCategoryId: category.id,
@@ -197,6 +197,23 @@ export class ExtensionData {
         }
     }
 
+    async getCategoryEntry(name: string, valueId: number): Promise<any | null> {
+        const category: any = await this.getCategoryByName(name);
+
+        try {
+            const response = await this.churchtoolsClient.get(
+                `/custommodules/${category.customModuleId}/customdatacategories/${category.id}/customdatavalues`
+            );
+
+            const values = response ?? [];
+            const entry = values.find((v: any) => v.id === valueId);
+
+            return entry ?? null;
+        } catch (error) {
+            console.error(`Failed to fetch entry ${valueId} in category "${name}":`, error);
+            throw error;
+        }
+    }
 
 
 }
