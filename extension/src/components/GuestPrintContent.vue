@@ -2,6 +2,7 @@
   <div class="print-container">
     <h1>Guest WiFi credentials</h1>
 
+    <div class="row"><span class="label">SSID:</span> {{ ssid }}</div>
     <div class="row"><span class="label">Username:</span> {{ guest.username }}</div>
     <div class="row"><span class="label">Password:</span> {{ guest.password }}</div>
     <div class="row"><span class="label">Valid from:</span> {{ guest.validFrom.toLocaleString() }}</div>
@@ -18,7 +19,8 @@ defineProps<{
     validFrom: Date
     validTo: Date
     vlan: number | null
-  }
+  },
+  ssid: string
 }>()
 </script>
 

@@ -16,9 +16,9 @@ export const SettingsSchema = z.object({
 
   usernameLength: z.number().min(1),
 
-  usernamePrefix: z.string().nonempty(),
+  usernamePrefix: z.string().trim().nonempty(),
 
-  guestSSID: z.string().nonempty(),
+  guestSSID: z.string().trim().nonempty(),
 });
 
 export type Settings = z.infer<
