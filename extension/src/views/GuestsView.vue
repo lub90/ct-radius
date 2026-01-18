@@ -143,9 +143,7 @@ async function loadSettings() {
 
 const {
   state: loadingState,
-  error: loadingError,
-  data: loadedData,
-  execute: reloadAll
+  error: loadingError
 } = loadWithState<undefined>(async () => {
   await loadSettings();
   await loadGuests();
