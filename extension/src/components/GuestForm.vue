@@ -3,29 +3,26 @@
         <v-container>
 
             <!-- Username -->
-            <v-text-field label="Username" :model-value="username" class="mb-2"
-                @update:model-value="val => emitUpdate('username', val)" :rules="[rules.required, rules.usernameLength]"
-                prepend-inner-icon="" :prefix="usernamePrefix" />
+            <v-text-field label="Username" :model-value="guest.username" class="mb-2" :prefix="settings.usernamePrefix"
+                :rules="[rules.required, rules.usernameLength]"
+                @update:model-value="val => updateField('username', val)" />
 
             <!-- Password -->
-            <v-text-field label="Password" :model-value="password"
-                @update:model-value="val => emitUpdate('password', val)" type="text" class="mb-2"
-                :rules="[rules.required, rules.passwordLength, rules.passwordNumber, rules.passwordSpecial]" />
+            <v-text-field label="Password" type="text" class="mb-2" :model-value="guest.password"
+                :rules="[rules.required, rules.passwordLength, rules.passwordNumber, rules.passwordSpecial]"
+                @update:model-value="val => updateField('password', val)" />
 
-            <!-- Password checks -->
+            <!-- Password criteria -->
             <v-list density="compact" class="criteria-list mt-n2 mb-4">
-
-                <!-- Minimum length -->
                 <v-list-item>
                     <template #prepend>
                         <v-icon :class="passwordLengthCheck ? 'text-success' : 'text-error'">
                             {{ passwordLengthCheck ? 'mdi-check-circle' : 'mdi-close-circle' }}
                         </v-icon>
                     </template>
-                    At least {{ minPasswordLength }} characters
+                    At least {{ settings.passwordLength }} characters
                 </v-list-item>
 
-                <!-- Contains number -->
                 <v-list-item>
                     <template #prepend>
                         <v-icon :class="passwordNumberCheck ? 'text-success' : 'text-error'">
@@ -35,7 +32,6 @@
                     Contains at least one number
                 </v-list-item>
 
-                <!-- Contains special character -->
                 <v-list-item>
                     <template #prepend>
                         <v-icon :class="passwordSpecialCheck ? 'text-success' : 'text-error'">
@@ -44,30 +40,29 @@
                     </template>
                     Contains at least one special character ({{ specialCharsDisplay }})
                 </v-list-item>
-
             </v-list>
 
             <!-- VLAN -->
-            <v-select label="Assigned VLAN" :items="vlanItems" item-title="label" item-value="id" :model-value="vlan"
-                @update:model-value="val => emitUpdate('vlan', val)" :rules="[rules.required]" />
+            <v-select label="Assigned VLAN" :items="vlanItems" item-title="label" item-value="id"
+                :model-value="guest.assignedVlan" :rules="[rules.required]"
+                @update:model-value="val => updateField('assignedVlan', val)" />
 
             <!-- Valid From -->
             <v-text-field label="Valid From" type="datetime-local" :model-value="validFromLocal"
-                @update:model-value="val => updateDate('validFrom', val)" :rules="[rules.required]" />
+                :rules="[rules.required]" @update:model-value="val => updateDate('from', val)" />
 
             <!-- Valid To -->
             <v-text-field label="Valid To" type="datetime-local" :model-value="validToLocal"
-                @update:model-value="val => updateDate('validTo', val)" :rules="[rules.required, rules.validRange]" />
+                :rules="[rules.required, rules.validRange]" @update:model-value="val => updateDate('to', val)" />
+
+            <!-- Comment -->
+            <v-textarea label="Comment" auto-grow class="mb-4" :model-value="guest.comment"
+                @update:model-value="val => updateField('comment', val)" />
 
             <!-- Buttons -->
             <div class="d-flex justify-end mt-6">
-                <v-btn variant="outlined" @click="$emit('cancel')">
-                    Cancel
-                </v-btn>
-
-                <v-btn color="primary" class="ml-2" :disabled="!isValid" type="submit">
-                    Save
-                </v-btn>
+                <v-btn variant="outlined" @click="$emit('cancel')">Cancel</v-btn>
+                <v-btn color="primary" class="ml-2" :disabled="!isValid" type="submit">Save</v-btn>
             </div>
 
         </v-container>
@@ -76,110 +71,69 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { SYMBOLS } from '@/../../typescript/src/types/isAllowedString';
+import { SYMBOLS } from "@/../../typescript/src/types/isAllowedString";
+import type { GuestUser }  from '@/../../typescript/src/core/modules/ct-guests/GuestUser'
+import type { Settings } from '@/types/SettingsSchema'
 
 const props = defineProps<{
-    username: string;
-    minUsernameLength: number;
-    usernamePrefix: string;
-    password: string;
-    minPasswordLength: number;
-    specialChars?: string;
-    vlan: number | null;
-    allowedVlans: { id: number; name: string }[];
-    validFrom: Date;
-    validTo: Date;
+    guest: GuestUser;
+    settings: Settings;
 }>();
 
 const emit = defineEmits<{
-    save: [
-        {
-            username: string;
-            password: string;
-            vlan: number | null;
-            validFrom: Date;
-            validTo: Date;
-        }
-    ];
+    save: [typeof props.guest];
     cancel: [];
-    update: [key: string, value: any];
+    update: [typeof props.guest];
 }>();
 
-// Form validity
 const isValid = ref(false);
 
-// Special chars fallback
-const specialChars = computed(() => props.specialChars ?? SYMBOLS);
-
-// Display version
+// Special chars
+const specialChars = computed(() => props.settings.specialChars ?? SYMBOLS);
 const specialCharsDisplay = computed(() => specialChars.value.split("").join(" "));
 
-// Convert dates to local datetime strings
-const validFromLocal = computed(() =>
-    props.validFrom.toISOString().slice(0, 16)
-);
-const validToLocal = computed(() =>
-    props.validTo.toISOString().slice(0, 16)
-);
+// Local date strings
+const validFromLocal = computed(() => props.guest.valid.from.toISOString().slice(0, 16));
+const validToLocal = computed(() => props.guest.valid.to.toISOString().slice(0, 16));
 
-// Emit updates to parent
-function emitUpdate(key: string, value: any) {
-    emit("update", key, value);
+// Update helpers
+function updateField(key: string, value: any) {
+    emit("update", { ...props.guest, [key]: value });
 }
 
-// Update date fields
-function updateDate(key: "validFrom" | "validTo", val: string) {
-    emit("update", key, new Date(val));
+function updateDate(key: "from" | "to", value: string) {
+    emit("update", {
+        ...props.guest,
+        valid: { ...props.guest.valid, [key]: new Date(value) }
+    });
 }
 
-// Password checks
-const passwordLengthCheck = computed(
-    () => props.password.length >= props.minPasswordLength
-);
-const passwordNumberCheck = computed(
-    () => /\d/.test(props.password)
-);
-const passwordSpecialCheck = computed(
-    () => new RegExp("[" + specialChars.value.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&") + "]").test(props.password)
+// Checks
+const usernameLengthCheck = computed(() => props.guest.username.length >= props.settings.usernameLength);
+const passwordLengthCheck = computed(() => props.guest.password.length >= props.settings.passwordLength);
+const passwordNumberCheck = computed(() => /\d/.test(props.guest.password));
+const passwordSpecialCheck = computed(() =>
+    new RegExp("[" + specialChars.value.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&") + "]").test(props.guest.password)
 );
 
-// Username checks
-const usernameLengthCheck = computed(
-    () => props.username.length >= props.minUsernameLength
-);
-
-// VLAN dropdown items
+// VLAN items
 const vlanItems = computed(() =>
-    props.allowedVlans.map(v => ({
-        id: v.id,
-        label: `${v.id} (${v.name})`
-    }))
+    props.settings.allowedVlans.map(v => ({ id: v.id, label: `${v.id} (${v.name})` }))
 );
 
-// Validation rules
+// Rules
 const rules = {
     required: (v: any) => !!v || "Required",
-    usernameLength: () =>
-        usernameLengthCheck.value || `Must be at least ${props.minUsernameLength} characters`,
-    passwordLength: () =>
-        passwordLengthCheck.value || `Must be at least ${props.minPasswordLength} characters`,
-    passwordNumber: () =>
-        passwordNumberCheck.value || "Must contain at least one number",
-    passwordSpecial: () =>
-        passwordSpecialCheck.value || `Must contain a special character (${specialChars.value})`,
-    validRange: () =>
-        props.validFrom < props.validTo || "Valid To must be after Valid From"
+    usernameLength: () => usernameLengthCheck.value || `Must be at least ${props.settings.usernameLength} characters`,
+    passwordLength: () => passwordLengthCheck.value || `Must be at least ${props.settings.passwordLength} characters`,
+    passwordNumber: () => passwordNumberCheck.value || "Must contain at least one number",
+    passwordSpecial: () => passwordSpecialCheck.value || `Must contain a special character (${specialChars.value})`,
+    validRange: () => props.guest.valid.from < props.guest.valid.to || "Valid To must be after Valid From"
 };
 
-// Emit save
+// Save
 function emitSave() {
-    emit("save", {
-        username: props.username,
-        password: props.password,
-        vlan: props.vlan,
-        validFrom: props.validFrom,
-        validTo: props.validTo
-    });
+    emit("save", props.guest);
 }
 </script>
 

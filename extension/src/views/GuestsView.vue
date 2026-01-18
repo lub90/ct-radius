@@ -40,6 +40,10 @@
           {{ getVlanName(item.vlan) }}
         </template>
 
+        <template #item.comment="{ item }">
+          {{ shortenComment(item.comment) }}
+        </template>
+
 
         <!-- Tools column -->
         <template #item.actions="{ item }">
@@ -98,6 +102,7 @@ type GuestRow = {
   validFrom: Date
   validTo: Date
   vlan: number | null
+  comment: string | null
   raw: GuestUser
 }
 
@@ -114,6 +119,7 @@ const headers = [
   { title: 'Valid From', key: 'validFrom', sortable: true },
   { title: 'Valid To', key: 'validTo', sortable: true },
   { title: 'VLAN ID', key: 'vlan', sortable: true },
+  { title: 'Comment', key: 'comment', sortable: true },
   { title: '', key: 'actions', sortable: false }
 ]
 
@@ -130,6 +136,7 @@ async function loadGuests() {
       validFrom: new Date(parsed.valid.from),
       validTo: new Date(parsed.valid.to),
       vlan: parsed.assignedVlan ?? null,
+      comment: parsed.comment ?? null,
       raw: parsed
     }
   })
@@ -180,6 +187,39 @@ function getVlanName(id: number | null): string {
   const match = settings.value.allowedVlans?.find((v: any) => v.id === id)
   return match ? `${id} (${match.name})` : `${id}`
 }
+
+function shortenComment(comment: string | null): string {
+  if (comment === null) {
+    return "-";
+  }
+
+  const trimmed = comment.trim();
+  if (trimmed === "") {
+    return "-";
+  }
+
+  const maxLen = 16;
+
+  const newlineIndex = trimmed.indexOf("\n");
+  const hasNewline = newlineIndex !== -1;
+
+  // Determine where to cut: first newline or maxLen, whichever comes first
+  let cutIndex: number;
+  if (hasNewline && newlineIndex < maxLen) {
+    cutIndex = newlineIndex;
+  } else {
+    cutIndex = maxLen;
+  }
+
+  // If the whole string fits within cutIndex and there's no newline before it → no truncation
+  if (!hasNewline && trimmed.length <= cutIndex) {
+    return trimmed;
+  }
+
+  const shortened = trimmed.slice(0, cutIndex);
+  return shortened + "...";
+}
+
 
 
 // Actions

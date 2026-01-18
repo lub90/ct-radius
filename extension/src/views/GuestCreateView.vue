@@ -5,10 +5,14 @@
     </template>
 
     <LoadingGuard :state="loadingState" :error="loadingError" loading-text="Loading settings…">
-      <GuestForm :username="form.username" :minUsernameLength="settings.usernameLength"
-        :usernamePrefix="settings.usernamePrefix" :password="form.password" :minPasswordLength="settings.passwordLength"
-        :specialChars="SYMBOLS" :vlan="form.vlan" :allowedVlans="settings.allowedVlans" :validFrom="form.validFrom"
-        :validTo="form.validTo" @update="updateField" @save="saveGuest" @cancel="cancel" />
+      <GuestForm
+        :guest="form"
+        :settings="settings"
+        @update="updateGuest"
+        @save="saveGuest"
+        @cancel="cancel"
+      />
+
     </LoadingGuard>
   </BaseLayout>
 </template>
@@ -40,9 +44,12 @@ const settings = ref<Settings | null>(null);
 const form = ref({
   username: "",
   password: "",
-  vlan: null as number | null,
-  validFrom: new Date(),
-  validTo: new Date(Date.now() + 24 * 60 * 60 * 1000) // +1 day
+  assignedVlan: null,
+  valid: {
+    from: new Date(),
+    to: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  },
+  comment: ""
 });
 
 // Load settings
@@ -59,7 +66,7 @@ const {
     settings.value.passwordLength,
     SYMBOLS
   );
-  form.value.vlan = settings.value.defaultVlan ?? null;
+  form.value.assignedVlan = settings.value.defaultVlan ?? null;
 });
 
 function generateRandomUsername(minLength: number): string {
@@ -95,30 +102,24 @@ function generateRandomPassword(minLength: number, specialChars: string): string
 
 
 // Update handler from GuestForm
-function updateField(key: string, value: any) {
-  (form.value as any)[key] = value;
+function updateGuest(updatedGuest: any) {
+  form.value = updatedGuest;
 }
 
+
 // Save handler
-async function saveGuest(payload: {
-  username: string;
-  password: string;
-  vlan: number | null;
-  validFrom: Date;
-  validTo: Date;
-}) {
+async function saveGuest(guest: any) {
   if (!settings.value) return;
 
-  const fullUsername = settings.value.usernamePrefix + payload.username;
-
   const entry = {
-    username: fullUsername,
-    password: payload.password,
-    assignedVlan: payload.vlan,
+    username: settings.value.usernamePrefix + guest.username,
+    password: guest.password,
+    assignedVlan: guest.assignedVlan,
     valid: {
-      from: payload.validFrom.toISOString(),
-      to: payload.validTo.toISOString()
-    }
+      from: guest.valid.from.toISOString(),
+      to: guest.valid.to.toISOString()
+    },
+    comment: guest.comment ?? ""
   };
 
   await extensionData.createCategoryEntry("guests", entry);

@@ -12,6 +12,7 @@ export const GuestUserSchema = z.object({
     to: z.coerce.date(),
   }),
   assignedVlan: z.number().int().nonnegative("VLAN must be non-negative").optional(),
+  comment: z.string().optional(),
 });
 
 export type GuestUser = z.infer<typeof GuestUserSchema>;

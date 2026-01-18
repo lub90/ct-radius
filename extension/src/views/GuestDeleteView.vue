@@ -40,6 +40,14 @@
               <v-col cols="4" class="text-medium-emphasis">VLAN</v-col>
               <v-col cols="8" class="font-weight-medium">{{ guest.vlan ?? '-' }}</v-col>
             </v-row>
+
+            <v-row dense class="mb-2">
+              <v-col cols="4" class="text-medium-emphasis">Comment</v-col>
+              <v-col cols="8" class="font-weight-medium" style="white-space: pre-line;">
+                {{ guest.comment ?? '-' }}
+              </v-col>
+            </v-row>
+
           </v-card-text>
         </v-card>
 
@@ -109,6 +117,7 @@ const { state, error, data: guest } = loadWithState(async () => {
     validFrom: new Date(parsed.valid.from),
     validTo: new Date(parsed.valid.to),
     vlan: parsed.assignedVlan ?? null,
+    comment: parsed.comment ?? null,
     raw: parsed
   }
 })
