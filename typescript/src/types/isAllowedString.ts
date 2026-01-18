@@ -1,8 +1,8 @@
-const LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const DIGITS = "0123456789";
-const SYMBOLS = "!@$%&*-_+=?.";
+export const LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export const DIGITS = "0123456789";
+export const SYMBOLS = "!@$%&*-_+=?.";
 
-const ALLOWED_CHARS = LETTERS + DIGITS + SYMBOLS;
+export const ALLOWED_CHARS = LETTERS + DIGITS + SYMBOLS;
 
 /**
  * Returns true if the string contains ONLY allowed characters.
