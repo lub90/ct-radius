@@ -190,7 +190,38 @@ describe("GuestUser", () => {
                 expect(result.data.valid.to).toBeInstanceOf(Date);
             }
         });
+
+        it("rejects non-string comment values", () => {
+            const invalidComments = [
+                123,
+                null,
+                {},
+                [],
+                true,
+            ];
+
+            for (const comment of invalidComments) {
+                const guestUser = {
+                    username: "testuser",
+                    password: "password123",
+                    valid: {
+                        from: new Date("2025-01-01"),
+                        to: new Date("2025-01-10"),
+                    },
+                    comment,
+                };
+
+                const result = GuestUserSchema.safeParse(guestUser);
+                expect(result.success).toBe(false);
+            }
+        });
+
+
+
+
     });
+
+
 
     describe("Invalid guest users", () => {
         it("rejects missing username", () => {
@@ -435,6 +466,8 @@ describe("GuestUser", () => {
                 expect(result.success).toBe(false);
             }
         });
+
+
     });
 
     describe("Type validation", () => {
@@ -564,6 +597,44 @@ describe("GuestUser", () => {
             expect(result.success).toBe(true);
             if (result.success) {
                 expect(result.data.assignedVlan).toBeUndefined();
+            }
+        });
+
+
+        it("handles very long comments", () => {
+            const longComment = "a".repeat(5000);
+
+            const guestUser = {
+                username: "testuser",
+                password: "password123",
+                valid: {
+                    from: new Date("2025-01-01"),
+                    to: new Date("2025-01-10"),
+                },
+                comment: longComment,
+            };
+
+            const result = GuestUserSchema.safeParse(guestUser);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.comment.length).toBe(5000);
+            }
+        });
+
+        it("ignores comment field when omitted", () => {
+            const guestUser = {
+                username: "testuser",
+                password: "password123",
+                valid: {
+                    from: new Date("2025-01-01"),
+                    to: new Date("2025-01-10"),
+                },
+            };
+
+            const result = GuestUserSchema.safeParse(guestUser);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.comment).toBeUndefined();
             }
         });
 
