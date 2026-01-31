@@ -1,5 +1,5 @@
 {
-    "name": "ct-radius-guests-extension",
+    "name": "ctradius",
     "private": true,
     "version": "0.0.1",
     "type": "module",
