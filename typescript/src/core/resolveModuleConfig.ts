@@ -33,8 +33,12 @@ export function resolveModuleConfig(
   const parentResolved = resolveModuleConfig(cfg, parentName, visited);
 
   // Merge parent → child (child overrides parent)
-  return {
+  var result = {
     ...parentResolved,
     ...moduleCfg
   };
+  // Remove 'inherits' from the final result, as it's not needed anymore
+  delete result.inherits;
+
+  return result;
 }
