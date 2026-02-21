@@ -1,6 +1,6 @@
 {
   "allowRequestedVlan": true,
-  "vlanSeparator": 5,
+  "vlanSeparator": "#",
 
   "requestRoutes": {
     "wifi": {
@@ -8,6 +8,9 @@
     },
     "vpn": {
       "modules": []
+    },
+    "invalid-route": {
+      "modules": ["ct-groups"]
     }
   },
 
@@ -17,8 +20,8 @@
     "wifiAccessGroups": [101],
     "includeAssignmentGroupsInAccessGroups": true,
 
-    "pathToPrivateDecryptionKey": "/ct-radius/key.pem",
-    "pathToCacheFile": "/ct-radius/cache/personCache.json",
+    "pathToPrivateDecryptionKey": "/keys/key.pem",
+    "pathToCacheFile": "/cache/cache.json",
 
     "backendConfig": {
       "timeout": 5,

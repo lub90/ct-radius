@@ -1,16 +1,30 @@
 {
   "allowRequestedVlan": true,
   "vlanSeparator": "#",
-  "modules": ["unknown-module"],
+
+  "requestRoutes": {
+    "wifi": {
+      "modules": ["unknown-module"]
+    },
+    "vpn": {
+      "modules": []
+    }
+  },
+
   "ct-groups": {
+    "type": "ct-groups",
+
     "wifiAccessGroups": [101],
     "includeAssignmentGroupsInAccessGroups": true,
+
     "pathToPrivateDecryptionKey": "/ct-radius/key.pem",
     "pathToCacheFile": "/ct-radius/cache/personCache.json",
+
     "backendConfig": {
       "timeout": 5,
       "usernameFieldName": "cmsUserId"
     },
+
     "vlanMapping": {
       "defaultVlan": 10,
       "assignments": {},

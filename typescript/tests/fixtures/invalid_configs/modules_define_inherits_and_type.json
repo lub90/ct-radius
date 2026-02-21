@@ -1,0 +1,56 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+
+  "requestRoutes": {
+    "wifi": {
+      "modules": ["wifi-module"]
+    },
+    "vpn": {
+      "modules": []
+    }
+  },
+
+  "base-module": {
+    "type": "ct-groups",
+
+    "wifiAccessGroups": [1],
+    "includeAssignmentGroupsInAccessGroups": true,
+
+    "pathToPrivateDecryptionKey": "/keys/base.pem",
+    "pathToCacheFile": "/cache/base.json",
+
+    "backendConfig": {
+      "timeout": 5,
+      "usernameFieldName": "cmsUserId"
+    },
+
+    "vlanMapping": {
+      "defaultVlan": 1,
+      "assignments": {},
+      "assignmentsIfRequested": {}
+    }
+  },
+
+  "wifi-module": {
+    "type": "ct-groups",
+    "inherits": "base-module",
+
+    "wifiAccessGroups": [10],
+    "includeAssignmentGroupsInAccessGroups": true,
+
+    "pathToPrivateDecryptionKey": "/keys/wifi.pem",
+    "pathToCacheFile": "/cache/wifi.json",
+
+    "backendConfig": {
+      "timeout": 5,
+      "usernameFieldName": "cmsUserId"
+    },
+
+    "vlanMapping": {
+      "defaultVlan": 10,
+      "assignments": {},
+      "assignmentsIfRequested": {}
+    }
+  }
+}

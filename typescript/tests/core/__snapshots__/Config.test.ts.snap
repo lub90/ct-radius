@@ -15,6 +15,7 @@ exports[`Config validation using fixtures > config + env combined > should load 
     "includeAssignmentGroupsInAccessGroups": true,
     "pathToCacheFile": "/ct-radius/cache/personCache.json",
     "pathToPrivateDecryptionKey": "/ct-radius/privateDecryptionKey.pem",
+    "type": "ct-groups",
     "vlanMapping": {
       "assignments": {
         "1": 10,
@@ -32,9 +33,18 @@ exports[`Config validation using fixtures > config + env combined > should load 
       200,
     ],
   },
-  "modules": [
-    "ct-groups",
-  ],
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "ct-groups",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "ct-groups",
+      ],
+    },
+  },
   "vlanSeparator": "#",
 }
 `;
@@ -54,6 +64,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
     "includeAssignmentGroupsInAccessGroups": true,
     "pathToCacheFile": "/ct-radius/cache/personCache.json",
     "pathToPrivateDecryptionKey": "/ct-radius/privateDecryptionKey.pem",
+    "type": "ct-groups",
     "vlanMapping": {
       "assignments": {
         "1": 10,
@@ -71,9 +82,18 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
       200,
     ],
   },
-  "modules": [
-    "ct-groups",
-  ],
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "ct-groups",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "ct-groups",
+      ],
+    },
+  },
   "vlanSeparator": "#",
 }
 `;
@@ -85,7 +105,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
     "apiToken": "secure-api-token-example",
     "serverUrl": "https://example.church.tools",
   },
-  "ct-groups": {
+  "ct-groups-a": {
     "backendConfig": {
       "timeout": 5,
       "usernameFieldName": "cmsUserId",
@@ -93,6 +113,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
     "includeAssignmentGroupsInAccessGroups": true,
     "pathToCacheFile": "/ct-radius/cache/personCache.json",
     "pathToPrivateDecryptionKey": "/ct-radius/privateDecryptionKey2.pem",
+    "type": "ct-groups",
     "vlanMapping": {
       "assignments": {
         "101": 10,
@@ -107,9 +128,16 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
       102,
     ],
   },
-  "modules": [
-    "ct-groups",
-  ],
+  "requestRoutes": {
+    "vpn": {
+      "modules": [],
+    },
+    "wifi": {
+      "modules": [
+        "ct-groups-a",
+      ],
+    },
+  },
   "vlanSeparator": "#",
 }
 `;
@@ -121,7 +149,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
     "apiToken": "secure-api-token-example",
     "serverUrl": "https://example.church.tools",
   },
-  "ct-groups": {
+  "ct-gr": {
     "backendConfig": {
       "timeout": 5,
       "usernameFieldName": "cmsUserId",
@@ -129,6 +157,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
     "includeAssignmentGroupsInAccessGroups": false,
     "pathToCacheFile": "/ct-radius/cache/personCache.json",
     "pathToPrivateDecryptionKey": "/ct-radius/key.pem",
+    "type": "ct-groups",
     "vlanMapping": {
       "assignments": {},
       "assignmentsIfRequested": {},
@@ -138,9 +167,18 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
       194,
     ],
   },
-  "modules": [
-    "ct-groups",
-  ],
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "ct-gr",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "ct-gr",
+      ],
+    },
+  },
   "vlanSeparator": "#",
 }
 `;
@@ -152,7 +190,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
     "apiToken": "secure-api-token-example",
     "serverUrl": "https://example.church.tools",
   },
-  "ct-groups": {
+  "m1": {
     "backendConfig": {
       "timeout": 5,
       "usernameFieldName": "cmsUserId",
@@ -160,6 +198,7 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
     "includeAssignmentGroupsInAccessGroups": true,
     "pathToCacheFile": "/ct-radius/cache/personCache.json",
     "pathToPrivateDecryptionKey": "privateDecryptionKey.pem",
+    "type": "ct-groups",
     "vlanMapping": {
       "assignments": {
         "101": 10,
@@ -178,9 +217,391 @@ exports[`Config validation using fixtures > valid configs > valid config /home/l
       202,
     ],
   },
-  "modules": [
-    "ct-groups",
-  ],
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "m1",
+      ],
+    },
+    "wifi": {
+      "modules": [],
+    },
+  },
   "vlanSeparator": "#",
+}
+`;
+
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_5.json should load successfully 1`] = `
+{
+  "allowRequestedVlan": true,
+  "backendConfig": {
+    "apiToken": "secure-api-token-example",
+    "serverUrl": "https://example.church.tools",
+  },
+  "ct-groups": {
+    "backendConfig": {
+      "timeout": 5,
+      "usernameFieldName": "cmsUserId",
+    },
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/ct-radius/cache/personCache.json",
+    "pathToPrivateDecryptionKey": "privateDecryptionKey.pem",
+    "type": "ct-groups",
+    "vlanMapping": {
+      "assignments": {
+        "101": 10,
+        "104": 10,
+        "139": 20,
+        "177": 1,
+      },
+      "assignmentsIfRequested": {
+        "231": 110,
+        "77": 120,
+      },
+      "defaultVlan": 10,
+    },
+    "wifiAccessGroups": [
+      101,
+      202,
+    ],
+  },
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "ct-groups",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "ct-groups",
+      ],
+    },
+  },
+  "vlanSeparator": "#",
+}
+`;
+
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_6.json should load successfully 1`] = `
+{
+  "allowRequestedVlan": false,
+  "backendConfig": {
+    "apiToken": "secure-api-token-example",
+    "serverUrl": "https://example.church.tools",
+  },
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "vpn-base",
+        "vpn-extended",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "wifi-base",
+      ],
+    },
+  },
+  "vlanSeparator": "#",
+  "vpn-base": {
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/cache/vpn-base.json",
+    "pathToPrivateDecryptionKey": "/keys/vpn-base.pem",
+    "type": "ct-groups",
+    "wifiAccessGroups": [
+      300,
+    ],
+  },
+  "vpn-extended": {
+    "includeAssignmentGroupsInAccessGroups": false,
+    "inherits": "vpn-mid",
+    "wifiAccessGroups": [
+      300,
+      301,
+      302,
+    ],
+  },
+  "vpn-mid": {
+    "inherits": "vpn-base",
+    "pathToPrivateDecryptionKey": "/keys/vpn-mid.pem",
+    "wifiAccessGroups": [
+      300,
+      301,
+    ],
+  },
+  "wifi-base": {
+    "includeAssignmentGroupsInAccessGroups": false,
+    "pathToCacheFile": "/cache/wifi.json",
+    "pathToPrivateDecryptionKey": "/keys/wifi.pem",
+    "type": "ct-groups",
+    "wifiAccessGroups": [
+      10,
+    ],
+  },
+}
+`;
+
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_7.json should load successfully 1`] = `
+{
+  "allowRequestedVlan": true,
+  "backendConfig": {
+    "apiToken": "secure-api-token-example",
+    "serverUrl": "https://example.church.tools",
+  },
+  "groups-base": {
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/cache/base.json",
+    "pathToPrivateDecryptionKey": "/keys/base.pem",
+    "type": "ct-groups",
+    "vlanMapping": {
+      "assignments": {
+        "50": 5,
+      },
+      "assignmentsIfRequested": {
+        "99": 100,
+      },
+      "defaultVlan": 5,
+    },
+    "wifiAccessGroups": [
+      50,
+    ],
+  },
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "groups-base",
+        "vpn-override",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "groups-base",
+        "wifi-override",
+      ],
+    },
+  },
+  "vlanSeparator": "#",
+  "vpn-override": {
+    "includeAssignmentGroupsInAccessGroups": false,
+    "inherits": "groups-base",
+    "pathToPrivateDecryptionKey": "/keys/vpn.pem",
+  },
+  "wifi-override": {
+    "inherits": "groups-base",
+    "vlanMapping": {
+      "assignments": {
+        "51": 15,
+      },
+      "defaultVlan": 15,
+    },
+    "wifiAccessGroups": [
+      51,
+      52,
+    ],
+  },
+}
+`;
+
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_8.json should load successfully 1`] = `
+{
+  "allowRequestedVlan": true,
+  "backendConfig": {
+    "apiToken": "secure-api-token-example",
+    "serverUrl": "https://example.church.tools",
+  },
+  "mid-module": {
+    "inherits": "root-module",
+    "vlanMapping": {
+      "assignments": {
+        "2": 2,
+      },
+    },
+    "wifiAccessGroups": [
+      1,
+      2,
+    ],
+  },
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "root-module",
+        "vpn-final",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "root-module",
+        "wifi-final",
+      ],
+    },
+  },
+  "root-module": {
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/cache/root.json",
+    "pathToPrivateDecryptionKey": "/keys/root.pem",
+    "type": "ct-groups",
+    "vlanMapping": {
+      "assignments": {
+        "1": 1,
+      },
+      "assignmentsIfRequested": {},
+      "defaultVlan": 1,
+    },
+    "wifiAccessGroups": [
+      1,
+    ],
+  },
+  "vlanSeparator": "#",
+  "vpn-final": {
+    "includeAssignmentGroupsInAccessGroups": false,
+    "inherits": "mid-module",
+    "pathToPrivateDecryptionKey": "/keys/vpn.pem",
+    "wifiAccessGroups": [
+      1,
+      2,
+      4,
+    ],
+  },
+  "wifi-final": {
+    "inherits": "mid-module",
+    "pathToPrivateDecryptionKey": "/keys/wifi.pem",
+    "vlanMapping": {
+      "defaultVlan": 30,
+    },
+    "wifiAccessGroups": [
+      1,
+      2,
+      3,
+    ],
+  },
+}
+`;
+
+exports[`Config validation using fixtures > valid configs > valid config /home/lukas-block/git/ct-radius/typescript/tests/fixtures/valid_configs/valid_config_9.json should load successfully 1`] = `
+{
+  "allowRequestedVlan": true,
+  "backendConfig": {
+    "apiToken": "secure-api-token-example",
+    "serverUrl": "https://example.church.tools",
+  },
+  "requestRoutes": {
+    "vpn": {
+      "modules": [
+        "root",
+        "vpn-mid",
+        "vpn-extended",
+      ],
+    },
+    "wifi": {
+      "modules": [
+        "root",
+        "wifi-mid",
+        "wifi-extended",
+        "wifi-final",
+      ],
+    },
+  },
+  "root": {
+    "backendConfig": {
+      "timeout": 5,
+      "usernameFieldName": "cmsUserId",
+    },
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToCacheFile": "/cache/root.json",
+    "pathToPrivateDecryptionKey": "/keys/root.pem",
+    "type": "ct-groups",
+    "vlanMapping": {
+      "assignments": {
+        "1": 1,
+      },
+      "assignmentsIfRequested": {
+        "900": 900,
+      },
+      "defaultVlan": 1,
+    },
+    "wifiAccessGroups": [
+      1,
+    ],
+  },
+  "vlanSeparator": "#",
+  "vpn-extended": {
+    "includeAssignmentGroupsInAccessGroups": false,
+    "inherits": "vpn-mid",
+    "pathToPrivateDecryptionKey": "/keys/vpn-extended.pem",
+    "vlanMapping": {
+      "assignmentsIfRequested": {
+        "888": 888,
+      },
+      "defaultVlan": 60,
+    },
+    "wifiAccessGroups": [
+      1,
+      50,
+      51,
+      60,
+    ],
+  },
+  "vpn-mid": {
+    "inherits": "root",
+    "pathToPrivateDecryptionKey": "/keys/vpn-mid.pem",
+    "vlanMapping": {
+      "assignments": {
+        "50": 50,
+        "51": 51,
+      },
+    },
+    "wifiAccessGroups": [
+      1,
+      50,
+      51,
+    ],
+  },
+  "wifi-extended": {
+    "includeAssignmentGroupsInAccessGroups": false,
+    "inherits": "wifi-mid",
+    "pathToPrivateDecryptionKey": "/keys/wifi-extended.pem",
+    "vlanMapping": {
+      "assignmentsIfRequested": {
+        "777": 777,
+      },
+    },
+    "wifiAccessGroups": [
+      1,
+      10,
+      11,
+      20,
+    ],
+  },
+  "wifi-final": {
+    "inherits": "wifi-extended",
+    "pathToPrivateDecryptionKey": "/keys/wifi-final.pem",
+    "vlanMapping": {
+      "assignments": {
+        "22": 30,
+      },
+      "defaultVlan": 30,
+    },
+    "wifiAccessGroups": [
+      1,
+      10,
+      11,
+      20,
+      21,
+      22,
+    ],
+  },
+  "wifi-mid": {
+    "inherits": "root",
+    "vlanMapping": {
+      "assignments": {
+        "10": 10,
+        "11": 11,
+      },
+    },
+    "wifiAccessGroups": [
+      1,
+      10,
+      11,
+    ],
+  },
 }
 `;

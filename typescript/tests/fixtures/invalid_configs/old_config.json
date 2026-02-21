@@ -1,23 +1,13 @@
 {
   "allowRequestedVlan": true,
   "vlanSeparator": "#",
+  "modules": ["ct-groups"],
 
-  "requestRoutes": {
-    "wifi": {
-      "modules": ["ct-groups-a"]
-    },
-    "vpn": {
-      "modules": []
-    }
-  },
-
-  "ct-groups-a": {
-    "type": "ct-groups",
-
+  "ct-groups": {
     "wifiAccessGroups": [101, 102],
     "includeAssignmentGroupsInAccessGroups": true,
 
-    "pathToPrivateDecryptionKey": "/ct-radius/privateDecryptionKey2.pem",
+    "pathToPrivateDecryptionKey": "/ct-radius/privateDecryptionKey.pem",
     "pathToCacheFile": "/ct-radius/cache/personCache.json",
 
     "backendConfig": {
@@ -28,10 +18,11 @@
     "vlanMapping": {
       "defaultVlan": 10,
       "assignments": {
-        "101": 10
+        "101": 10,
+        "102": 20
       },
       "assignmentsIfRequested": {
-        "77": 120
+        "200": 30
       }
     }
   }

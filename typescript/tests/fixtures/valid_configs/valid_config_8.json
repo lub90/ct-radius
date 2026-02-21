@@ -1,0 +1,54 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+
+  "requestRoutes": {
+    "wifi": {
+      "modules": ["root-module", "wifi-final"]
+    },
+    "vpn": {
+      "modules": ["root-module", "vpn-final"]
+    }
+  },
+
+  "root-module": {
+    "type": "ct-groups",
+    "wifiAccessGroups": [1],
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToPrivateDecryptionKey": "/keys/root.pem",
+    "pathToCacheFile": "/cache/root.json",
+    "vlanMapping": {
+      "defaultVlan": 1,
+      "assignments": {
+        "1": 1
+      },
+      "assignmentsIfRequested": {}
+    }
+  },
+
+  "mid-module": {
+    "inherits": "root-module",
+    "wifiAccessGroups": [1, 2],
+    "vlanMapping": {
+      "assignments": {
+        "2": 2
+      }
+    }
+  },
+
+  "wifi-final": {
+    "inherits": "mid-module",
+    "wifiAccessGroups": [1, 2, 3],
+    "pathToPrivateDecryptionKey": "/keys/wifi.pem",
+    "vlanMapping": {
+      "defaultVlan": 30
+    }
+  },
+
+  "vpn-final": {
+    "inherits": "mid-module",
+    "wifiAccessGroups": [1, 2, 4],
+    "includeAssignmentGroupsInAccessGroups": false,
+    "pathToPrivateDecryptionKey": "/keys/vpn.pem"
+  }
+}
