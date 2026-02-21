@@ -17,18 +17,18 @@ vi.mock("../../../src/core/ModuleRegistry.js", () => ({
 }));
 
 vi.mock("../../../src/core/churchtoolsSetup.js", () => {
-  const mockChurchtoolsClientInstance = {
-    __isMockChurchToolsClient: true,
-    setCookieJar: vi.fn(),
-  };
+    const mockChurchtoolsClientInstance = {
+        __isMockChurchToolsClient: true,
+        setCookieJar: vi.fn(),
+    };
 
-  return {
-    ChurchToolsClient: vi.fn().mockImplementation(function () {
-      return mockChurchtoolsClientInstance;
-    }),
-    axiosCookieJarSupport: { wrapper: vi.fn() },
-    tough: { CookieJar: vi.fn() }
-  };
+    return {
+        ChurchToolsClient: vi.fn().mockImplementation(function () {
+            return mockChurchtoolsClientInstance;
+        }),
+        axiosCookieJarSupport: { wrapper: vi.fn() },
+        tough: { CookieJar: vi.fn() }
+    };
 });
 import { ChurchToolsClient } from "../../../src/core/churchtoolsSetup.js";
 
@@ -59,7 +59,7 @@ function createProviderWithConfig(config) {
     // Inject one fake module so authorize() runs cleanUsername()
     moduleRegistry["dummy"] = vi.fn().mockReturnValue(fakeModule);
 
-    return new CtAuthProvider("config.json", undefined, fakeLogger);
+    return new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 }
 
 // Helper: generate username variants (Python equivalent)
@@ -103,7 +103,11 @@ describe("CtAuthProvider.cleanUsername (indirect via authorize)", () => {
             it(`throws AuthenticationError for empty username variant: ${JSON.stringify(raw)}`, async () => {
                 const provider = createProviderWithConfig({
                     allowRequestedVlan: allowRequestedVlan,
-                    modules: ["dummy"]
+                    requestRoutes: {
+                        wifi: { modules: ["dummy"] },
+                        vpn: { modules: ["dummy"] }
+                    },
+                    dummy: { type: "dummy" }
                 });
 
                 await expect(provider.authorize(raw as any))
@@ -124,7 +128,11 @@ describe("CtAuthProvider.cleanUsername (indirect via authorize)", () => {
             it(`accepts valid username without VLAN: ${user}`, async () => {
                 const provider = createProviderWithConfig({
                     allowRequestedVlan: allowRequestedVlan,
-                    modules: ["dummy"]
+                    requestRoutes: {
+                        wifi: { modules: ["dummy"] },
+                        vpn: { modules: ["dummy"] }
+                    },
+                    dummy: { type: "dummy" }
                 });
 
                 await provider.authorize(user);
@@ -147,7 +155,11 @@ describe("CtAuthProvider.cleanUsername (indirect via authorize)", () => {
                 it(`normalizes username variant '${variant}' → '${base}'`, async () => {
                     const provider = createProviderWithConfig({
                         allowRequestedVlan: allowRequestedVlan,
-                        modules: ["dummy"]
+                        requestRoutes: {
+                            wifi: { modules: ["dummy"] },
+                            vpn: { modules: ["dummy"] }
+                        },
+                        dummy: { type: "dummy" }
                     });
 
                     await provider.authorize(variant);
@@ -174,7 +186,11 @@ describe("CtAuthProvider.cleanUsername (indirect via authorize)", () => {
             const provider = createProviderWithConfig({
                 allowRequestedVlan: true,
                 vlanSeparator: "|",
-                modules: ["dummy"]
+                requestRoutes: {
+                    wifi: { modules: ["dummy"] },
+                    vpn: { modules: ["dummy"] }
+                },
+                dummy: { type: "dummy" }
             });
 
             await provider.authorize(raw);
@@ -201,7 +217,11 @@ describe("CtAuthProvider.cleanUsername (indirect via authorize)", () => {
             const provider = createProviderWithConfig({
                 allowRequestedVlan: true,
                 vlanSeparator: "|",
-                modules: ["dummy"]
+                requestRoutes: {
+                    wifi: { modules: ["dummy"] },
+                    vpn: { modules: ["dummy"] }
+                },
+                dummy: { type: "dummy" }
             });
 
             await provider.authorize(raw);
@@ -234,7 +254,11 @@ describe("CtAuthProvider.cleanUsername (indirect via authorize)", () => {
             const provider = createProviderWithConfig({
                 allowRequestedVlan: true,
                 vlanSeparator: "|",
-                modules: ["dummy"]
+                requestRoutes: {
+                    wifi: { modules: ["dummy"] },
+                    vpn: { modules: ["dummy"] }
+                },
+                dummy: { type: "dummy" }
             });
 
             await expect(provider.authorize(raw))
@@ -257,7 +281,11 @@ describe("CtAuthProvider.cleanUsername (indirect via authorize)", () => {
             const provider = createProviderWithConfig({
                 allowRequestedVlan: false,
                 vlanSeparator: "|",
-                modules: ["dummy"]
+                requestRoutes: {
+                    wifi: { modules: ["dummy"] },
+                    vpn: { modules: ["dummy"] }
+                },
+                dummy: { type: "dummy" }
             });
 
             await provider.authorize(raw);
