@@ -3,7 +3,7 @@ import { RejectResponse } from "./types/RadiusResponse.js";
 import { AuthenticationError } from "./errors/AuthenticationError.js";
 import pino from "pino";
 
-export async function authenticateUser(config: string, env: string, username: string, requestRoute: string,logger: pino.Logger): Promise<number> {
+export async function authenticateUser(config: string, env: string, requestRoute: string, username: string, logger: pino.Logger): Promise<number> {
 
     // Firstly, check that the logger is valid
     // All other checks are left to the CtAuthProvider class

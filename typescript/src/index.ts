@@ -35,7 +35,7 @@ export async function main() {
     /*
      * Setup is finished, now run the real stuff here
      */
-    const exitCode = await authenticateUser(args.config, args.env, args.username, args.requestRoute, logger);
+    const exitCode = await authenticateUser(args.config, args.env, args.requestRoute, args.username, logger);
     await safeExit(logger, exitCode);
 }
 

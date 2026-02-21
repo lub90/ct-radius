@@ -21,7 +21,7 @@ export class CtAuthProvider {
     private readonly requestRoute: string;
     private readonly logger: pino.Logger;
 
-    constructor(configPath: string, envPath: string | undefined, requestRoute: string = "wifi", logger: pino.Logger) {
+    constructor(configPath: string, envPath: string | undefined, requestRoute: string, logger: pino.Logger) {
         this.logger = logger;
         this.config = new Config(configPath, envPath).get();
         if (!CtAuthProvider.ALLOWED_REQUEST_ROUTES.includes(requestRoute)) {

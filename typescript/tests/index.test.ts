@@ -26,7 +26,7 @@ describe("main", () => {
   });
 
   it("should reject when required --config is missing", async () => {
-    process.argv = ["node", "script.js", "--username", "testuser"];
+    process.argv = ["node", "script.js", "--username", "--requestRoute", "wifi", "testuser"];
     (authenticateUser as any).mockResolvedValue(0);
 
     await expect(index.main()).rejects.toThrow("EXIT_1");
@@ -38,7 +38,7 @@ describe("main", () => {
   });
 
   it("should reject when required --username is missing", async () => {
-    process.argv = ["node", "script.js", "--config", "config.json"];
+    process.argv = ["node", "script.js", "--config", "config.json", "--requestRoute", "vpn"];
     (authenticateUser as any).mockResolvedValue(0);
 
     await expect(index.main()).rejects.toThrow("EXIT_1");
@@ -49,33 +49,39 @@ describe("main", () => {
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
-  it("should call authenticateUser with correct parameters and exit correctly", async () => {
-    (authenticateUser as any).mockResolvedValue(0);
+  for (const requestRoute of ["wifi", "vpn"]) {
 
-    process.argv = [
-      "node",
-      "script.js",
-      "--config",
-      "config.json",
-      "--username",
-      "testuser",
-      "--env",
-      "env.file",
-      "--log",
-      "mylog.log",
-    ];
+    it("should call authenticateUser with correct parameters and exit correctly with requestRoute " + requestRoute, async () => {
+      (authenticateUser as any).mockResolvedValue(0);
 
-    await expect(index.main()).rejects.toThrow("EXIT_0");
+      process.argv = [
+        "node",
+        "script.js",
+        "--config",
+        "config.json",
+        "--username",
+        "testuser",
+        "--env",
+        "env.file",
+        "--requestRoute",
+        requestRoute,
+        "--log",
+        "mylog.log",
+      ];
 
-    expect(authenticateUser).toHaveBeenCalledWith(
-      "config.json",
-      "env.file",
-      "testuser",
-      expect.any(Object) // logger
-    );
-    expect(authenticateUser).toHaveBeenCalledTimes(1);
-    expect(process.exit).toHaveBeenCalledWith(0);
-  });
+      await expect(index.main()).rejects.toThrow("EXIT_0");
+
+      expect(authenticateUser).toHaveBeenCalledWith(
+        "config.json",
+        "env.file",
+        requestRoute,
+        "testuser",
+        expect.any(Object) // logger
+      );
+      expect(authenticateUser).toHaveBeenCalledTimes(1);
+      expect(process.exit).toHaveBeenCalledWith(0);
+    });
+  }
 
   it("should exit with code returned by authenticateUser", async () => {
     (authenticateUser as any).mockResolvedValue(1);
@@ -85,6 +91,8 @@ describe("main", () => {
       "script.js",
       "--config",
       "config.json",
+      "--requestRoute",
+      "vpn",
       "--username",
       "testuser",
     ];

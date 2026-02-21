@@ -6,7 +6,12 @@ import { AuthenticationError } from '../src/errors/AuthenticationError.js';
 import { MockLogger } from './helpers/MockLogger.js';
 import { ConsoleChecker } from './helpers/ConsoleChecker.js';
 
-vi.mock('../src/core/CtAuthProvider.js');
+vi.mock('../src/core/CtAuthProvider.js', () => {
+  const mockClass = vi.fn();
+  mockClass.ALLOWED_REQUEST_ROUTES = ["wifi", "vpn"];
+  return { CtAuthProvider: mockClass };
+});
+
 
 describe('authenticateUser', () => {
   let consoleChecker: ConsoleChecker;
@@ -23,6 +28,7 @@ describe('authenticateUser', () => {
       config: 'config.json',
       env: 'env',
       username: 'user',
+      requestRoute: 'wifi',
     };
 
   });
@@ -41,9 +47,9 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Accept');
@@ -58,9 +64,9 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -75,9 +81,9 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(0);
       expect(console.log).toHaveBeenCalledWith('Cleartext-Password := "password"');
@@ -93,9 +99,9 @@ describe('authenticateUser', () => {
         throw new AuthenticationError("auth error");
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -108,9 +114,9 @@ describe('authenticateUser', () => {
         throw new Error('internal error');
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -124,9 +130,9 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -141,9 +147,9 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -157,9 +163,9 @@ describe('authenticateUser', () => {
         throw 'string error';
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -172,9 +178,9 @@ describe('authenticateUser', () => {
         throw { custom: 'error' };
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
       expect(console.log).toHaveBeenCalledTimes(1);
@@ -188,9 +194,9 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -205,9 +211,9 @@ describe('authenticateUser', () => {
         return mockCt as unknown as CtAuthProvider;
       });
 
-      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.username, mockLogger);
+      const exitCode = await authenticateUser(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockArgs.username, mockLogger);
 
-      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockLogger);
+      expect(CtAuthProviderMock).toHaveBeenCalledWith(mockArgs.config, mockArgs.env, mockArgs.requestRoute, mockLogger);
       expect(mockCt.authorize).toHaveBeenCalledWith(mockArgs.username);
       expect(exitCode).toBe(1);
       expect(console.log).toHaveBeenCalledWith('Auth-Type := Reject');
@@ -223,6 +229,7 @@ describe('authenticateUser', () => {
       const exitCode = await authenticateUser(
         mockArgs.config,
         mockArgs.env,
+        mockArgs.requestRoute,
         mockArgs.username,
         undefined as any
       );
