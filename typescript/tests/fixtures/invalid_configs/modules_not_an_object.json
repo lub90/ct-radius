@@ -1,0 +1,11 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+
+  "requestRoutes": {
+    "wifi": { "modules": ["ct-groups"] },
+    "vpn": { "modules": [] }
+  },
+
+  "ct-groups": "invalid"
+}

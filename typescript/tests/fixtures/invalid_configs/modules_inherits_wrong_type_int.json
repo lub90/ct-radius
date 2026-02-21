@@ -1,0 +1,20 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+
+  "requestRoutes": {
+    "wifi": { "modules": ["child"] },
+    "vpn": { "modules": [] }
+  },
+
+  "child": {
+    "type": "ct-groups",
+    "inherits": 123,
+    "wifiAccessGroups": [1],
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToPrivateDecryptionKey": "/keys/key.pem",
+    "pathToCacheFile": "/cache/cache.json",
+    "backendConfig": { "timeout": 5, "usernameFieldName": "cmsUserId" },
+    "vlanMapping": { "defaultVlan": 1, "assignments": {}, "assignmentsIfRequested": {} }
+  }
+}

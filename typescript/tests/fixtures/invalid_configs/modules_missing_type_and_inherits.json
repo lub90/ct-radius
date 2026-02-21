@@ -1,0 +1,18 @@
+{
+  "allowRequestedVlan": true,
+  "vlanSeparator": "#",
+
+  "requestRoutes": {
+    "wifi": { "modules": ["broken"] },
+    "vpn": { "modules": [] }
+  },
+
+  "broken": {
+    "wifiAccessGroups": [1],
+    "includeAssignmentGroupsInAccessGroups": true,
+    "pathToPrivateDecryptionKey": "/keys/key.pem",
+    "pathToCacheFile": "/cache/cache.json",
+    "backendConfig": { "timeout": 5, "usernameFieldName": "cmsUserId" },
+    "vlanMapping": { "defaultVlan": 1, "assignments": {}, "assignmentsIfRequested": {} }
+  }
+}
