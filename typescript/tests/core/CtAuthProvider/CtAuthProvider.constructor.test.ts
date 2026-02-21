@@ -15,18 +15,18 @@ vi.mock("../../../src/core/ModuleRegistry.js", () => ({
 
 
 vi.mock("../../../src/core/churchtoolsSetup.js", () => {
-  const mockChurchtoolsClientInstance = {
-    __isMockChurchToolsClient: true,
-    setCookieJar: vi.fn(),
-  };
+    const mockChurchtoolsClientInstance = {
+        __isMockChurchToolsClient: true,
+        setCookieJar: vi.fn(),
+    };
 
-  return {
-    ChurchToolsClient: vi.fn().mockImplementation(function () {
-      return mockChurchtoolsClientInstance;
-    }),
-    axiosCookieJarSupport: { wrapper: vi.fn() },
-    tough: { CookieJar: vi.fn() }
-  };
+    return {
+        ChurchToolsClient: vi.fn().mockImplementation(function () {
+            return mockChurchtoolsClientInstance;
+        }),
+        axiosCookieJarSupport: { wrapper: vi.fn() },
+        tough: { CookieJar: vi.fn() }
+    };
 });
 
 
@@ -90,7 +90,10 @@ describe("CtAuthProvider constructor", () => {
 
     it("stores the config returned by Config.get()", () => {
         const cfg = {
-            modules: [],
+            requestRoutes: {
+                "wifi": { modules: [] },
+                "vpn": { modules: [] }
+            },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
@@ -98,7 +101,7 @@ describe("CtAuthProvider constructor", () => {
         };
         mockConfigInstance.get.mockReturnValue(cfg);
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 
         expect(provider["config"]).toBe(cfg);
         expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
@@ -107,14 +110,17 @@ describe("CtAuthProvider constructor", () => {
 
     it("passes the correct parameters to Config", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: [],
+            requestRoutes: {
+                "wifi": { modules: [] },
+                "vpn": { modules: [] }
+            },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", "envfile", fakeLogger);
+        const provider = new CtAuthProvider("config.json", "envfile", "vpn", fakeLogger);
 
         expect(Config).toHaveBeenCalledTimes(1);
         expect(Config).toHaveBeenCalledWith("config.json", "envfile");
@@ -124,14 +130,17 @@ describe("CtAuthProvider constructor", () => {
 
     it("passes undefined envPath correctly to Config", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: [],
+            requestRoutes: {
+                "wifi": { modules: [] },
+                "vpn": { modules: [] }
+            },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 
         expect(Config).toHaveBeenCalledWith("config.json", undefined);
         expect(mockConfigInstance.get).toHaveBeenCalledTimes(1);
@@ -143,7 +152,7 @@ describe("CtAuthProvider constructor", () => {
             throw new Error("Config failed");
         });
 
-        expect(() => new CtAuthProvider("x", undefined, fakeLogger))
+        expect(() => new CtAuthProvider("x", undefined, "vpn", fakeLogger))
             .toThrow("Config failed");
     });
 
@@ -152,7 +161,7 @@ describe("CtAuthProvider constructor", () => {
             throw new Error("get() failed");
         });
 
-        expect(() => new CtAuthProvider("x", undefined, fakeLogger))
+        expect(() => new CtAuthProvider("x", undefined, "wifi", fakeLogger))
             .toThrow("get() failed");
     });
 
@@ -162,14 +171,17 @@ describe("CtAuthProvider constructor", () => {
 
     it("stores the logger instance", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: [],
+            requestRoutes: {
+                "wifi": { modules: [] },
+                "vpn": { modules: [] }
+            },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 
         expect(provider["logger"]).toBe(fakeLogger);
     });
@@ -180,15 +192,18 @@ describe("CtAuthProvider constructor", () => {
 
     it("loads one module correctly", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: ["A"],
-            A: { foo: 1 },
+            requestRoutes: {
+                "wifi": { modules: ["A1"] },
+                "vpn": { modules: [] }
+            },
+            A1: { foo: 1, type: "A" },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 
         expect(provider["modules"]).toHaveLength(1);
         expect(provider["modules"][0].name).toBe("A");
@@ -196,22 +211,26 @@ describe("CtAuthProvider constructor", () => {
         expect(moduleRegistry["A"]).toHaveBeenCalledTimes(1);
         const callArgs = (moduleRegistry["A"] as any).mock.calls[0];
         expect(callArgs[0].__isMockChurchToolsClient).toBe(true); // churchtoolsClient
-        expect(callArgs[1]).toEqual({ foo: 1 }); // moduleConfig
+        expect(callArgs[1]).toEqual({ foo: 1, type: "A" }); // moduleConfig
         expect(callArgs[2]).toBe(fakeLogger); // logger
     });
 
     it("loads two modules correctly", () => {
         mockConfigInstance.get.mockReturnValue({
             modules: ["A", "B"],
-            A: { a: 1 },
-            B: { b: 2 },
+            requestRoutes: {
+                "vpn": { modules: ["A1", "BModule"] },
+                "wifi": { modules: [] }
+            },
+            A1: { a: 1, type: "A" },
+            BModule: { b: 2, type: "B" },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "vpn", fakeLogger);
 
         expect(provider["modules"]).toHaveLength(2);
         expect(provider["modules"].map((m) => m.name)).toEqual(["A", "B"]);
@@ -221,15 +240,18 @@ describe("CtAuthProvider constructor", () => {
         const names = ["A", "B", "C", "D", "E"];
 
         mockConfigInstance.get.mockReturnValue({
-            modules: names,
-            A: {}, B: {}, C: {}, D: {}, E: {},
+            requestRoutes: {
+                "vpn": { modules: names },
+                "wifi": { modules: names }
+            },
+            A: { type: "A" }, B: { type: "B" }, C: { type: "C" }, D: { type: "D" }, E: { type: "E" },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "vpn", fakeLogger);
 
         expect(provider["modules"]).toHaveLength(5);
         expect(provider["modules"].map((m) => m.name)).toEqual(names);
@@ -237,49 +259,61 @@ describe("CtAuthProvider constructor", () => {
 
     it("creates an empty modules array when no modules are configured", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: [],
+            requestRoutes: {
+                "vpn": { modules: [] },
+                "wifi": { modules: [] }
+            },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 
         expect(provider["modules"]).toHaveLength(0);
     });
 
     it("throws when an unknown module is configured", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: ["Unknown"],
+            requestRoutes: {
+                "vpn": { modules: ["Unknown"] },
+                "wifi": { modules: ["Unknown"] }
+            },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
-            .toThrow("Unknown authorization module 'Unknown' in config!");
+        expect(() => new CtAuthProvider("config.json", undefined, "vpn", fakeLogger))
+            .toThrow("Module 'Unknown' does not exist in configuration.");
     });
 
     it("throws when unknown module is mixed with known modules", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: ["A", "Unknown"],
-            A: {},
+            requestRoutes: {
+                "vpn": { modules: ["Unknown", "module"] },
+                "wifi": { modules: [] }
+            },
+            module: { type: "A" },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
-            .toThrow("Unknown authorization module 'Unknown' in config!");
+        expect(() => new CtAuthProvider("config.json", undefined, "vpn", fakeLogger))
+            .toThrow("Module 'Unknown' does not exist in configuration.");
     });
 
     it("forwards errors thrown by a module constructor", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: ["A"],
-            A: { foo: 1 },
+            requestRoutes: {
+                "vpn": { modules: [] },
+                "wifi": { modules: ["A"] }
+            },
+            A: { type: "A", foo: 20 },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
@@ -290,56 +324,38 @@ describe("CtAuthProvider constructor", () => {
             throw new Error("Module A failed");
         });
 
-        expect(() => new CtAuthProvider("config.json", undefined, fakeLogger))
+        expect(() => new CtAuthProvider("config.json", undefined, "wifi", fakeLogger))
             .toThrow("Module A failed");
     });
 
 
     it("passes the correct config object to each module constructor", () => {
         mockConfigInstance.get.mockReturnValue({
-            modules: ["A", "B"],
-            A: { a: 1 },
-            B: { b: 2 },
+            requestRoutes: {
+                "vpn": { modules: [] },
+                "wifi": { modules: ["A", "B"] }
+            },
+            A: { type: "A", a: 1 },
+            B: { type: "B", b: 2 },
             backendConfig: {
                 serverUrl: "https://example.com",
                 apiToken: "test-token"
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 
         // Factory is called with (churchtoolsClient, moduleConfig, logger)
         const callArgsA = (moduleRegistry["A"] as any).mock.calls[0];
         expect(callArgsA[0].__isMockChurchToolsClient).toBe(true);
-        expect(callArgsA[1]).toEqual({ a: 1 });
+        expect(callArgsA[1]).toEqual({ type: "A", a: 1 });
         expect(callArgsA[2]).toBe(fakeLogger);
         const callArgsB = (moduleRegistry["B"] as any).mock.calls[0];
         expect(callArgsB[0].__isMockChurchToolsClient).toBe(true);
-        expect(callArgsB[1]).toEqual({ b: 2 });
+        expect(callArgsB[1]).toEqual({ type: "B", b: 2 });
         expect(callArgsB[2]).toBe(fakeLogger);
 
         expect(ChurchToolsClient).toHaveBeenCalledTimes(2);
-    });
-
-
-    it("passes an empty object when module config is missing", () => {
-        mockConfigInstance.get.mockReturnValue({
-            modules: ["A"],
-            // no A: {} provided
-            backendConfig: {
-                serverUrl: "https://example.com",
-                apiToken: "test-token"
-            }
-        });
-
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
-
-        // Factory is called with (churchtoolsClient, moduleConfig, logger)
-        const callArgs = (moduleRegistry["A"] as any).mock.calls[0];
-        expect(ChurchToolsClient).toHaveBeenCalledTimes(1);
-        expect(callArgs[0].__isMockChurchToolsClient).toBe(true);
-        expect(callArgs[1]).toEqual({});
-        expect(callArgs[2]).toBe(fakeLogger);
     });
 
     it("passes the churchtools client to each module", () => {
@@ -347,16 +363,19 @@ describe("CtAuthProvider constructor", () => {
         const apiToken = "test-token-123";
 
         mockConfigInstance.get.mockReturnValue({
-            modules: ["A", "B"],
-            A: {},
-            B: {},
+            requestRoutes: {
+                "vpn": { modules: [] },
+                "wifi": { modules: ["A", "B"] }
+            },
+            A: { type: "A" },
+            B: { type: "B" },
             backendConfig: {
                 serverUrl,
                 apiToken
             }
         });
 
-        const provider = new CtAuthProvider("config.json", undefined, fakeLogger);
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
 
         // Verify ChurchToolsClient was instantiated with correct parameters
         // The actual client is passed as first argument to each module factory
@@ -371,6 +390,62 @@ describe("CtAuthProvider constructor", () => {
         expect(churchtoolsClientB).toBeDefined();
 
         expect(ChurchToolsClient).toHaveBeenCalledTimes(2);
+    });
+
+    it("throws if the selected requestRoute does not exist", () => {
+        mockConfigInstance.get.mockReturnValue({
+            requestRoutes: {
+                wifi: { modules: [] },
+                vpn: { modules: [] }
+            },
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
+        });
+
+        expect(() => new CtAuthProvider("config.json", undefined, "nonexistent", fakeLogger))
+            .toThrow();
+    });
+
+    it("passes the resolved module config (with inheritance) to the module constructor", () => {
+        mockConfigInstance.get.mockReturnValue({
+            requestRoutes: {
+                wifi: { modules: ["Child"] },
+                vpn: { modules: [] }
+            },
+
+            // Parent defines the type and base attributes
+            Parent: {
+                type: "A",
+                base: 1,
+                overrideMe: "parent"
+            },
+
+            // Child inherits and overrides one attribute
+            Child: {
+                inherits: "Parent",
+                overrideMe: "child",
+                extra: 42
+            },
+
+            backendConfig: {
+                serverUrl: "https://example.com",
+                apiToken: "test-token"
+            }
+        });
+
+        const provider = new CtAuthProvider("config.json", undefined, "wifi", fakeLogger);
+
+        // Factory call: (churchtoolsClient, resolvedConfig, logger)
+        const callArgs = (moduleRegistry["A"] as any).mock.calls[0];
+
+        expect(callArgs[1]).toEqual({
+            type: "A",
+            base: 1,
+            overrideMe: "child",
+            extra: 42
+        });
     });
 
 });
