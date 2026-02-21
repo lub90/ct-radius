@@ -7,44 +7,68 @@ import type { UserRequest } from "../types/UserRequest.js";
 import { moduleRegistry } from "./ModuleRegistry.js";
 import pino from "pino";
 import { ChurchToolsClient, axiosCookieJarSupport, tough } from "./churchtoolsSetup.js";
+import { resolveModuleConfig } from "./resolveModuleConfig.js";
 
 
 
 
 export class CtAuthProvider {
 
+    public static readonly ALLOWED_REQUEST_ROUTES = ["wifi", "vpn"];
+
     private readonly modules: AuthModule[];
     private readonly config: AppConfig;
+    private readonly requestRoute: string;
     private readonly logger: pino.Logger;
 
-    constructor(configPath: string, envPath: string | undefined, logger: pino.Logger) {
+    constructor(configPath: string, envPath: string | undefined, requestRoute: string = "wifi", logger: pino.Logger) {
         this.logger = logger;
         this.config = new Config(configPath, envPath).get();
+        if (!CtAuthProvider.ALLOWED_REQUEST_ROUTES.includes(requestRoute)) {
+            throw new Error(`Invalid request route '${requestRoute}'. Allowed routes are: ${CtAuthProvider.ALLOWED_REQUEST_ROUTES.join(", ")}`);
+        }
+        this.requestRoute = requestRoute;
         this.modules = this.loadModules(this.config);
     }
 
     private loadModules(config: AppConfig): AuthModule[] {
+        const route = this.requestRoute;
 
-        return config.modules.map((name) => {
-            // Get the module-specific config
-            const moduleConfig = config[name] ?? {};
+        // Get module names for this route
+        const moduleNames = config.requestRoutes[route]?.modules ?? [];
 
-            // The factory method to generate the module
-            const factory = moduleRegistry[name];
-            if (!factory) {
-                throw new Error(`Unknown authorization module '${name}' in config!`);
+        return moduleNames.map((moduleName) => {
+            // Resolve full module config (handles inheritance)
+            const resolvedConfig = resolveModuleConfig(config, moduleName);
+
+            // Extract the module type
+            const moduleType = resolvedConfig.type;
+            if (!moduleType) {
+                throw new Error(
+                    `Module '${moduleName}' resolved without a 'type'. This should not happen.`
+                );
             }
 
-            // Generate a churchtools client for this module
-            const churchtoolsClient = new ChurchToolsClient(
-                    this.config.backendConfig.serverUrl,
-                    this.config.backendConfig.apiToken
+            // Get the factory for this module type
+            const factory = moduleRegistry[moduleType];
+            if (!factory) {
+                throw new Error(
+                    `Unknown module type '${moduleType}' for module '${moduleName}'.`
                 );
-            // Set the cookie jar for the client
-            churchtoolsClient.setCookieJar(axiosCookieJarSupport.wrapper, new tough.CookieJar());
+            }
 
-            // Create the module and return it
-            return factory(churchtoolsClient, moduleConfig, this.logger);
+            // Create a ChurchTools client
+            const churchtoolsClient = new ChurchToolsClient(
+                this.config.backendConfig.serverUrl,
+                this.config.backendConfig.apiToken
+            );
+            churchtoolsClient.setCookieJar(
+                axiosCookieJarSupport.wrapper,
+                new tough.CookieJar()
+            );
+
+            // Instantiate the module
+            return factory(churchtoolsClient, resolvedConfig, this.logger);
         });
     }
 

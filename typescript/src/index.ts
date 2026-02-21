@@ -21,6 +21,7 @@ export async function main() {
         .option("--log <path>", "Path to your log file")
         .requiredOption("--config <path>", "Path to your ChurchTools config file")
         .option("--env <path>", "Path to your .env file")
+        .requiredOption("--requestRoute <name>", "The request route for this authentication attempt (e.g., 'wifi' or 'vpn')")
         .requiredOption("--username <name>", "Username for authentication");
 
     // Parse arguments
@@ -34,7 +35,7 @@ export async function main() {
     /*
      * Setup is finished, now run the real stuff here
      */
-    const exitCode = await authenticateUser(args.config, args.env, args.username, logger);
+    const exitCode = await authenticateUser(args.config, args.env, args.username, args.requestRoute, logger);
     await safeExit(logger, exitCode);
 }
 
